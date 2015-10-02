@@ -1,0 +1,110 @@
+name:          cacophony
+version:       0.1.0.0
+synopsis:      A library implementing the Noise protocol
+license:       PublicDomain
+license-file:  LICENSE
+author:        John Galt
+maintainer:    centromere@users.noreply.github.com
+homepage:      https://github.com/centromere/cacophony/wiki
+bug-reports:   https://github.com/centromere/cacophony/issues
+category:      Cryptography
+build-type:    Simple
+cabal-version: >=1.10
+tested-with:   GHC == 7.10.1, GHC == 7.10.2
+
+extra-source-files:
+  .travis.yml
+  README.md
+
+source-repository head
+  type: git
+  location: https://github.com/centromere/cacophony.git
+
+--------------------------------------------------------------------------------
+-- FLAGS
+
+flag properties
+
+flag hlint
+
+flag doctest
+
+flag llvm
+  default: False
+  manual: True
+
+--------------------------------------------------------------------------------
+-- LIBRARY
+
+library
+  build-depends:
+    base >=4.8 && <4.9
+  hs-source-dirs:   src
+  default-language: Haskell2010
+  exposed-modules:
+  ghc-options:      -rtsopts -with-rtsopts=-N -Wall -fwarn-tabs
+
+  if flag(llvm)
+    ghc-options: -fllvm
+
+--------------------------------------------------------------------------------
+-- TESTS
+
+test-suite properties
+  type:             exitcode-stdio-1.0
+  main-is:          properties.hs
+  ghc-options:      -Wall -fwarn-tabs
+  hs-source-dirs:   tests
+  default-language: Haskell2010
+
+  if !flag(properties)
+    buildable: False
+  else
+    build-depends:
+      base       >= 4.8 && < 4.9,
+      bytestring,
+      cacophony,
+      QuickCheck
+
+test-suite hlint
+  type:             exitcode-stdio-1.0
+  main-is:          hlint.hs
+  ghc-options:      -Wall -fwarn-tabs
+  hs-source-dirs:   tests
+  default-language: Haskell2010
+
+  if !flag(hlint)
+    buildable: False
+  else
+    build-depends:
+      base  >= 4.8 && < 4.9,
+      hlint >= 1.7
+
+test-suite doctests
+  type:             exitcode-stdio-1.0
+  main-is:          doctests.hs
+  ghc-options:      -threaded -Wall -fwarn-tabs
+  hs-source-dirs:   tests
+  default-language: Haskell2010
+
+  if !flag(doctest)
+    buildable: False
+  else
+    build-depends:
+      base,
+      filepath,
+      directory,
+      doctest
+
+--------------------------------------------------------------------------------
+-- BENCHMARKS
+
+benchmark bench
+  type:             exitcode-stdio-1.0
+  main-is:          bench.hs
+  ghc-options:      -Wall -fwarn-tabs
+  hs-source-dirs:   benchmarks
+  default-language: Haskell2010
+
+  build-depends:
+    base >= 4.8 && < 4.9

@@ -10,7 +10,7 @@ bug-reports:   https://github.com/centromere/cacophony/issues
 category:      Cryptography
 build-type:    Simple
 cabal-version: >=1.10
-tested-with:   GHC == 7.10.1, GHC == 7.10.2, GHC == HEAD
+tested-with:   GHC == 7.10.1, GHC == 7.10.2
 
 extra-source-files:
   .travis.yml

@@ -6,4 +6,5 @@ module Main (
 import Util (driver)
 
 main :: IO ()
-main = driver $ \_ -> undefined --Foo.tests n
+main = return ()
+--main = driver $ \n -> Foo.tests n

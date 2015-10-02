@@ -7,11 +7,19 @@
 
 module Crypto.Noise.Internal
   ( -- * Types
+    PlainText,
+    CipherText,
+    SymmetricKey,
+    Nonce,
+    HashOutput,
+    HandshakeName,
     CipherState,
+    SymmetricHandshakeState,
     -- * API
-    newCipherState,
+    cipherState,
     encryptAndIncrement,
-    decryptAndIncrement
+    decryptAndIncrement,
+    symmetricHandshake
   ) where
 
 import Data.ByteString (ByteString)
@@ -22,17 +30,30 @@ newtype PlainText = PlainText ByteString
 newtype CipherText = CipherText ByteString
 newtype SymmetricKey = SymmetricKey Word256
 newtype Nonce = Nonce Word64
+newtype HashOutput = HashOutput Word256
+newtype HandshakeName = HandshakeName ByteString
+newtype DHOutput = DHOutput ByteString
 
 data CipherState =
   CipherState { k :: SymmetricKey
               , n :: Nonce
               }
 
-newCipherState :: CipherState
-newCipherState = undefined
+data SymmetricHandshakeState =
+  SymmetricHandshakeState { hasKey :: Bool
+                          , h       :: HashOutput
+                          }
+
+cipherState :: CipherState
+cipherState = undefined
 
 encryptAndIncrement :: CipherState -> PlainText -> (CipherText, CipherState)
 encryptAndIncrement cs pt = undefined
 
 decryptAndIncrement :: CipherState -> CipherText -> (PlainText, CipherState)
 decryptAndIncrement cs ct = undefined
+
+symmetricHandshake :: HandshakeName -> SymmetricHandshakeState
+symmetricHandshake = undefined
+
+--mixKey :: DHOutput -> 

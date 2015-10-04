@@ -8,46 +8,55 @@
 -- Portability : POSIX
 
 module Crypto.Noise.Cipher.ChaChaPoly1305
-  ( ChaChaPoly1305,
-    chaChaPoly1305,
-    -- * Type families
-    Ciphertext(..),
-    SymmetricKey(..),
-    Nonce(..),
-    Digest(..)
+  ( -- * Types
+    ChaChaPoly1305
   ) where
 
-import Data.ByteString (ByteString)
+import Crypto.Error (throwCryptoError)
 import qualified Crypto.MAC.Poly1305 as P
 import qualified Crypto.Cipher.ChaChaPoly1305 as CCP
 import qualified Crypto.Hash as H
+import Data.ByteArray (ScrubbedBytes)
+import Data.ByteString (ByteString)
 
 import Crypto.Noise.Cipher
 
 data ChaChaPoly1305
 
-data instance Ciphertext   ChaChaPoly1305 = Ciphertext   (ByteString, P.Auth)
-data instance SymmetricKey ChaChaPoly1305 = SymmetricKey ByteString
-data instance Nonce        ChaChaPoly1305 = Nonce        CCP.Nonce
-data instance Digest       ChaChaPoly1305 = Digest       H.SHA256
+instance Cipher ChaChaPoly1305 where
+  data Ciphertext   ChaChaPoly1305 = CTCCP1305 (ScrubbedBytes, P.Auth)
+  data SymmetricKey ChaChaPoly1305 = SKCCP1305 ScrubbedBytes
+  data Nonce        ChaChaPoly1305 = NCCP1305  CCP.Nonce
+  data Digest       ChaChaPoly1305 = DCCP1305  (H.Digest H.SHA256)
 
-chaChaPoly1305 :: Cipher ChaChaPoly1305
-chaChaPoly1305 =
-  Cipher { cipherName = "ChaChaPoly"
-         , cipherEncrypt = _encrypt
-         , cipherDecrypt = _decrypt
-         , cipherGetKey  = _getKey
-         , cipherHash    = _hash
-         }
+  cipherName _  = "ChaChaPoly"
+  cipherEncrypt = _encrypt
+  cipherDecrypt = _decrypt
+  cipherGetKey  = _getKey
+  cipherHash    = _hash
 
-_encrypt :: SymmetricKey c -> Nonce c -> AssocData c -> Plaintext  c -> Ciphertext c
-_encrypt = undefined
+_encrypt :: SymmetricKey ChaChaPoly1305 -> Nonce ChaChaPoly1305 -> AssocData -> Plaintext -> Ciphertext ChaChaPoly1305
+_encrypt (SKCCP1305 k) (NCCP1305 n) (AssocData ad) (Plaintext plaintext) = CTCCP1305 (out, authTag)
+  where
+    initState       = throwCryptoError $ CCP.initialize k n
+    afterAAD        = CCP.finalizeAAD (CCP.appendAAD ad initState)
+    (out, afterEnc) = CCP.encrypt plaintext afterAAD
+    authTag         = CCP.finalize afterEnc
 
-_decrypt :: SymmetricKey c -> Nonce c -> AssocData c -> Ciphertext c -> Plaintext  c
-_decrypt = undefined
+_decrypt :: SymmetricKey ChaChaPoly1305 -> Nonce ChaChaPoly1305 -> AssocData -> Ciphertext ChaChaPoly1305 -> Maybe Plaintext
+_decrypt (SKCCP1305 k) (NCCP1305 n) (AssocData ad) (CTCCP1305 (ciphertext, provAuthTag)) =
+  if provAuthTag == calcAuthTag then
+    return $ Plaintext out
+  else
+    Nothing
+  where
+    initState       = throwCryptoError $ CCP.initialize k n
+    afterAAD        = CCP.finalizeAAD (CCP.appendAAD ad initState)
+    (out, afterDec) = CCP.decrypt ciphertext afterAAD
+    calcAuthTag     = CCP.finalize afterDec
 
-_getKey :: SymmetricKey c -> Nonce c
+_getKey :: SymmetricKey ChaChaPoly1305 -> Nonce ChaChaPoly1305
 _getKey = undefined
 
-_hash :: ByteString -> ByteString
-_hash = undefined
+_hash :: ByteString -> Digest ChaChaPoly1305
+_hash bs = DCCP1305 $ H.hash bs

@@ -8,27 +8,22 @@
 -- Portability : POSIX
 
 module Crypto.Noise.Curve
-  ( -- * Type families
-    PublicKey,
-    SecretKey,
-    DHOutput,
+  ( -- * Classes
+    Curve(..),
     -- * Types
-    KeyPair,
-    Curve(..)
+    KeyPair
   ) where
 
 import Data.ByteString (ByteString)
 
-data family PublicKey c :: *
-data family SecretKey c :: *
-data family DHOutput  c :: *
+class Curve c where
+  data PublicKey c :: *
+  data SecretKey c :: *
+  data DHOutput  c :: *
 
-type KeyPair c = (PublicKey c, SecretKey c)
+  curveName   :: c -> ByteString
+  curveLen    :: c -> Int
+  curveGenKey :: IO (KeyPair c)
+  curveDH     :: SecretKey c -> PublicKey c -> DHOutput c
 
-data Curve c =
-  Curve {
-    curveName   :: ByteString,
-    curveLen    :: Int,
-    curveGenKey :: IO (KeyPair c),
-    curveDH     :: SecretKey c -> PublicKey c -> DHOutput c
-  }
+type KeyPair c = (SecretKey c, PublicKey c)

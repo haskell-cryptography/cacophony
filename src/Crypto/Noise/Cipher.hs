@@ -8,32 +8,27 @@
 -- Portability : POSIX
 
 module Crypto.Noise.Cipher
-  ( -- * Type families
-    Ciphertext,
-    SymmetricKey,
-    Nonce,
-    Digest,
+  ( -- * Classes
+    Cipher(..),
     -- * Types
     Plaintext(..),
-    AssocData(..),
-    Cipher(..)
+    AssocData(..)
   ) where
 
+import Data.ByteArray (ScrubbedBytes)
 import Data.ByteString (ByteString)
 
-data family Ciphertext   c :: *
-data family SymmetricKey c :: *
-data family Nonce        c :: *
-data family Digest       c :: *
+class Cipher c where
+  data Ciphertext   c :: *
+  data SymmetricKey c :: *
+  data Nonce        c :: *
+  data Digest       c :: *
 
-newtype Plaintext c = Plaintext ByteString
-newtype AssocData c = AssocData ByteString
+  cipherName    :: c -> ByteString
+  cipherEncrypt :: SymmetricKey c -> Nonce c -> AssocData -> Plaintext -> Ciphertext c
+  cipherDecrypt :: SymmetricKey c -> Nonce c -> AssocData -> Ciphertext c -> Maybe Plaintext
+  cipherGetKey  :: SymmetricKey c -> Nonce c
+  cipherHash    :: ByteString -> Digest c
 
-data Cipher c =
-  Cipher {
-    cipherName :: ByteString,
-    cipherEncrypt :: SymmetricKey c -> Nonce c -> AssocData c -> Plaintext  c -> Ciphertext c,
-    cipherDecrypt :: SymmetricKey c -> Nonce c -> AssocData c -> Ciphertext c -> Plaintext  c,
-    cipherGetKey  :: SymmetricKey c -> Nonce c,
-    cipherHash    :: ByteString -> ByteString
-}
+newtype Plaintext = Plaintext ScrubbedBytes
+newtype AssocData = AssocData ScrubbedBytes

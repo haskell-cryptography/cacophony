@@ -37,7 +37,9 @@ instance Byteable (PublicKey Curve25519) where
 
 _genKey :: IO (KeyPair Curve25519)
 _genKey = do
-  (sk, pk) <- C.generateKeypair
+  r <- getEntropy 32 :: IO ScrubbedBytes
+  let sk = either error id $ C.secretKey r
+      pk = C.toPublic sk
   return (SK25519 sk, PK25519 pk)
 
 _dh :: SecretKey Curve25519 -> PublicKey Curve25519 -> DHOutput Curve25519

@@ -14,6 +14,7 @@ module Crypto.Noise.Curve
     KeyPair
   ) where
 
+import Data.ByteArray (ScrubbedBytes)
 import Data.ByteString (ByteString)
 
 class Curve c where
@@ -21,9 +22,10 @@ class Curve c where
   data SecretKey c :: *
   data DHOutput  c :: *
 
-  curveName   :: c -> ByteString
-  curveLen    :: c -> Int
-  curveGenKey :: IO (KeyPair c)
-  curveDH     :: SecretKey c -> PublicKey c -> DHOutput c
+  curveName    :: c -> ByteString
+  curveLen     :: c -> Int
+  curveGenKey  :: IO (KeyPair c)
+  curveDH      :: SecretKey c -> PublicKey c -> DHOutput c
+  curveDHBytes :: DHOutput c -> ScrubbedBytes
 
 type KeyPair c = (SecretKey c, PublicKey c)

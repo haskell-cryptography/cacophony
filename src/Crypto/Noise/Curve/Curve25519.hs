@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, TypeFamilies #-}
+{-# LANGUAGE OverloadedStrings, TypeFamilies, FlexibleInstances #-}
 
 ----------------------------------------------------------------
 -- |
@@ -14,7 +14,8 @@ module Crypto.Noise.Curve.Curve25519
 
 import Crypto.Random.Entropy
 import qualified Crypto.PubKey.Curve25519 as C
-import Data.ByteArray (ScrubbedBytes)
+import Data.Byteable
+import Data.ByteArray (ScrubbedBytes, convert)
 
 import Crypto.Noise.Curve
 
@@ -25,17 +26,22 @@ instance Curve Curve25519 where
   data SecretKey Curve25519 = SK25519  C.SecretKey
   data DHOutput  Curve25519 = DHO25519 C.DhSecret
 
-  curveName _ = "25519"
-  curveLen _  = 32
-  curveGenKey = _curveGenKey
-  curveDH     = _curveDH
+  curveName _  = "25519"
+  curveLen _   = 32
+  curveGenKey  = _genKey
+  curveDH      = _dh
+  curveDHBytes = _dhBytes
 
-_curveGenKey :: IO (KeyPair Curve25519)
-_curveGenKey = do
-  r <- getEntropy 32 :: IO ScrubbedBytes
-  let sk = either error id $ C.secretKey r
-      pk = C.toPublic sk
+instance Byteable (PublicKey Curve25519) where
+  toBytes (PK25519 pk) = convert pk
+
+_genKey :: IO (KeyPair Curve25519)
+_genKey = do
+  (sk, pk) <- C.generateKeypair
   return (SK25519 sk, PK25519 pk)
 
-_curveDH :: SecretKey Curve25519 -> PublicKey Curve25519 -> DHOutput Curve25519
-_curveDH (SK25519 sk) (PK25519 pk) = DHO25519 $ C.dh pk sk
+_dh :: SecretKey Curve25519 -> PublicKey Curve25519 -> DHOutput Curve25519
+_dh (SK25519 sk) (PK25519 pk) = DHO25519 $ C.dh pk sk
+
+_dhBytes :: DHOutput Curve25519 -> ScrubbedBytes
+_dhBytes (DHO25519 dho) = convert dho

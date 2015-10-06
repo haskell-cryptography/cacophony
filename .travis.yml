@@ -58,7 +58,7 @@ install:
       echo "cabal build-cache MISS";
       rm -rf $HOME/.cabsnap;
       mkdir -p $HOME/.ghc $HOME/.cabal/lib $HOME/.cabal/share $HOME/.cabal/bin;
-      cabal install --only-dependencies --enable-tests;
+      cabal install --only-dependencies --enable-tests cacophony.cabal cryptonite/;
       if [ "$GHCVER" = "7.10.1" ]; then cabal install Cabal-1.22.4.0; fi;
     fi
 

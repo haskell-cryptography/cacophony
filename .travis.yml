@@ -33,7 +33,7 @@ before_install:
   - export PATH=~/.cabal/bin:/opt/ghc/$GHCVER/bin:/opt/cabal/$CABALVER/bin:/opt/happy/$HAPPYVER/bin:/opt/alex/$ALEXVER/bin:$PATH
 
 install:
-  - git clone https://github.com/centromere/cryptonite.git
+  - git clone -b combined https://github.com/centromere/cryptonite.git
 
   - cabal --version
   - echo "$(ghc --version) [$(ghc --print-project-git-commit-id 2> /dev/null || echo '?')]"

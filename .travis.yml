@@ -44,7 +44,7 @@ install:
     fi
   - travis_retry cabal update
   - "sed -i  's/^jobs:.*$/jobs: 2/' $HOME/.cabal/config"
-  - cabal install --only-dependencies --enable-tests --dry -v cacophone.cabal cryptonite/ > installplan.txt
+  - cabal install --only-dependencies --enable-tests --dry -v cacophony.cabal cryptonite/ > installplan.txt
   - sed -i -e '1,/^Resolving /d' installplan.txt; cat installplan.txt
 
   # check whether current requested install-plan matches cached package-db snapshot

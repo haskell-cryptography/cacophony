@@ -63,5 +63,10 @@ decryptAndHash shs@SymmetricHandshakeState{..} ct
     (pt, cs) = decryptAndIncrement shsCipher (AssocData (cipherHashToBytes shsh)) ct
     shs'     = mixHash shs { shsCipher = cs } (cipherTextToBytes ct)
 
-split :: SymmetricHandshakeState c -> (CipherState c, CipherState c)
-split shs@SymmetricHandshakeState{..} = undefined
+split :: Cipher c => SymmetricHandshakeState c -> (CipherState c, CipherState c)
+split SymmetricHandshakeState{..} = (cs1, cs2)
+  where
+    cs1k = cipherGetKey (csk shsCipher) (csn shsCipher)
+    cs1  = CipherState { csk = cs1k, csn = cipherZeroNonce }
+    cs2k = cipherGetKey (csk shsCipher) (cipherIncNonce (csn shsCipher))
+    cs2  = CipherState { csk = cs2k, csn = cipherZeroNonce }

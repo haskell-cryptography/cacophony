@@ -20,7 +20,6 @@ module Crypto.Noise.Internal.SymmetricHandshakeState
   ) where
 
 import Crypto.Noise.Cipher
-import Crypto.Noise.Curve
 import Crypto.Noise.Internal.CipherState
 import Crypto.Noise.Types
 
@@ -51,13 +50,18 @@ encryptAndHash :: Cipher c => SymmetricHandshakeState c -> Plaintext -> (Scrubbe
 encryptAndHash shs@SymmetricHandshakeState{..} (Plaintext pt)
   | shsHasKey = (cipherTextToBytes ct, kshs)
   | otherwise = (pt, nkshs)
-    where
-      (ct, cs) = encryptAndIncrement shsCipher (AssocData (cipherHashToBytes shsh)) (Plaintext pt)
-      kshs     = mixHash shs { shsCipher = cs } (cipherTextToBytes ct)
-      nkshs    = mixHash shs pt
+  where
+    (ct, cs) = encryptAndIncrement shsCipher (AssocData (cipherHashToBytes shsh)) (Plaintext pt)
+    kshs     = mixHash shs { shsCipher = cs } (cipherTextToBytes ct)
+    nkshs    = mixHash shs pt
 
-decryptAndHash :: SymmetricHandshakeState c -> ScrubbedBytes -> undefined
-decryptAndHash shs d = undefined
+decryptAndHash :: Cipher c => SymmetricHandshakeState c -> Ciphertext c -> (Plaintext, SymmetricHandshakeState c)
+decryptAndHash shs@SymmetricHandshakeState{..} ct
+  | shsHasKey = (pt, shs')
+  | otherwise = (Plaintext (cipherTextToBytes ct), shs')
+  where
+    (pt, cs) = decryptAndIncrement shsCipher (AssocData (cipherHashToBytes shsh)) ct
+    shs'     = mixHash shs { shsCipher = cs } (cipherTextToBytes ct)
 
 split :: SymmetricHandshakeState c -> (CipherState c, CipherState c)
-split shs = undefined
+split shs@SymmetricHandshakeState{..} = undefined

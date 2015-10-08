@@ -12,22 +12,14 @@ module Crypto.Noise.Handshake
     noiseNN
   ) where
 
+import Crypto.Noise.Cipher
 import Crypto.Noise.Curve
 import Crypto.Noise.Internal.HandshakeState
-
-data Token c = TokenE (PublicKey c)
-             | TokenS (PublicKey c)
-             | TokenDHEE
-             | TokenDHES
-             | TokenDHSE
-             | TokenDHSS
-
-type Descriptor c = [Token c]
 
 data Handshake c d =
   Handshake { hsPattern :: [Descriptor c]
             , hsState   :: HandshakeState c d
             }
 
-noiseNN :: Handshake c d
+noiseNN :: (Cipher c, Curve d) => Handshake c d
 noiseNN = undefined

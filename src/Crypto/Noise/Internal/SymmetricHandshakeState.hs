@@ -45,7 +45,7 @@ mixKey shs@SymmetricHandshakeState{..} d = shs { shsCipher = cs, shsHasKey = Tru
 
 mixHash :: Cipher c => SymmetricHandshakeState c -> ScrubbedBytes -> SymmetricHandshakeState c
 mixHash shs@SymmetricHandshakeState{..} d =
-  shs { shsh = cipherHash $ (cipherHashToBytes shsh) `append` d }
+  shs { shsh = cipherHash $ cipherHashToBytes shsh `append` d }
 
 encryptAndHash :: Cipher c => SymmetricHandshakeState c -> Plaintext -> (ScrubbedBytes, SymmetricHandshakeState c)
 encryptAndHash shs@SymmetricHandshakeState{..} (Plaintext pt)

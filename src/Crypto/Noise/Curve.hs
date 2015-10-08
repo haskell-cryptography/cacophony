@@ -20,12 +20,10 @@ import Data.ByteString (ByteString)
 class Curve c where
   data PublicKey c :: *
   data SecretKey c :: *
-  data DHOutput  c :: *
 
-  curveName    :: c -> ByteString
-  curveLen     :: c -> Int
-  curveGenKey  :: IO (KeyPair c)
-  curveDH      :: SecretKey c -> PublicKey c -> DHOutput c
-  curveDHBytes :: DHOutput c -> ScrubbedBytes
+  curveName     :: c -> ByteString
+  curveLen      :: c -> Int
+  curveGenKey   :: IO (KeyPair c)
+  curveDH       :: SecretKey c -> PublicKey c -> ScrubbedBytes
 
 type KeyPair c = (SecretKey c, PublicKey c)

@@ -15,9 +15,7 @@ module Crypto.Noise.Cipher
     AssocData(..)
   ) where
 
-import Data.Byteable
-import Data.ByteArray (ScrubbedBytes, convert)
-import Data.ByteString (ByteString)
+import Crypto.Noise.Types
 
 class Cipher c where
   data Ciphertext   c :: *
@@ -25,18 +23,17 @@ class Cipher c where
   data Nonce        c :: *
   data Digest       c :: *
 
-  cipherName      :: c -> ByteString
-  cipherEncrypt   :: SymmetricKey c -> Nonce c -> AssocData -> Plaintext -> Ciphertext c
-  cipherDecrypt   :: SymmetricKey c -> Nonce c -> AssocData -> Ciphertext c -> Maybe Plaintext
-  cipherZeroNonce :: Nonce c
-  cipherIncNonce  :: Nonce c -> Nonce c
-  cipherGetKey    :: SymmetricKey c -> Nonce c -> SymmetricKey c
-  cipherHash      :: ByteString -> Digest c
-  cipherHashToKey :: Digest c -> SymmetricKey c
-  cipherHMAC      :: SymmetricKey c -> Plaintext -> Digest c
+  cipherName        :: c -> ScrubbedBytes
+  cipherEncrypt     :: SymmetricKey c -> Nonce c -> AssocData -> Plaintext -> Ciphertext c
+  cipherDecrypt     :: SymmetricKey c -> Nonce c -> AssocData -> Ciphertext c -> Maybe Plaintext
+  cipherZeroNonce   :: Nonce c
+  cipherIncNonce    :: Nonce c -> Nonce c
+  cipherGetKey      :: SymmetricKey c -> Nonce c -> SymmetricKey c
+  cipherHash        :: ScrubbedBytes -> Digest c
+  cipherHMAC        :: SymmetricKey c -> ScrubbedBytes -> Digest c
+  cipherHashToKey   :: Digest c -> SymmetricKey c
+  cipherHashToBytes :: Digest c -> ScrubbedBytes
+  cipherTextToBytes :: Ciphertext c -> ScrubbedBytes
 
 newtype Plaintext = Plaintext ScrubbedBytes
 newtype AssocData = AssocData ScrubbedBytes
-
-instance Byteable Plaintext where
-  toBytes (Plaintext pt) = convert pt

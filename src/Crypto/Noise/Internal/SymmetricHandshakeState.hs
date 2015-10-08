@@ -19,12 +19,10 @@ module Crypto.Noise.Internal.SymmetricHandshakeState
     split
   ) where
 
-import Data.Byteable
-import Data.ByteString hiding (split)
-
 import Crypto.Noise.Cipher
 import Crypto.Noise.Curve
 import Crypto.Noise.Internal.CipherState
+import Crypto.Noise.Types
 
 data SymmetricHandshakeState c =
   SymmetricHandshakeState { shsCipher :: CipherState c
@@ -32,26 +30,33 @@ data SymmetricHandshakeState c =
                           , shsh      :: Digest c
                           }
 
-symmetricHandshake :: Cipher c => ByteString -> SymmetricHandshakeState c
+symmetricHandshake :: Cipher c => ScrubbedBytes -> SymmetricHandshakeState c
 symmetricHandshake hsn = SymmetricHandshakeState cs False h
   where
-    h  = cipherHash hsn
+    h  = cipherHash $ convert hsn
     cs = CipherState (cipherHashToKey h) cipherZeroNonce
 
-mixKey :: (Cipher c, Curve d) => SymmetricHandshakeState c -> DHOutput d -> SymmetricHandshakeState c
-mixKey SymmetricHandshakeState{..} dho = SymmetricHandshakeState cs True shsh
+mixKey :: Cipher c => SymmetricHandshakeState c -> ScrubbedBytes -> SymmetricHandshakeState c
+mixKey shs@SymmetricHandshakeState{..} d = shs { shsCipher = cs, shsHasKey = True }
   where
     gk   = cipherGetKey (csk shsCipher) (csn shsCipher)
-    hmac = cipherHMAC gk (Plaintext (curveDHBytes dho))
+    hmac = cipherHMAC gk d
     cs   = CipherState (cipherHashToKey hmac) cipherZeroNonce
 
-mixHash :: Byteable b => SymmetricHandshakeState c -> b -> SymmetricHandshakeState c
-mixHash shs = undefined
+mixHash :: Cipher c => SymmetricHandshakeState c -> ScrubbedBytes -> SymmetricHandshakeState c
+mixHash shs@SymmetricHandshakeState{..} d =
+  shs { shsh = cipherHash $ (cipherHashToBytes shsh) `append` d }
 
-encryptAndHash :: SymmetricHandshakeState c -> ByteString -> ByteString
-encryptAndHash shs pt = undefined
+encryptAndHash :: Cipher c => SymmetricHandshakeState c -> Plaintext -> (ScrubbedBytes, SymmetricHandshakeState c)
+encryptAndHash shs@SymmetricHandshakeState{..} (Plaintext pt)
+  | shsHasKey = (cipherTextToBytes ct, kshs)
+  | otherwise = (pt, nkshs)
+    where
+      (ct, cs) = encryptAndIncrement shsCipher (AssocData (cipherHashToBytes shsh)) (Plaintext pt)
+      kshs     = mixHash shs { shsCipher = cs } (cipherTextToBytes ct)
+      nkshs    = mixHash shs pt
 
-decryptAndHash :: SymmetricHandshakeState c -> ByteString -> ByteString
+decryptAndHash :: SymmetricHandshakeState c -> ScrubbedBytes -> undefined
 decryptAndHash shs d = undefined
 
 split :: SymmetricHandshakeState c -> (CipherState c, CipherState c)

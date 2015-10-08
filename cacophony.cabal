@@ -39,7 +39,6 @@ flag llvm
 library
   build-depends:
     base >=4.8 && <4.9,
-    byteable,
     bytestring,
     cryptonite,
     largeword,
@@ -55,6 +54,7 @@ library
     Crypto.Noise.Internal.CipherState
     Crypto.Noise.Internal.SymmetricHandshakeState
     Crypto.Noise.Internal.HandshakeState
+    Crypto.Noise.Types
   ghc-options:      -rtsopts -with-rtsopts=-N -Wall -fwarn-tabs
 
   if flag(llvm)

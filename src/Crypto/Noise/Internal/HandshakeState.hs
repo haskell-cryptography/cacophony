@@ -8,13 +8,13 @@
 module Crypto.Noise.Internal.HandshakeState
   ( -- * Types
     HandshakeState,
-    Token(..),
-    Descriptor,
     -- * Functions
-    tokenIE,
+    tokenWE,
     tokenRE,
+    tokenDH,
     noiseNNI1,
     noiseNNR1,
+    noiseNNR2,
     runDescriptor,
     handshakeState,
     writeHandshakeMessage,
@@ -28,6 +28,7 @@ import Control.Monad.State
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B (splitAt, append)
 import Data.Functor.Identity (Identity, runIdentity)
+import Data.Maybe (fromJust)
 
 import Crypto.Noise.Cipher
 import Crypto.Noise.Curve
@@ -35,20 +36,11 @@ import Crypto.Noise.Internal.CipherState
 import Crypto.Noise.Internal.SymmetricHandshakeState
 import Crypto.Noise.Types
 
-data Token d = TokenE (PublicKey d)
-             | TokenS (PublicKey d)
-             | TokenDHEE
-             | TokenDHES
-             | TokenDHSE
-             | TokenDHSS
-
-type Descriptor d = [Token d]
-
 type DescriptorT c d m a = StateT (HandshakeState c d) m a
 
-tokenIE :: (Cipher c, Curve d)
+tokenWE :: (Cipher c, Curve d)
         => DescriptorT c d IO ByteString
-tokenIE = do
+tokenWE = do
   kp <- liftIO curveGenKey
   hs <- get
   let pk         = snd . curveKeyBytes $ kp
@@ -75,20 +67,54 @@ tokenRE buf = do
   return rest
   where
     d hk
-      | hk        = 48
-      | otherwise = 32
+      | hk        = 32 + 16
+      | otherwise = 32 -- this should call curveLen!
+
+tokenDH :: (Cipher c, Curve d)
+        => KeyPair d
+        -> PublicKey d
+        -> DescriptorT c d Identity ()
+tokenDH (sk, _) rpk = do
+  hs <- get
+  let shs  = hssSymmetricHandshake hs
+      dh   = curveDH sk rpk
+      shs' = mixKey shs dh
+  put $ hs { hssSymmetricHandshake = shs' }
 
 noiseNNI1 :: (Cipher c, Curve d)
           => DescriptorT c d IO ByteString
-noiseNNI1 = tokenIE
+noiseNNI1 = tokenWE
 
 noiseNNR1 :: (Cipher c, Curve d)
           => ByteString
           -> DescriptorT c d Identity ByteString
 noiseNNR1 = tokenRE
 
-runDescriptor :: Monad m => DescriptorT c d m a -> HandshakeState c d -> m a
-runDescriptor = evalStateT
+noiseNNR2 :: (Cipher c, Curve d)
+          => ByteString
+          -> DescriptorT c d IO ByteString
+noiseNNR2 buf = do
+  hs <- get
+  e <- tokenWE
+  let kp       = fromJust $ hssLocalEphemeralKey hs
+      rpk      = fromJust $ hssRemoteEphemeralKey hs
+      (_, hs') = runIdentity $ runDescriptor (tokenDH kp rpk) hs
+  put hs'
+  return e
+
+noiseNNI2 :: (Cipher c, Curve d)
+          => ByteString
+          -> DescriptorT c d Identity ByteString
+noiseNNI2 buf = do
+  hs <- get
+  rest <- tokenRE buf
+  let kp  = fromJust $ hssLocalEphemeralKey hs
+      rpk = fromJust $ hssRemoteEphemeralKey hs
+  tokenDH kp rpk
+  return rest
+
+runDescriptor :: Monad m => DescriptorT c d m a -> HandshakeState c d -> m (a, HandshakeState c d)
+runDescriptor = runStateT
 
 data HandshakeState c d =
   HandshakeState { hssSymmetricHandshake :: SymmetricHandshakeState c
@@ -117,11 +143,11 @@ writeHandshakeMessage :: (Cipher c, Curve d)
 writeHandshakeMessage hs desc final payload
   | final = undefined
   | otherwise = do
-    d <- runDescriptor desc hs
+    (d, hs') <- runDescriptor desc hs
     let shs        = hssSymmetricHandshake hs
         (ep, shs') = encryptAndHash shs payload
-        hs'        = hs { hssSymmetricHandshake = shs' }
-    return $ Left (d `B.append` convert ep, hs')
+        hs''       = hs' { hssSymmetricHandshake = shs' }
+    return $ Left (d `B.append` convert ep, hs'')
 
 readHandshakeMessage :: (Cipher c, Curve d)
                      => HandshakeState c d
@@ -133,11 +159,11 @@ readHandshakeMessage :: (Cipher c, Curve d)
 readHandshakeMessage hs buf desc final
   | final = undefined
   | otherwise = do
-    let d          = runIdentity $ runDescriptor (desc buf) hs
+    let (d, hs')   = runIdentity $ runDescriptor (desc buf) hs
         shs        = hssSymmetricHandshake hs
         (dp, shs') = decryptAndHash shs $ cipherBytesToText $ convert d
-        hs'        = hs { hssSymmetricHandshake = shs' }
-    Left (dp, hs')
+        hs''       = hs' { hssSymmetricHandshake = shs' }
+    Left (dp, hs'')
 
 writePayload :: Cipher c
              => CipherState c

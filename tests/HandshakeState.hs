@@ -8,7 +8,6 @@ import Crypto.Noise.Internal.HandshakeState
 import Crypto.Noise.Internal.Descriptor
 import Crypto.Noise.Types
 import Crypto.Noise.Cipher
-import Crypto.Noise.Curve
 import Crypto.Noise.Cipher.ChaChaPoly1305
 import Crypto.Noise.Curve.Curve25519
 

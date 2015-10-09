@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 ----------------------------------------------------------------
 -- |
 -- Module      : Crypto.Noise.Internal.HandshakeState
@@ -16,8 +17,8 @@ module Crypto.Noise.Internal.HandshakeState
     readHandshakeMsg,
     writeHandshakeMsgFinal,
     readHandshakeMsgFinal,
-    writePayload,
-    readPayload
+    encryptPayload,
+    decryptPayload
   ) where
 
 import Control.Monad.State
@@ -100,14 +101,20 @@ readHandshakeMsgFinal hs buf desc = (pt, cs1, cs2)
     shs        = hssSymmetricHandshake hs'
     (cs1, cs2) = split shs
 
-writePayload :: Cipher c
+encryptPayload :: Cipher c
              => CipherState c
              -> Plaintext
-             -> ByteString
-writePayload cs pt = undefined
+             -> (ByteString, CipherState c)
+encryptPayload cs pt = ((convert . cipherTextToBytes) ct, cs')
+  where
+    (ct, cs') = encryptAndIncrement cs ad pt
+    ad = AssocData $ convert ("" :: ByteString)
 
-readPayload :: Cipher c
+decryptPayload :: Cipher c
             => CipherState c
             -> ByteString
-            -> Plaintext
-readPayload cs bs = undefined
+            -> (Plaintext, CipherState c)
+decryptPayload cs ct = (pt, cs')
+  where
+    (pt, cs') = decryptAndIncrement cs ad $ (cipherBytesToText . convert) ct
+    ad = AssocData $ convert ("" :: ByteString)

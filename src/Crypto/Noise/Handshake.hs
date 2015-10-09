@@ -7,4 +7,18 @@
 
 module Crypto.Noise.Handshake
   ( -- * Types
+    HandshakeState,
+    -- * Functions
+    handshakeState,
+    writeHandshakeMsg,
+    readHandshakeMsg,
+    writeHandshakeMsgFinal,
+    readHandshakeMsgFinal,
+    encryptPayload,
+    decryptPayload,
+    -- * Modules
+    module Crypto.Noise.Internal.Descriptor
   ) where
+
+import Crypto.Noise.Internal.HandshakeState
+import Crypto.Noise.Internal.Descriptor

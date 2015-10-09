@@ -34,6 +34,7 @@ class Cipher c where
   cipherHashToKey   :: Digest c -> SymmetricKey c
   cipherHashToBytes :: Digest c -> ScrubbedBytes
   cipherTextToBytes :: Ciphertext c -> ScrubbedBytes
+  cipherBytesToText :: ScrubbedBytes -> Ciphertext c
 
 newtype Plaintext = Plaintext ScrubbedBytes
 newtype AssocData = AssocData ScrubbedBytes

@@ -41,8 +41,8 @@ library
     base >=4.8 && <4.9,
     bytestring,
     cryptonite,
-    largeword,
-    memory
+    memory,
+    mtl
   hs-source-dirs:   src
   default-language: Haskell2010
   exposed-modules:

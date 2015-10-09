@@ -21,9 +21,11 @@ class Curve c where
   data PublicKey c :: *
   data SecretKey c :: *
 
-  curveName     :: c -> ByteString
-  curveLen      :: c -> Int
-  curveGenKey   :: IO (KeyPair c)
-  curveDH       :: SecretKey c -> PublicKey c -> ScrubbedBytes
+  curveName       :: c -> ScrubbedBytes
+  curveLen        :: c -> Int
+  curveGenKey     :: IO (KeyPair c)
+  curveDH         :: SecretKey c -> PublicKey c -> ScrubbedBytes
+  curveKeyBytes   :: KeyPair c -> (ScrubbedBytes, ByteString)
+  curveBytesToPub :: ScrubbedBytes -> PublicKey c
 
 type KeyPair c = (SecretKey c, PublicKey c)

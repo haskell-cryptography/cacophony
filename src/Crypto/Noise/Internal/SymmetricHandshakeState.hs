@@ -9,7 +9,7 @@
 
 module Crypto.Noise.Internal.SymmetricHandshakeState
   ( -- * Types
-    SymmetricHandshakeState,
+    SymmetricHandshakeState(..),
     -- * Functions
     symmetricHandshake,
     mixKey,

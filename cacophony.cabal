@@ -44,7 +44,6 @@ library
   hs-source-dirs:   src
   default-language: Haskell2010
   exposed-modules:
-    Crypto.Noise
     Crypto.Noise.Cipher
     Crypto.Noise.Cipher.ChaChaPoly1305
     Crypto.Noise.Curve

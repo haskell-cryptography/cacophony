@@ -1,5 +1,4 @@
 {-# LANGUAGE TypeFamilies #-}
-
 ----------------------------------------------------------------
 -- |
 -- Module      : Crypto.Noise.Curve

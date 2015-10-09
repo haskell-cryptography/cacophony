@@ -1,5 +1,4 @@
 {-# LANGUAGE RecordWildCards #-}
-
 ----------------------------------------------------------------
 -- |
 -- Module      : Crypto.Noise.Internal.CipherState

@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedStrings, TypeFamilies, FlexibleInstances #-}
-
 ----------------------------------------------------------------
 -- |
 -- Module      : Crypto.Noise.Curve.Curve25519

@@ -52,8 +52,12 @@ handshakeState :: (Cipher c, Curve d)
                -> Maybe (KeyPair d)
                -> Maybe (PublicKey d)
                -> Maybe (PublicKey d)
+               -> Maybe (Descriptor c d Identity ())
                -> HandshakeState c d
-handshakeState hn = HandshakeState (symmetricHandshake hn)
+handshakeState hn ls le rs re = maybe hs hs'
+  where
+    hs = HandshakeState (symmetricHandshake hn) ls le rs re
+    hs' desc = snd $ runIdentity $ runDescriptor desc hs
 
 writeHandshakeMsg :: (Cipher c, Curve d)
                       => HandshakeState c d

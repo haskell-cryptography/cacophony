@@ -28,7 +28,7 @@ instance Curve Curve25519 where
   curveLen _      = 32
   curveGenKey     = genKey
   curveDH         = dh
-  curveKeyBytes   = keyBytes
+  curvePubToBytes = pubToBytes
   curveBytesToPub = bytesToPub
 
 genKey :: IO (KeyPair Curve25519)
@@ -41,8 +41,8 @@ genKey = do
 dh :: SecretKey Curve25519 -> PublicKey Curve25519 -> ScrubbedBytes
 dh (SK25519 sk) (PK25519 pk) = convert $ C.dh pk sk
 
-keyBytes :: KeyPair Curve25519 -> (ScrubbedBytes, ByteString)
-keyBytes (SK25519 sk, PK25519 pk) = (convert sk, convert pk)
+pubToBytes :: PublicKey Curve25519 -> ScrubbedBytes
+pubToBytes (PK25519 pk) = convert pk
 
 bytesToPub :: ScrubbedBytes -> PublicKey Curve25519
 bytesToPub b = PK25519 $ either error id $ C.publicKey b

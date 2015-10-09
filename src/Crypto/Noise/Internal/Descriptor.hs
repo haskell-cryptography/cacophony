@@ -9,10 +9,17 @@ module Crypto.Noise.Internal.Descriptor
   ( -- * Types
     Descriptor,
     -- * Functions
+    -- ** Noise_NN
     noiseNNI1,
     noiseNNR1,
     noiseNNR2,
-    noiseNNI2
+    noiseNNI2,
+    -- ** Noise_SN
+    noiseSNR0,
+    noiseSNI1,
+    noiseSNR1,
+    noiseSNR2,
+    noiseSNI2
   ) where
 
 import Control.Monad.State
@@ -34,11 +41,11 @@ import Crypto.Noise.Types
 tokenWE :: (Cipher c, Curve d)
         => Descriptor c d IO ByteString
 tokenWE = do
-  kp <- liftIO curveGenKey
+  kp@(_, pk) <- liftIO curveGenKey
   hs <- get
-  let pk         = snd . curveKeyBytes $ kp
+  let pk'        = curvePubToBytes $ pk
       shs        = hssSymmetricHandshake hs
-      (ct, shs') = encryptAndHash shs (Plaintext (convert pk))
+      (ct, shs') = encryptAndHash shs (Plaintext pk')
   put $ hs { hssLocalEphemeralKey = Just kp
            , hssSymmetricHandshake = shs'
            }
@@ -78,7 +85,7 @@ tokenWS :: (Cipher c, Curve d)
         => Descriptor c d IO ByteString
 tokenWS = do
   hs <- get
-  let (_, pk)    = curveKeyBytes . fromJust . hssLocalStaticKey $ hs
+  let pk         = curvePubToBytes . snd . fromJust . hssLocalStaticKey $ hs
       shs        = hssSymmetricHandshake hs
       (ct, shs') = encryptAndHash shs $ Plaintext . convert $ pk
   put $ hs { hssSymmetricHandshake = shs' }
@@ -98,6 +105,24 @@ tokenDH (sk, _) rpk = do
   let shs  = hssSymmetricHandshake hs
       dh   = curveDH sk rpk
       shs' = mixKey shs dh
+  put $ hs { hssSymmetricHandshake = shs' }
+
+tokenPreS :: (Cipher c, Curve d)
+          => Descriptor c d Identity ()
+tokenPreS = do
+  hs <- get
+  let shs  = hssSymmetricHandshake hs
+      pk   = fromJust . hssRemoteStaticKey $ hs
+      shs' = mixHash shs (curvePubToBytes pk)
+  put $ hs { hssSymmetricHandshake = shs' }
+
+tokenPreE :: (Cipher c, Curve d)
+          => Descriptor c d Identity ()
+tokenPreE = do
+  hs <- get
+  let shs  = hssSymmetricHandshake hs
+      pk   = fromJust . hssRemoteEphemeralKey $ hs
+      shs' = mixHash shs (curvePubToBytes pk)
   put $ hs { hssSymmetricHandshake = shs' }
 
 --------------------------------------------------------------------------------
@@ -137,5 +162,31 @@ noiseNNI2 buf = do
 --------------------------------------------------------------------------------
 -- Noise_SN
 
-noiseSNI0 :: a
-noiseSNI0 = undefined
+noiseSNR0 :: (Cipher c, Curve d)
+          => Descriptor c d Identity ()
+noiseSNR0 = tokenPreS
+
+noiseSNI1 :: (Cipher c, Curve d)
+          => Descriptor c d IO ByteString
+noiseSNI1 = tokenWE
+
+noiseSNR1 :: (Cipher c, Curve d)
+          => ByteString
+          -> Descriptor c d Identity ByteString
+noiseSNR1 = tokenRE
+
+noiseSNR2 :: (Cipher c, Curve d)
+          => Descriptor c d IO ByteString
+noiseSNR2 = do
+  e <- tokenWE
+  hs <- get
+  let kp       = fromJust $ hssLocalEphemeralKey hs
+      rpk      = fromJust $ hssRemoteEphemeralKey hs
+      (_, hs') = runIdentity $ runDescriptor (tokenDH kp rpk) hs
+  put hs'
+  return e
+
+noiseSNI2 :: (Cipher c, Curve d)
+          => ByteString
+          -> Descriptor c d Identity ByteString
+noiseSNI2 = undefined

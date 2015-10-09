@@ -9,16 +9,16 @@ module Crypto.Noise.Internal.HandshakeState
   ( -- * Types
     HandshakeState,
     -- * Functions
-    tokenWE,
-    tokenRE,
-    tokenDH,
     noiseNNI1,
     noiseNNR1,
     noiseNNR2,
+    noiseNNI2,
     runDescriptor,
     handshakeState,
-    writeHandshakeMessage,
-    readHandshakeMessage,
+    writeHandshakeMsg,
+    readHandshakeMsg,
+    writeHandshakeMsgFinal,
+    readHandshakeMsgFinal,
     writePayload,
     readPayload
   ) where
@@ -91,11 +91,10 @@ noiseNNR1 :: (Cipher c, Curve d)
 noiseNNR1 = tokenRE
 
 noiseNNR2 :: (Cipher c, Curve d)
-          => ByteString
-          -> DescriptorT c d IO ByteString
-noiseNNR2 buf = do
-  hs <- get
+          => DescriptorT c d IO ByteString
+noiseNNR2 = do
   e <- tokenWE
+  hs <- get
   let kp       = fromJust $ hssLocalEphemeralKey hs
       rpk      = fromJust $ hssRemoteEphemeralKey hs
       (_, hs') = runIdentity $ runDescriptor (tokenDH kp rpk) hs
@@ -106,8 +105,8 @@ noiseNNI2 :: (Cipher c, Curve d)
           => ByteString
           -> DescriptorT c d Identity ByteString
 noiseNNI2 buf = do
-  hs <- get
   rest <- tokenRE buf
+  hs <- get
   let kp  = fromJust $ hssLocalEphemeralKey hs
       rpk = fromJust $ hssRemoteEphemeralKey hs
   tokenDH kp rpk
@@ -133,37 +132,51 @@ handshakeState :: (Cipher c, Curve d)
                -> HandshakeState c d
 handshakeState hn = HandshakeState (symmetricHandshake hn)
 
-writeHandshakeMessage :: (Cipher c, Curve d)
+writeHandshakeMsg :: (Cipher c, Curve d)
                       => HandshakeState c d
                       -> DescriptorT c d IO ByteString
-                      -> Bool
                       -> Plaintext
-                      -> IO (Either (ByteString, HandshakeState c d)
-                                    (CipherState c, CipherState c))
-writeHandshakeMessage hs desc final payload
-  | final = undefined
-  | otherwise = do
-    (d, hs') <- runDescriptor desc hs
-    let shs        = hssSymmetricHandshake hs
-        (ep, shs') = encryptAndHash shs payload
-        hs''       = hs' { hssSymmetricHandshake = shs' }
-    return $ Left (d `B.append` convert ep, hs'')
+                      -> IO (ByteString, HandshakeState c d)
+writeHandshakeMsg hs desc payload = do
+  (d, hs') <- runDescriptor desc hs
+  let shs        = hssSymmetricHandshake hs
+      (ep, shs') = encryptAndHash shs payload
+      hs''       = hs' { hssSymmetricHandshake = shs' }
+  return (d `B.append` convert ep, hs'')
 
-readHandshakeMessage :: (Cipher c, Curve d)
+readHandshakeMsg :: (Cipher c, Curve d)
                      => HandshakeState c d
                      -> ByteString
                      -> (ByteString -> DescriptorT c d Identity ByteString)
-                     -> Bool
-                     -> Either (Plaintext, HandshakeState c d)
-                               (Plaintext, CipherState c, CipherState c)
-readHandshakeMessage hs buf desc final
-  | final = undefined
-  | otherwise = do
-    let (d, hs')   = runIdentity $ runDescriptor (desc buf) hs
-        shs        = hssSymmetricHandshake hs
-        (dp, shs') = decryptAndHash shs $ cipherBytesToText $ convert d
-        hs''       = hs' { hssSymmetricHandshake = shs' }
-    Left (dp, hs'')
+                     -> (Plaintext, HandshakeState c d)
+readHandshakeMsg hs buf desc = (dp, hs'')
+  where
+    (d, hs')   = runIdentity $ runDescriptor (desc buf) hs
+    shs        = hssSymmetricHandshake hs
+    (dp, shs') = decryptAndHash shs $ cipherBytesToText $ convert d
+    hs''       = hs' { hssSymmetricHandshake = shs' }
+
+writeHandshakeMsgFinal :: (Cipher c, Curve d)
+                       => HandshakeState c d
+                       -> DescriptorT c d IO ByteString
+                       -> Plaintext
+                       -> IO (ByteString, CipherState c, CipherState c)
+writeHandshakeMsgFinal hs desc payload = do
+  (d, hs') <- writeHandshakeMsg hs desc payload
+  let shs        = hssSymmetricHandshake hs'
+      (cs1, cs2) = split shs
+  return (d, cs1, cs2)
+
+readHandshakeMsgFinal :: (Cipher c, Curve d)
+                      => HandshakeState c d
+                      -> ByteString
+                      -> (ByteString -> DescriptorT c d Identity ByteString)
+                      -> (Plaintext, CipherState c, CipherState c)
+readHandshakeMsgFinal hs buf desc = (pt, cs1, cs2)
+  where
+    (pt, hs')  = readHandshakeMsg hs buf desc
+    shs        = hssSymmetricHandshake hs'
+    (cs1, cs2) = split shs
 
 writePayload :: Cipher c
              => CipherState c

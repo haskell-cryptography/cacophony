@@ -17,7 +17,7 @@ import qualified Crypto.Cipher.ChaChaPoly1305 as CCP
 import qualified Crypto.Hash as H
 import qualified Crypto.MAC.HMAC as M
 import qualified Crypto.MAC.Poly1305 as P
-import qualified Data.ByteArray as B (drop, length)
+import qualified Data.ByteArray as B (drop, length, eq)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS (replicate)
 
@@ -44,6 +44,9 @@ instance Cipher ChaChaPoly1305 where
   cipherHashToBytes = hashToBytes
   cipherTextToBytes = ctToBytes
   cipherBytesToText = bytesToCt
+
+instance Eq (SymmetricKey ChaChaPoly1305) where
+  (SKCCP1305 ct1) == (SKCCP1305 ct2) = ct1 `B.eq` ct2
 
 encrypt :: SymmetricKey ChaChaPoly1305 -> Nonce ChaChaPoly1305 -> AssocData -> Plaintext -> Ciphertext ChaChaPoly1305
 encrypt (SKCCP1305 k) (NCCP1305 n) (AssocData ad) (Plaintext plaintext) =

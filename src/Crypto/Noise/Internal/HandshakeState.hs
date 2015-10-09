@@ -1,5 +1,3 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving, OverloadedStrings #-}
-
 ----------------------------------------------------------------
 -- |
 -- Module      : Crypto.Noise.Internal.HandshakeState
@@ -28,8 +26,8 @@ module Crypto.Noise.Internal.HandshakeState
 import Control.Monad.State
 
 import Data.ByteString (ByteString)
-import qualified Data.ByteString as B (splitAt)
-import Data.Functor.Identity (Identity)
+import qualified Data.ByteString as B (splitAt, append)
+import Data.Functor.Identity (Identity, runIdentity)
 
 import Crypto.Noise.Cipher
 import Crypto.Noise.Curve
@@ -110,20 +108,36 @@ handshakeState :: (Cipher c, Curve d)
 handshakeState hn = HandshakeState (symmetricHandshake hn)
 
 writeHandshakeMessage :: (Cipher c, Curve d)
-                      => Descriptor d
+                      => HandshakeState c d
+                      -> DescriptorT c d IO ByteString
                       -> Bool
                       -> Plaintext
-                      -> IO (Either ByteString (CipherState c, CipherState c))
-writeHandshakeMessage desc final payload
+                      -> IO (Either (ByteString, HandshakeState c d)
+                                    (CipherState c, CipherState c))
+writeHandshakeMessage hs desc final payload
   | final = undefined
-  | otherwise = undefined
+  | otherwise = do
+    d <- runDescriptor desc hs
+    let shs        = hssSymmetricHandshake hs
+        (ep, shs') = encryptAndHash shs payload
+        hs'        = hs { hssSymmetricHandshake = shs' }
+    return $ Left (d `B.append` convert ep, hs')
 
 readHandshakeMessage :: (Cipher c, Curve d)
-                     => Descriptor d
-                     -> Bool
+                     => HandshakeState c d
                      -> ByteString
-                     -> Either Plaintext (Plaintext, CipherState c, CipherState c)
-readHandshakeMessage = undefined
+                     -> (ByteString -> DescriptorT c d Identity ByteString)
+                     -> Bool
+                     -> Either (Plaintext, HandshakeState c d)
+                               (Plaintext, CipherState c, CipherState c)
+readHandshakeMessage hs buf desc final
+  | final = undefined
+  | otherwise = do
+    let d          = runIdentity $ runDescriptor (desc buf) hs
+        shs        = hssSymmetricHandshake hs
+        (dp, shs') = decryptAndHash shs $ cipherBytesToText $ convert d
+        hs'        = hs { hssSymmetricHandshake = shs' }
+    Left (dp, hs')
 
 writePayload :: Cipher c
              => CipherState c

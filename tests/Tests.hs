@@ -2,11 +2,11 @@ module Main where
 
 import Imports
 
-import qualified HandshakeState
+import qualified Handshake
 
 tests :: TestTree
 tests = testGroup "cacophony"
-  [ HandshakeState.tests
+  [ Handshake.tests
   ]
 
 main :: IO ()

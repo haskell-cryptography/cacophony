@@ -15,6 +15,7 @@ tested-with:   GHC == 7.10.1, GHC == 7.10.2
 extra-source-files:
   .travis.yml
   README.md
+  LICENSE
 
 source-repository head
   type: git

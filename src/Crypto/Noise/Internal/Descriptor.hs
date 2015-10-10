@@ -20,9 +20,6 @@ module Crypto.Noise.Internal.Descriptor
     noiseSNI2
   ) where
 
-import Control.Monad.Identity
-import Control.Monad.State
-
 import Data.ByteString (ByteString)
 
 import Crypto.Noise.Internal.HandshakeState
@@ -33,16 +30,16 @@ import Crypto.Noise.Curve
 -- Noise_NN
 
 noiseNNI1 :: (Cipher c, Curve d)
-          => Descriptor c d IO ByteString
+          => DescriptorIO c d ByteString
 noiseNNI1 = tokenWE
 
 noiseNNR1 :: (Cipher c, Curve d)
           => ByteString
-          -> Descriptor c d Identity ByteString
+          -> Descriptor c d ByteString
 noiseNNR1 = tokenRE
 
 noiseNNR2 :: (Cipher c, Curve d)
-          => Descriptor c d IO ByteString
+          => DescriptorIO c d ByteString
 noiseNNR2 = do
   e <- tokenWE
   tokenDHEE
@@ -50,7 +47,7 @@ noiseNNR2 = do
 
 noiseNNI2 :: (Cipher c, Curve d)
           => ByteString
-          -> Descriptor c d Identity ByteString
+          -> Descriptor c d ByteString
 noiseNNI2 buf = do
   rest <- tokenRE buf
   tokenDHEE
@@ -60,20 +57,20 @@ noiseNNI2 buf = do
 -- Noise_SN
 
 noiseSNR0 :: (Cipher c, Curve d)
-          => Descriptor c d Identity ()
+          => Descriptor c d ()
 noiseSNR0 = tokenPreS
 
 noiseSNI1 :: (Cipher c, Curve d)
-          => Descriptor c d IO ByteString
+          => DescriptorIO c d ByteString
 noiseSNI1 = tokenWE
 
 noiseSNR1 :: (Cipher c, Curve d)
           => ByteString
-          -> Descriptor c d Identity ByteString
+          -> Descriptor c d ByteString
 noiseSNR1 = tokenRE
 
-noiseSNR2 :: (MonadIO m, MonadHandshake m, Cipher c, Curve d)
-          => Descriptor c d m ByteString
+noiseSNR2 :: (Cipher c, Curve d)
+          => DescriptorIO c d ByteString
 noiseSNR2 = do
   e <- tokenWE
   tokenDHEE
@@ -81,5 +78,5 @@ noiseSNR2 = do
 
 noiseSNI2 :: (Cipher c, Curve d)
           => ByteString
-          -> Descriptor c d Identity ByteString
+          -> Descriptor c d ByteString
 noiseSNI2 = undefined

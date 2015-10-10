@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, FlexibleInstances #-}
 ----------------------------------------------------------------
 -- |
 -- Module      : Crypto.Noise.Internal.HandshakeState
@@ -7,7 +7,9 @@
 -- Portability : POSIX
 
 module Crypto.Noise.Internal.HandshakeState
-  ( -- * Types
+  ( -- * Classes
+    MonadHandshake(..),
+    -- * Types
     HandshakeState(..),
     Descriptor,
     -- * Functions
@@ -24,8 +26,9 @@ module Crypto.Noise.Internal.HandshakeState
 import Control.Monad.State
 
 import Data.ByteString (ByteString)
-import qualified Data.ByteString as B (append)
+import qualified Data.ByteString as B (append, splitAt)
 import Data.Functor.Identity (Identity, runIdentity)
+import Data.Maybe (fromJust)
 
 import Crypto.Noise.Cipher
 import Crypto.Noise.Curve
@@ -45,6 +48,123 @@ type Descriptor c d m a = StateT (HandshakeState c d) m a
 
 runDescriptor :: Monad m => Descriptor c d m a -> HandshakeState c d -> m (a, HandshakeState c d)
 runDescriptor = runStateT
+
+class Monad m => MonadHandshake m where
+  tokenPreS :: m ()
+  tokenPreE :: m ()
+  tokenWE   :: MonadIO m => m ByteString
+  tokenRE   :: ByteString -> m ByteString
+  tokenWS   :: m ByteString
+  tokenRS   :: ByteString -> m ByteString
+  tokenDHEE :: m ()
+  tokenDHES :: m ()
+  tokenDHSE :: m ()
+  tokenDHSS :: m ()
+
+instance (Monad m, Cipher c, Curve d) => MonadHandshake (StateT (HandshakeState c d) m) where
+  tokenPreS = do
+    hs <- get
+    let shs  = hssSymmetricHandshake hs
+        pk   = fromJust . hssRemoteStaticKey $ hs
+        shs' = mixHash (curvePubToBytes pk) shs
+    put $ hs { hssSymmetricHandshake = shs' }
+
+  tokenPreE = do
+    hs <- get
+    let shs  = hssSymmetricHandshake hs
+        pk   = fromJust . hssRemoteEphemeralKey $ hs
+        shs' = mixHash (curvePubToBytes pk) shs
+    put $ hs { hssSymmetricHandshake = shs' }
+
+  tokenWE = do
+    ~kp@(_, pk) <- liftIO curveGenKey
+    hs <- get
+    let pk'        = curvePubToBytes pk
+        shs        = hssSymmetricHandshake hs
+        (ct, shs') = encryptAndHash (Plaintext pk') shs
+    put $ hs { hssLocalEphemeralKey = Just kp
+             , hssSymmetricHandshake = shs'
+             }
+    return . convert $ ct
+
+  tokenRE buf = do
+    hs <- get
+    let hasKey    = shsHasKey . hssSymmetricHandshake $ hs
+        (b, rest) = B.splitAt (d hasKey) buf
+        ct        = cipherBytesToText . convert $ b
+        shs       = hssSymmetricHandshake hs
+        (Plaintext pt, shs') = decryptAndHash ct shs
+        hs'       = hs { hssRemoteEphemeralKey = Just (curveBytesToPub pt)
+                       , hssSymmetricHandshake = shs'
+                       }
+    put hs'
+    return rest
+    where
+      d hk
+        | hk        = 32 + 16
+        | otherwise = 32 -- this should call curveLen!
+
+  tokenWS = do
+    hs <- get
+    let pk         = curvePubToBytes . snd . fromJust . hssLocalStaticKey $ hs
+        shs        = hssSymmetricHandshake hs
+        (ct, shs') = encryptAndHash ((Plaintext . convert) pk) shs
+    put $ hs { hssSymmetricHandshake = shs' }
+    return . convert $ ct
+
+  tokenRS buf = do
+    hs <- get
+    let hasKey    = shsHasKey . hssSymmetricHandshake $ hs
+        (b, rest) = B.splitAt (d hasKey) buf
+        ct        = cipherBytesToText . convert $ b
+        shs       = hssSymmetricHandshake hs
+        (Plaintext pt, shs') = decryptAndHash ct shs
+        hs'       = hs { hssRemoteStaticKey = Just (curveBytesToPub pt)
+                       , hssSymmetricHandshake = shs'
+                       }
+    put hs'
+    return rest
+    where
+      d hk
+        | hk        = 32 + 16
+        | otherwise = 32 -- this should call curveLen!
+
+  tokenDHEE = do
+    hs <- get
+    let shs      = hssSymmetricHandshake hs
+        ~(sk, _) = fromJust . hssLocalEphemeralKey $ hs
+        rpk      = fromJust . hssRemoteEphemeralKey $ hs
+        dh       = curveDH sk rpk
+        shs'     = mixKey dh shs
+    put $ hs { hssSymmetricHandshake = shs' }
+
+  tokenDHES = do
+    hs <- get
+    let shs      = hssSymmetricHandshake hs
+        ~(sk, _) = fromJust . hssLocalEphemeralKey $ hs
+        rpk      = fromJust . hssRemoteStaticKey $ hs
+        dh       = curveDH sk rpk
+        shs'     = mixKey dh shs
+    put $ hs { hssSymmetricHandshake = shs' }
+
+  tokenDHSE = do
+    hs <- get
+    let shs      = hssSymmetricHandshake hs
+        ~(sk, _) = fromJust . hssLocalStaticKey $ hs
+        rpk      = fromJust . hssRemoteEphemeralKey $ hs
+        dh       = curveDH sk rpk
+        shs'     = mixKey dh shs
+    put $ hs { hssSymmetricHandshake = shs' }
+
+  tokenDHSS = do
+    hs <- get
+    let shs      = hssSymmetricHandshake hs
+        ~(sk, _) = fromJust . hssLocalStaticKey $ hs
+        rpk      = fromJust . hssRemoteStaticKey $ hs
+        dh       = curveDH sk rpk
+        shs'     = mixKey dh shs
+    put $ hs { hssSymmetricHandshake = shs' }
+
 
 handshakeState :: (Cipher c, Curve d)
                => ScrubbedBytes

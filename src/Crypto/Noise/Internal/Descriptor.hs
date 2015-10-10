@@ -43,9 +43,9 @@ tokenWE :: (Cipher c, Curve d)
 tokenWE = do
   kp@(_, pk) <- liftIO curveGenKey
   hs <- get
-  let pk'        = curvePubToBytes $ pk
+  let pk'        = curvePubToBytes pk
       shs        = hssSymmetricHandshake hs
-      (ct, shs') = encryptAndHash shs (Plaintext pk')
+      (ct, shs') = encryptAndHash (Plaintext pk') shs
   put $ hs { hssLocalEphemeralKey = Just kp
            , hssSymmetricHandshake = shs'
            }
@@ -61,7 +61,7 @@ tokenR buf updateEphemeral = do
       (b, rest) = B.splitAt (d hasKey) buf
       ct        = cipherBytesToText . convert $ b
       shs       = hssSymmetricHandshake hs
-      (Plaintext pt, shs') = decryptAndHash shs ct
+      (Plaintext pt, shs') = decryptAndHash ct shs
       hs'
         | updateEphemeral = hs { hssRemoteEphemeralKey = Just (curveBytesToPub pt)
                                , hssSymmetricHandshake = shs'
@@ -87,7 +87,7 @@ tokenWS = do
   hs <- get
   let pk         = curvePubToBytes . snd . fromJust . hssLocalStaticKey $ hs
       shs        = hssSymmetricHandshake hs
-      (ct, shs') = encryptAndHash shs $ Plaintext . convert $ pk
+      (ct, shs') = encryptAndHash ((Plaintext . convert) pk) shs
   put $ hs { hssSymmetricHandshake = shs' }
   return . convert $ ct
 
@@ -104,7 +104,7 @@ tokenDH (sk, _) rpk = do
   hs <- get
   let shs  = hssSymmetricHandshake hs
       dh   = curveDH sk rpk
-      shs' = mixKey shs dh
+      shs' = mixKey dh shs
   put $ hs { hssSymmetricHandshake = shs' }
 
 tokenPreS :: (Cipher c, Curve d)
@@ -113,7 +113,7 @@ tokenPreS = do
   hs <- get
   let shs  = hssSymmetricHandshake hs
       pk   = fromJust . hssRemoteStaticKey $ hs
-      shs' = mixHash shs (curvePubToBytes pk)
+      shs' = mixHash (curvePubToBytes pk) shs
   put $ hs { hssSymmetricHandshake = shs' }
 
 tokenPreE :: (Cipher c, Curve d)
@@ -122,7 +122,7 @@ tokenPreE = do
   hs <- get
   let shs  = hssSymmetricHandshake hs
       pk   = fromJust . hssRemoteEphemeralKey $ hs
-      shs' = mixHash shs (curvePubToBytes pk)
+      shs' = mixHash (curvePubToBytes pk) shs
   put $ hs { hssSymmetricHandshake = shs' }
 
 --------------------------------------------------------------------------------

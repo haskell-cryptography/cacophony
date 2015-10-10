@@ -23,14 +23,14 @@ data CipherState c =
               , csn :: Nonce c
               }
 
-encryptAndIncrement :: Cipher c => CipherState c -> AssocData -> Plaintext -> (Ciphertext c, CipherState c)
-encryptAndIncrement cs@CipherState{..} ad plaintext = (ct, newState)
+encryptAndIncrement :: Cipher c => AssocData -> Plaintext -> CipherState c -> (Ciphertext c, CipherState c)
+encryptAndIncrement ad plaintext cs@CipherState{..} = (ct, newState)
   where
     ct       = cipherEncrypt csk csn ad plaintext
     newState = cs { csn = cipherIncNonce csn }
 
-decryptAndIncrement :: Cipher c => CipherState c -> AssocData -> Ciphertext c -> (Plaintext, CipherState c)
-decryptAndIncrement cs@CipherState{..} ad ct = (pt, newState)
+decryptAndIncrement :: Cipher c => AssocData -> Ciphertext c -> CipherState c -> (Plaintext, CipherState c)
+decryptAndIncrement ad ct cs@CipherState{..} = (pt, newState)
   where
     pt       = fromJust $ cipherDecrypt csk csn ad ct
     newState = cs { csn = cipherIncNonce csn }

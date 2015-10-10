@@ -34,33 +34,33 @@ symmetricHandshake hsn = SymmetricHandshakeState cs False h
     h  = cipherHash $ convert hsn
     cs = CipherState (cipherHashToKey h) cipherZeroNonce
 
-mixKey :: Cipher c => SymmetricHandshakeState c -> ScrubbedBytes -> SymmetricHandshakeState c
-mixKey shs@SymmetricHandshakeState{..} d = shs { shsCipher = cs, shsHasKey = True }
+mixKey :: Cipher c => ScrubbedBytes -> SymmetricHandshakeState c -> SymmetricHandshakeState c
+mixKey d shs@SymmetricHandshakeState{..} = shs { shsCipher = cs, shsHasKey = True }
   where
     gk   = cipherGetKey (csk shsCipher) (csn shsCipher)
     hmac = cipherHMAC gk d
     cs   = CipherState (cipherHashToKey hmac) cipherZeroNonce
 
-mixHash :: Cipher c => SymmetricHandshakeState c -> ScrubbedBytes -> SymmetricHandshakeState c
-mixHash shs@SymmetricHandshakeState{..} d =
+mixHash :: Cipher c => ScrubbedBytes -> SymmetricHandshakeState c -> SymmetricHandshakeState c
+mixHash d shs@SymmetricHandshakeState{..} =
   shs { shsh = cipherHash $ cipherHashToBytes shsh `append` d }
 
-encryptAndHash :: Cipher c => SymmetricHandshakeState c -> Plaintext -> (ScrubbedBytes, SymmetricHandshakeState c)
-encryptAndHash shs@SymmetricHandshakeState{..} (Plaintext pt)
+encryptAndHash :: Cipher c => Plaintext -> SymmetricHandshakeState c -> (ScrubbedBytes, SymmetricHandshakeState c)
+encryptAndHash (Plaintext pt) shs@SymmetricHandshakeState{..}
   | shsHasKey = (cipherTextToBytes ct, kshs)
   | otherwise = (pt, nkshs)
   where
-    (ct, cs) = encryptAndIncrement shsCipher (AssocData (cipherHashToBytes shsh)) (Plaintext pt)
-    kshs     = mixHash shs { shsCipher = cs } (cipherTextToBytes ct)
-    nkshs    = mixHash shs pt
+    (ct, cs) = encryptAndIncrement (AssocData (cipherHashToBytes shsh)) (Plaintext pt) shsCipher
+    kshs     = mixHash (cipherTextToBytes ct) shs { shsCipher = cs }
+    nkshs    = mixHash pt shs
 
-decryptAndHash :: Cipher c => SymmetricHandshakeState c -> Ciphertext c -> (Plaintext, SymmetricHandshakeState c)
-decryptAndHash shs@SymmetricHandshakeState{..} ct
+decryptAndHash :: Cipher c => Ciphertext c -> SymmetricHandshakeState c -> (Plaintext, SymmetricHandshakeState c)
+decryptAndHash ct shs@SymmetricHandshakeState{..}
   | shsHasKey = (pt, shs')
   | otherwise = (Plaintext (cipherTextToBytes ct), shs')
   where
-    (pt, cs) = decryptAndIncrement shsCipher (AssocData (cipherHashToBytes shsh)) ct
-    shs'     = mixHash shs { shsCipher = cs } (cipherTextToBytes ct)
+    (pt, cs) = decryptAndIncrement (AssocData (cipherHashToBytes shsh)) ct shsCipher
+    shs'     = mixHash (cipherTextToBytes ct) shs { shsCipher = cs }
 
 split :: Cipher c => SymmetricHandshakeState c -> (CipherState c, CipherState c)
 split SymmetricHandshakeState{..} = (cs1, cs2)

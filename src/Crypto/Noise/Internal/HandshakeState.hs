@@ -67,7 +67,7 @@ writeHandshakeMsg :: (Cipher c, Curve d)
 writeHandshakeMsg hs desc payload = do
   (d, hs') <- runDescriptor desc hs
   let shs        = hssSymmetricHandshake hs
-      (ep, shs') = encryptAndHash shs payload
+      (ep, shs') = encryptAndHash payload shs
       hs''       = hs' { hssSymmetricHandshake = shs' }
   return (d `B.append` convert ep, hs'')
 
@@ -80,7 +80,7 @@ readHandshakeMsg hs buf desc = (dp, hs'')
   where
     (d, hs')   = runIdentity $ runDescriptor (desc buf) hs
     shs        = hssSymmetricHandshake hs
-    (dp, shs') = decryptAndHash shs $ cipherBytesToText $ convert d
+    (dp, shs') = decryptAndHash (cipherBytesToText (convert d)) shs
     hs''       = hs' { hssSymmetricHandshake = shs' }
 
 writeHandshakeMsgFinal :: (Cipher c, Curve d)
@@ -111,7 +111,7 @@ encryptPayload :: Cipher c
              -> (ByteString, CipherState c)
 encryptPayload cs pt = ((convert . cipherTextToBytes) ct, cs')
   where
-    (ct, cs') = encryptAndIncrement cs ad pt
+    (ct, cs') = encryptAndIncrement ad pt cs
     ad = AssocData $ convert ("" :: ByteString)
 
 decryptPayload :: Cipher c
@@ -120,5 +120,5 @@ decryptPayload :: Cipher c
             -> (Plaintext, CipherState c)
 decryptPayload cs ct = (pt, cs')
   where
-    (pt, cs') = decryptAndIncrement cs ad $ (cipherBytesToText . convert) ct
+    (pt, cs') = decryptAndIncrement ad ((cipherBytesToText . convert) ct) cs
     ad = AssocData $ convert ("" :: ByteString)

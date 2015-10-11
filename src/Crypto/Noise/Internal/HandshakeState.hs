@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings, FlexibleInstances,
-    GeneralizedNewtypeDeriving #-}
+    GeneralizedNewtypeDeriving, TemplateHaskell #-}
 ----------------------------------------------------------------
 -- |
 -- Module      : Crypto.Noise.Internal.HandshakeState
@@ -25,11 +25,11 @@ module Crypto.Noise.Internal.HandshakeState
     decryptPayload
   ) where
 
+import Control.Lens hiding (re)
 import Control.Monad.State
 
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B (append, splitAt)
-import Data.Functor.Identity (Identity, runIdentity)
 import Data.Maybe (fromJust)
 
 import Crypto.Noise.Cipher
@@ -39,12 +39,14 @@ import Crypto.Noise.Internal.SymmetricHandshakeState
 import Crypto.Noise.Types
 
 data HandshakeState c d =
-  HandshakeState { hssSymmetricHandshake :: SymmetricHandshakeState c
-                 , hssLocalStaticKey     :: Maybe (KeyPair d)
-                 , hssLocalEphemeralKey  :: Maybe (KeyPair d)
-                 , hssRemoteStaticKey    :: Maybe (PublicKey d)
-                 , hssRemoteEphemeralKey :: Maybe (PublicKey d)
+  HandshakeState { _hssSymmetricHandshake :: SymmetricHandshakeState c
+                 , _hssLocalStaticKey     :: Maybe (KeyPair d)
+                 , _hssLocalEphemeralKey  :: Maybe (KeyPair d)
+                 , _hssRemoteStaticKey    :: Maybe (PublicKey d)
+                 , _hssRemoteEphemeralKey :: Maybe (PublicKey d)
                  }
+
+$(makeLenses ''HandshakeState)
 
 newtype DescriptorT c d m a = DescriptorT { unD :: StateT (HandshakeState c d) m a }
   deriving (Functor, Applicative, Monad, MonadIO, MonadState(HandshakeState c d))
@@ -71,40 +73,35 @@ class Monad m => MonadHandshake m where
 instance (Monad m, Cipher c, Curve d) => MonadHandshake (DescriptorT c d m) where
   tokenPreS = do
     hs <- get
-    let shs  = hssSymmetricHandshake hs
-        pk   = fromJust . hssRemoteStaticKey $ hs
+    let shs  = hs ^. hssSymmetricHandshake
+        pk   = fromJust $ hs ^. hssRemoteStaticKey
         shs' = mixHash (curvePubToBytes pk) shs
-    put $ hs { hssSymmetricHandshake = shs' }
+    put $ hs & hssSymmetricHandshake .~ shs'
 
   tokenPreE = do
     hs <- get
-    let shs  = hssSymmetricHandshake hs
-        pk   = fromJust . hssRemoteEphemeralKey $ hs
+    let shs  = hs ^. hssSymmetricHandshake
+        pk   = fromJust $ hs ^. hssRemoteEphemeralKey
         shs' = mixHash (curvePubToBytes pk) shs
-    put $ hs { hssSymmetricHandshake = shs' }
+    put $ hs & hssSymmetricHandshake .~ shs'
 
   tokenWE = do
     ~kp@(_, pk) <- liftIO curveGenKey
     hs <- get
     let pk'        = curvePubToBytes pk
-        shs        = hssSymmetricHandshake hs
+        shs        = hs ^. hssSymmetricHandshake
         (ct, shs') = encryptAndHash (Plaintext pk') shs
-    put $ hs { hssLocalEphemeralKey = Just kp
-             , hssSymmetricHandshake = shs'
-             }
+    put $ hs & hssLocalEphemeralKey .~ Just kp & hssSymmetricHandshake .~ shs'
     return . convert $ ct
 
   tokenRE buf = do
     hs <- get
-    let hasKey    = shsHasKey . hssSymmetricHandshake $ hs
+    let hasKey    = shsHasKey $ hs ^. hssSymmetricHandshake
         (b, rest) = B.splitAt (d hasKey) buf
         ct        = cipherBytesToText . convert $ b
-        shs       = hssSymmetricHandshake hs
+        shs       = hs ^. hssSymmetricHandshake
         (Plaintext pt, shs') = decryptAndHash ct shs
-        hs'       = hs { hssRemoteEphemeralKey = Just (curveBytesToPub pt)
-                       , hssSymmetricHandshake = shs'
-                       }
-    put hs'
+    put $ hs & hssRemoteEphemeralKey .~ Just (curveBytesToPub pt) & hssSymmetricHandshake .~ shs'
     return rest
     where
       d hk
@@ -113,23 +110,20 @@ instance (Monad m, Cipher c, Curve d) => MonadHandshake (DescriptorT c d m) wher
 
   tokenWS = do
     hs <- get
-    let pk         = curvePubToBytes . snd . fromJust . hssLocalStaticKey $ hs
-        shs        = hssSymmetricHandshake hs
+    let pk         = curvePubToBytes . snd . fromJust $ hs ^. hssLocalStaticKey
+        shs        = hs ^. hssSymmetricHandshake
         (ct, shs') = encryptAndHash ((Plaintext . convert) pk) shs
-    put $ hs { hssSymmetricHandshake = shs' }
+    put $ hs & hssSymmetricHandshake .~ shs'
     return . convert $ ct
 
   tokenRS buf = do
     hs <- get
-    let hasKey    = shsHasKey . hssSymmetricHandshake $ hs
+    let hasKey    = shsHasKey $ hs ^. hssSymmetricHandshake
         (b, rest) = B.splitAt (d hasKey) buf
         ct        = cipherBytesToText . convert $ b
-        shs       = hssSymmetricHandshake hs
+        shs       = hs ^. hssSymmetricHandshake
         (Plaintext pt, shs') = decryptAndHash ct shs
-        hs'       = hs { hssRemoteStaticKey = Just (curveBytesToPub pt)
-                       , hssSymmetricHandshake = shs'
-                       }
-    put hs'
+    put $ hs & hssRemoteStaticKey .~ Just (curveBytesToPub pt) & hssSymmetricHandshake .~ shs'
     return rest
     where
       d hk
@@ -138,40 +132,39 @@ instance (Monad m, Cipher c, Curve d) => MonadHandshake (DescriptorT c d m) wher
 
   tokenDHEE = do
     hs <- get
-    let shs      = hssSymmetricHandshake hs
-        ~(sk, _) = fromJust . hssLocalEphemeralKey $ hs
-        rpk      = fromJust . hssRemoteEphemeralKey $ hs
+    let shs      = hs ^. hssSymmetricHandshake
+        ~(sk, _) = fromJust $ hs ^. hssLocalEphemeralKey
+        rpk      = fromJust $ hs ^. hssRemoteEphemeralKey
         dh       = curveDH sk rpk
         shs'     = mixKey dh shs
-    put $ hs { hssSymmetricHandshake = shs' }
+    put $ hs & hssSymmetricHandshake .~ shs'
 
   tokenDHES = do
     hs <- get
-    let shs      = hssSymmetricHandshake hs
-        ~(sk, _) = fromJust . hssLocalEphemeralKey $ hs
-        rpk      = fromJust . hssRemoteStaticKey $ hs
+    let shs      = hs ^. hssSymmetricHandshake
+        ~(sk, _) = fromJust $ hs ^. hssLocalEphemeralKey
+        rpk      = fromJust $ hs ^. hssRemoteStaticKey
         dh       = curveDH sk rpk
         shs'     = mixKey dh shs
-    put $ hs { hssSymmetricHandshake = shs' }
+    put $ hs & hssSymmetricHandshake .~ shs'
 
   tokenDHSE = do
     hs <- get
-    let shs      = hssSymmetricHandshake hs
-        ~(sk, _) = fromJust . hssLocalStaticKey $ hs
-        rpk      = fromJust . hssRemoteEphemeralKey $ hs
+    let shs      = hs ^. hssSymmetricHandshake
+        ~(sk, _) = fromJust $ hs ^. hssLocalStaticKey
+        rpk      = fromJust $ hs ^. hssRemoteEphemeralKey
         dh       = curveDH sk rpk
         shs'     = mixKey dh shs
-    put $ hs { hssSymmetricHandshake = shs' }
+    put $ hs & hssSymmetricHandshake .~ shs'
 
   tokenDHSS = do
     hs <- get
-    let shs      = hssSymmetricHandshake hs
-        ~(sk, _) = fromJust . hssLocalStaticKey $ hs
-        rpk      = fromJust . hssRemoteStaticKey $ hs
+    let shs      = hs ^. hssSymmetricHandshake
+        ~(sk, _) = fromJust $ hs ^. hssLocalStaticKey
+        rpk      = fromJust $ hs ^. hssRemoteStaticKey
         dh       = curveDH sk rpk
         shs'     = mixKey dh shs
-    put $ hs { hssSymmetricHandshake = shs' }
-
+    put $ hs & hssSymmetricHandshake .~ shs'
 
 handshakeState :: (Cipher c, Curve d)
                => ScrubbedBytes
@@ -193,9 +186,9 @@ writeHandshakeMsg :: (Cipher c, Curve d)
                       -> IO (ByteString, HandshakeState c d)
 writeHandshakeMsg hs desc payload = do
   (d, hs') <- runDescriptorT desc hs
-  let shs        = hssSymmetricHandshake hs
+  let shs        = hs' ^. hssSymmetricHandshake
       (ep, shs') = encryptAndHash payload shs
-      hs''       = hs' { hssSymmetricHandshake = shs' }
+      hs''       = hs' & hssSymmetricHandshake .~ shs'
   return (d `B.append` convert ep, hs'')
 
 readHandshakeMsg :: (Cipher c, Curve d)
@@ -206,9 +199,9 @@ readHandshakeMsg :: (Cipher c, Curve d)
 readHandshakeMsg hs buf desc = (dp, hs'')
   where
     (d, hs')   = runIdentity $ runDescriptorT (desc buf) hs
-    shs        = hssSymmetricHandshake hs
+    shs        = hs ^. hssSymmetricHandshake
     (dp, shs') = decryptAndHash (cipherBytesToText (convert d)) shs
-    hs''       = hs' { hssSymmetricHandshake = shs' }
+    hs''       = hs' & hssSymmetricHandshake .~ shs'
 
 writeHandshakeMsgFinal :: (Cipher c, Curve d)
                        => HandshakeState c d
@@ -217,7 +210,7 @@ writeHandshakeMsgFinal :: (Cipher c, Curve d)
                        -> IO (ByteString, CipherState c, CipherState c)
 writeHandshakeMsgFinal hs desc payload = do
   (d, hs') <- writeHandshakeMsg hs desc payload
-  let shs        = hssSymmetricHandshake hs'
+  let shs        = hs' ^. hssSymmetricHandshake
       (cs1, cs2) = split shs
   return (d, cs1, cs2)
 
@@ -229,7 +222,7 @@ readHandshakeMsgFinal :: (Cipher c, Curve d)
 readHandshakeMsgFinal hs buf desc = (pt, cs1, cs2)
   where
     (pt, hs')  = readHandshakeMsg hs buf desc
-    shs        = hssSymmetricHandshake hs'
+    shs        = hs' ^. hssSymmetricHandshake
     (cs1, cs2) = split shs
 
 encryptPayload :: Cipher c

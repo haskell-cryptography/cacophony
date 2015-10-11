@@ -185,8 +185,7 @@ writeHandshakeMsg :: (Cipher c, Curve d)
                       -> IO (ByteString, HandshakeState c d)
 writeHandshakeMsg hs desc payload = do
   (d, hs') <- runDescriptorT desc hs
-  let shs        = hs ^. hssSymmetricHandshake
-      (ep, shs') = encryptAndHash payload shs
+  let (ep, shs') = encryptAndHash payload $ hs' ^. hssSymmetricHandshake
       hs''       = hs' & hssSymmetricHandshake .~ shs'
   return (d `B.append` convert ep, hs'')
 
@@ -198,8 +197,8 @@ readHandshakeMsg :: (Cipher c, Curve d)
 readHandshakeMsg hs buf desc = (dp, hs'')
   where
     (d, hs')   = runIdentity $ runDescriptorT (desc buf) hs
-    shs        = hs ^. hssSymmetricHandshake
-    (dp, shs') = decryptAndHash (cipherBytesToText (convert d)) shs
+    (dp, shs') = decryptAndHash (cipherBytesToText (convert d))
+                 $ hs' ^. hssSymmetricHandshake
     hs''       = hs' & hssSymmetricHandshake .~ shs'
 
 writeHandshakeMsgFinal :: (Cipher c, Curve d)
@@ -209,8 +208,7 @@ writeHandshakeMsgFinal :: (Cipher c, Curve d)
                        -> IO (ByteString, CipherState c, CipherState c)
 writeHandshakeMsgFinal hs desc payload = do
   (d, hs') <- writeHandshakeMsg hs desc payload
-  let shs        = hs' ^. hssSymmetricHandshake
-      (cs1, cs2) = split shs
+  let (cs1, cs2) = split $ hs' ^. hssSymmetricHandshake
   return (d, cs1, cs2)
 
 readHandshakeMsgFinal :: (Cipher c, Curve d)
@@ -221,8 +219,7 @@ readHandshakeMsgFinal :: (Cipher c, Curve d)
 readHandshakeMsgFinal hs buf desc = (pt, cs1, cs2)
   where
     (pt, hs')  = readHandshakeMsg hs buf desc
-    shs        = hs' ^. hssSymmetricHandshake
-    (cs1, cs2) = split shs
+    (cs1, cs2) = split $ hs' ^. hssSymmetricHandshake
 
 encryptPayload :: Cipher c
              => CipherState c

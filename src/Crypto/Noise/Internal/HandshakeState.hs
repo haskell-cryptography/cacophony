@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings, FlexibleInstances,
-    GeneralizedNewtypeDeriving, TemplateHaskell #-}
+    GeneralizedNewtypeDeriving, TemplateHaskell,
+    RankNTypes, FlexibleContexts #-}
 ----------------------------------------------------------------
 -- |
 -- Module      : Crypto.Noise.Internal.HandshakeState
@@ -11,7 +12,7 @@ module Crypto.Noise.Internal.HandshakeState
   ( -- * Classes
     MonadHandshake(..),
     -- * Types
-    HandshakeState(..),
+    HandshakeState,
     Descriptor,
     DescriptorIO,
     -- * Functions
@@ -61,29 +62,23 @@ runDescriptorT = runStateT . unD
 class Monad m => MonadHandshake m where
   tokenPreS :: m ()
   tokenPreE :: m ()
-  tokenWE   :: MonadIO m => m ByteString
   tokenRE   :: ByteString -> m ByteString
-  tokenWS   :: m ByteString
   tokenRS   :: ByteString -> m ByteString
+  tokenWE   :: MonadIO m => m ByteString
+  tokenWS   :: m ByteString
   tokenDHEE :: m ()
   tokenDHES :: m ()
   tokenDHSE :: m ()
   tokenDHSS :: m ()
 
 instance (Monad m, Cipher c, Curve d) => MonadHandshake (DescriptorT c d m) where
-  tokenPreS = do
-    hs <- get
-    let shs  = hs ^. hssSymmetricHandshake
-        pk   = fromJust $ hs ^. hssRemoteStaticKey
-        shs' = mixHash (curvePubToBytes pk) shs
-    put $ hs & hssSymmetricHandshake .~ shs'
+  tokenPreS = tokenPreX hssRemoteStaticKey
 
-  tokenPreE = do
-    hs <- get
-    let shs  = hs ^. hssSymmetricHandshake
-        pk   = fromJust $ hs ^. hssRemoteEphemeralKey
-        shs' = mixHash (curvePubToBytes pk) shs
-    put $ hs & hssSymmetricHandshake .~ shs'
+  tokenPreE = tokenPreX hssRemoteEphemeralKey
+
+  tokenRE buf = tokenRX buf hssRemoteEphemeralKey
+
+  tokenRS buf = tokenRX buf hssRemoteStaticKey
 
   tokenWE = do
     ~kp@(_, pk) <- liftIO curveGenKey
@@ -94,20 +89,6 @@ instance (Monad m, Cipher c, Curve d) => MonadHandshake (DescriptorT c d m) wher
     put $ hs & hssLocalEphemeralKey .~ Just kp & hssSymmetricHandshake .~ shs'
     return . convert $ ct
 
-  tokenRE buf = do
-    hs <- get
-    let hasKey    = shsHasKey $ hs ^. hssSymmetricHandshake
-        (b, rest) = B.splitAt (d hasKey) buf
-        ct        = cipherBytesToText . convert $ b
-        shs       = hs ^. hssSymmetricHandshake
-        (Plaintext pt, shs') = decryptAndHash ct shs
-    put $ hs & hssRemoteEphemeralKey .~ Just (curveBytesToPub pt) & hssSymmetricHandshake .~ shs'
-    return rest
-    where
-      d hk
-        | hk        = 32 + 16
-        | otherwise = 32 -- this should call curveLen!
-
   tokenWS = do
     hs <- get
     let pk         = curvePubToBytes . snd . fromJust $ hs ^. hssLocalStaticKey
@@ -115,20 +96,6 @@ instance (Monad m, Cipher c, Curve d) => MonadHandshake (DescriptorT c d m) wher
         (ct, shs') = encryptAndHash ((Plaintext . convert) pk) shs
     put $ hs & hssSymmetricHandshake .~ shs'
     return . convert $ ct
-
-  tokenRS buf = do
-    hs <- get
-    let hasKey    = shsHasKey $ hs ^. hssSymmetricHandshake
-        (b, rest) = B.splitAt (d hasKey) buf
-        ct        = cipherBytesToText . convert $ b
-        shs       = hs ^. hssSymmetricHandshake
-        (Plaintext pt, shs') = decryptAndHash ct shs
-    put $ hs & hssRemoteStaticKey .~ Just (curveBytesToPub pt) & hssSymmetricHandshake .~ shs'
-    return rest
-    where
-      d hk
-        | hk        = 32 + 16
-        | otherwise = 32 -- this should call curveLen!
 
   tokenDHEE = do
     hs <- get
@@ -165,6 +132,38 @@ instance (Monad m, Cipher c, Curve d) => MonadHandshake (DescriptorT c d m) wher
         dh       = curveDH sk rpk
         shs'     = mixKey dh shs
     put $ hs & hssSymmetricHandshake .~ shs'
+
+tokenPreX :: (MonadState (HandshakeState c d) m, Cipher c, Curve d)
+          => Lens' (HandshakeState c d) (Maybe (PublicKey d))
+          -> m ()
+tokenPreX keyToView = do
+  hs <- get
+  let shs  = hs ^. hssSymmetricHandshake
+      pk   = fromJust $ hs ^. keyToView
+      shs' = mixHash (curvePubToBytes pk) shs
+  put $ hs & hssSymmetricHandshake .~ shs'
+
+tokenRX :: (MonadState (HandshakeState c d) m, Cipher c, Curve d)
+       => ByteString
+       -> Lens' (HandshakeState c d) (Maybe (PublicKey d))
+       -> m ByteString
+tokenRX buf keyToUpdate = do
+  hs <- get
+
+  let hasKey    = shsHasKey $ hs ^. hssSymmetricHandshake
+      (b, rest) = B.splitAt (d hasKey) buf
+      ct        = cipherBytesToText . convert $ b
+      shs       = hs ^. hssSymmetricHandshake
+      (Plaintext pt, shs') = decryptAndHash ct shs
+
+  put $ hs & keyToUpdate .~ Just (curveBytesToPub pt) & hssSymmetricHandshake .~ shs'
+
+  return rest
+
+  where
+    d hk
+      | hk        = 32 + 16
+      | otherwise = 32 -- this should call curveLen!-}
 
 handshakeState :: (Cipher c, Curve d)
                => ScrubbedBytes

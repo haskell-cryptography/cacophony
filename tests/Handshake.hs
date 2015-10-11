@@ -33,8 +33,12 @@ doNN pt = ioProperty $ do
   (bobToAlice1, csBob1, csBob2) <- writeHandshakeMsgFinal bobNN' noiseNNR2 emptyPT
   let (_, csAlice1, csAlice2) = readHandshakeMsgFinal aliceNN' bobToAlice1 noiseNNI2
 
-  --return $ (decrypt csBob1 . encrypt csAlice1) pt === pt
-  return $ True === True
+  return $ conjoin
+    [ (decrypt csBob1 . encrypt csAlice1) pt === pt
+    , (decrypt csBob2 . encrypt csAlice2) pt === pt
+    , (decrypt csAlice1 . encrypt csBob1) pt === pt
+    , (decrypt csAlice2 . encrypt csBob2) pt === pt
+    ]
 
   where
     encrypt cs p = fst $ encryptPayload p cs

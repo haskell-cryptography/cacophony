@@ -57,10 +57,11 @@ encryptAndHash (Plaintext pt) shs@SymmetricHandshakeState{..}
 decryptAndHash :: Cipher c => Ciphertext c -> SymmetricHandshakeState c -> (Plaintext, SymmetricHandshakeState c)
 decryptAndHash ct shs@SymmetricHandshakeState{..}
   | shsHasKey = (pt, shs')
-  | otherwise = (Plaintext (cipherTextToBytes ct), shs')
+  | otherwise = (Plaintext (cipherTextToBytes ct), nkshs')
   where
     (pt, cs) = decryptAndIncrement (AssocData (cipherHashToBytes shsh)) ct shsCipher
     shs'     = mixHash (cipherTextToBytes ct) shs { shsCipher = cs }
+    nkshs'   = mixHash (cipherTextToBytes ct) shs
 
 split :: Cipher c => SymmetricHandshakeState c -> (CipherState c, CipherState c)
 split SymmetricHandshakeState{..} = (cs1, cs2)

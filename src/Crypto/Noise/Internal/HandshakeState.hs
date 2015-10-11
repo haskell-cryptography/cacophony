@@ -163,7 +163,7 @@ tokenRX buf keyToUpdate = do
   where
     d hk
       | hk        = 32 + 16
-      | otherwise = 32 -- this should call curveLen!-}
+      | otherwise = 32 -- this should call curveLen!
 
 handshakeState :: (Cipher c, Curve d)
                => ScrubbedBytes

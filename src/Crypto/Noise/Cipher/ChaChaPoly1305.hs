@@ -16,7 +16,7 @@ import qualified Crypto.Cipher.ChaChaPoly1305 as CCP
 import qualified Crypto.Hash as H
 import qualified Crypto.MAC.HMAC as M
 import qualified Crypto.MAC.Poly1305 as P
-import qualified Data.ByteArray as B (take, drop, length, eq)
+import qualified Data.ByteArray as B (take, drop, length)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS (replicate)
 
@@ -44,9 +44,6 @@ instance Cipher ChaChaPoly1305 where
   cipherTextToBytes = ctToBytes
   cipherBytesToText = bytesToCt
 
-instance Eq (SymmetricKey ChaChaPoly1305) where
-  (SKCCP1305 sk1) == (SKCCP1305 sk2) = sk1 `B.eq` sk2
-
 encrypt :: SymmetricKey ChaChaPoly1305 -> Nonce ChaChaPoly1305 -> AssocData -> Plaintext -> Ciphertext ChaChaPoly1305
 encrypt (SKCCP1305 k) (NCCP1305 n) (AssocData ad) (Plaintext plaintext) =
   CTCCP1305 (out, P.Auth (convert authTag))
@@ -69,7 +66,7 @@ decrypt (SKCCP1305 k) (NCCP1305 n) (AssocData ad) (CTCCP1305 (ct, auth)) =
     calcAuthTag     = CCP.finalize afterDec
 
 zeroNonce :: Nonce ChaChaPoly1305
-zeroNonce = NCCP1305 $ throwCryptoError $ CCP.nonce8 constant iv
+zeroNonce = NCCP1305 . throwCryptoError $ CCP.nonce8 constant iv
   where
     constant = BS.replicate 4 0
     iv       = BS.replicate 8 0
@@ -102,5 +99,5 @@ ctToBytes (CTCCP1305 (ct, a)) = ct `append` convert a
 bytesToCt :: ScrubbedBytes -> Ciphertext ChaChaPoly1305
 bytesToCt bytes =
   CTCCP1305 (B.take (B.length bytes - 16) bytes
-            , P.Auth $ convert $ B.drop (B.length bytes - 16) bytes
+            , P.Auth . convert $ B.drop (B.length bytes - 16) bytes
             )

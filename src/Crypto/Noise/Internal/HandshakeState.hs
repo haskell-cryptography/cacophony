@@ -176,7 +176,7 @@ handshakeState :: (Cipher c, Curve d)
 handshakeState hn ls le rs re = maybe hs hs'
   where
     hs = HandshakeState (symmetricHandshake hn) ls le rs re
-    hs' desc = snd $ runIdentity $ runDescriptorT desc hs
+    hs' desc = snd . runIdentity $ runDescriptorT desc hs
 
 writeHandshakeMsg :: (Cipher c, Curve d)
                       => HandshakeState c d
@@ -222,19 +222,19 @@ readHandshakeMsgFinal hs buf desc = (pt, cs1, cs2)
     (cs1, cs2) = split $ hs' ^. hssSymmetricHandshake
 
 encryptPayload :: Cipher c
-             => CipherState c
-             -> Plaintext
-             -> (ByteString, CipherState c)
-encryptPayload cs pt = ((convert . cipherTextToBytes) ct, cs')
+               => Plaintext
+               -> CipherState c
+               -> (ByteString, CipherState c)
+encryptPayload pt cs = ((convert . cipherTextToBytes) ct, cs')
   where
     (ct, cs') = encryptAndIncrement ad pt cs
     ad = AssocData $ convert ("" :: ByteString)
 
 decryptPayload :: Cipher c
-            => CipherState c
-            -> ByteString
-            -> (Plaintext, CipherState c)
-decryptPayload cs ct = (pt, cs')
+               => ByteString
+               -> CipherState c
+               -> (Plaintext, CipherState c)
+decryptPayload ct cs = (pt, cs')
   where
     (pt, cs') = decryptAndIncrement ad ((cipherBytesToText . convert) ct) cs
     ad = AssocData $ convert ("" :: ByteString)

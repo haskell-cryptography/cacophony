@@ -24,5 +24,5 @@ getFiles ext root = filter (isSuffixOf ext) <$> go root
 
 getFilesAndDirectories :: FilePath -> IO ([FilePath], [FilePath])
 getFilesAndDirectories dir = do
-  c <- map (dir </>) . filter (`notElem` ["..", "."]) <$> getDirectoryContents dir
+  c <- fmap (dir </>) . filter (`notElem` ["..", "."]) <$> getDirectoryContents dir
   (,) <$> filterM doesDirectoryExist c <*> filterM doesFileExist c

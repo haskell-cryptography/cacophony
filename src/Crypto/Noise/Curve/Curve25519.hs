@@ -45,4 +45,4 @@ pubToBytes :: PublicKey Curve25519 -> ScrubbedBytes
 pubToBytes (PK25519 pk) = convert pk
 
 bytesToPub :: ScrubbedBytes -> PublicKey Curve25519
-bytesToPub b = PK25519 $ either error id $ C.publicKey b
+bytesToPub b = PK25519 . either error id $ C.publicKey b

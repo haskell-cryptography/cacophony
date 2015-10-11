@@ -16,7 +16,7 @@ import qualified Crypto.Cipher.ChaChaPoly1305 as CCP
 import qualified Crypto.Hash as H
 import qualified Crypto.MAC.HMAC as M
 import qualified Crypto.MAC.Poly1305 as P
-import qualified Data.ByteArray as B (drop, length, eq)
+import qualified Data.ByteArray as B (take, drop, length, eq)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS (replicate)
 
@@ -26,7 +26,7 @@ import Crypto.Noise.Types
 data ChaChaPoly1305
 
 instance Cipher ChaChaPoly1305 where
-  newtype Ciphertext   ChaChaPoly1305 = CTCCP1305 ScrubbedBytes
+  newtype Ciphertext   ChaChaPoly1305 = CTCCP1305 (ScrubbedBytes, P.Auth)
   newtype SymmetricKey ChaChaPoly1305 = SKCCP1305 ScrubbedBytes
   newtype Nonce        ChaChaPoly1305 = NCCP1305  CCP.Nonce
   newtype Digest       ChaChaPoly1305 = DCCP1305  (H.Digest H.SHA256)
@@ -45,11 +45,11 @@ instance Cipher ChaChaPoly1305 where
   cipherBytesToText = bytesToCt
 
 instance Eq (SymmetricKey ChaChaPoly1305) where
-  (SKCCP1305 ct1) == (SKCCP1305 ct2) = ct1 `B.eq` ct2
+  (SKCCP1305 sk1) == (SKCCP1305 sk2) = sk1 `B.eq` sk2
 
 encrypt :: SymmetricKey ChaChaPoly1305 -> Nonce ChaChaPoly1305 -> AssocData -> Plaintext -> Ciphertext ChaChaPoly1305
 encrypt (SKCCP1305 k) (NCCP1305 n) (AssocData ad) (Plaintext plaintext) =
-  CTCCP1305 $ out `append` convert authTag
+  CTCCP1305 (out, P.Auth (convert authTag))
   where
     initState       = throwCryptoError $ CCP.initialize k n
     afterAAD        = CCP.finalizeAAD (CCP.appendAAD ad initState)
@@ -57,13 +57,12 @@ encrypt (SKCCP1305 k) (NCCP1305 n) (AssocData ad) (Plaintext plaintext) =
     authTag         = CCP.finalize afterEnc
 
 decrypt :: SymmetricKey ChaChaPoly1305 -> Nonce ChaChaPoly1305 -> AssocData -> Ciphertext ChaChaPoly1305 -> Maybe Plaintext
-decrypt (SKCCP1305 k) (NCCP1305 n) (AssocData ad) (CTCCP1305 ct) =
-  if provAuthTag == calcAuthTag then
+decrypt (SKCCP1305 k) (NCCP1305 n) (AssocData ad) (CTCCP1305 (ct, auth)) =
+  if auth == calcAuthTag then
     return $ Plaintext out
   else
     Nothing
   where
-    provAuthTag     = P.Auth $ convert $ B.drop (B.length ct - 16) ct
     initState       = throwCryptoError $ CCP.initialize k n
     afterAAD        = CCP.finalizeAAD (CCP.appendAAD ad initState)
     (out, afterDec) = CCP.decrypt ct afterAAD
@@ -81,7 +80,7 @@ incNonce (NCCP1305 n) = NCCP1305 $ CCP.incrementNonce n
 getKey :: SymmetricKey ChaChaPoly1305 -> Nonce ChaChaPoly1305 -> SymmetricKey ChaChaPoly1305
 getKey k n = SKCCP1305 ct
   where
-    (CTCCP1305 ct) = encrypt k n (AssocData empty) (Plaintext zeroes)
+    (CTCCP1305 (ct, _)) = encrypt k n (AssocData empty) (Plaintext zeroes)
     zeroes = convert . BS.replicate 32 $ 0
     empty = convert ("" :: ByteString)
 
@@ -98,7 +97,10 @@ hashToBytes :: Digest ChaChaPoly1305 -> ScrubbedBytes
 hashToBytes (DCCP1305 d) = convert d
 
 ctToBytes :: Ciphertext ChaChaPoly1305 -> ScrubbedBytes
-ctToBytes (CTCCP1305 ct) = ct
+ctToBytes (CTCCP1305 (ct, a)) = ct `append` convert a
 
 bytesToCt :: ScrubbedBytes -> Ciphertext ChaChaPoly1305
-bytesToCt = CTCCP1305
+bytesToCt bytes =
+  CTCCP1305 (B.take (B.length bytes - 16) bytes
+            , P.Auth $ convert $ B.drop (B.length bytes - 16) bytes
+            )

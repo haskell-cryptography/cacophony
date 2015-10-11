@@ -186,7 +186,7 @@ writeHandshakeMsg :: (Cipher c, Curve d)
                       -> IO (ByteString, HandshakeState c d)
 writeHandshakeMsg hs desc payload = do
   (d, hs') <- runDescriptorT desc hs
-  let shs        = hs' ^. hssSymmetricHandshake
+  let shs        = hs ^. hssSymmetricHandshake
       (ep, shs') = encryptAndHash payload shs
       hs''       = hs' & hssSymmetricHandshake .~ shs'
   return (d `B.append` convert ep, hs'')

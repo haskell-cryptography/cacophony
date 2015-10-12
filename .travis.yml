@@ -33,8 +33,6 @@ before_install:
   - export PATH=~/.cabal/bin:/opt/ghc/$GHCVER/bin:/opt/cabal/$CABALVER/bin:/opt/happy/$HAPPYVER/bin:/opt/alex/$ALEXVER/bin:$PATH
 
 install:
-  - git clone https://github.com/vincenthz/cryptonite
-
   - cabal --version
   - echo "$(ghc --version) [$(ghc --print-project-git-commit-id 2> /dev/null || echo '?')]"
   - if [ -f $HOME/.cabal/packages/hackage.haskell.org/00-index.tar.gz ];
@@ -44,7 +42,7 @@ install:
     fi
   - travis_retry cabal update
   - "sed -i  's/^jobs:.*$/jobs: 2/' $HOME/.cabal/config"
-  - cabal install --only-dependencies --enable-tests --dry -v cacophony.cabal cryptonite/ > installplan.txt
+  - cabal install --only-dependencies --enable-tests --dry -v cacophony.cabal > installplan.txt
   - sed -i -e '1,/^Resolving /d' installplan.txt; cat installplan.txt
 
   # check whether current requested install-plan matches cached package-db snapshot
@@ -58,7 +56,7 @@ install:
       echo "cabal build-cache MISS";
       rm -rf $HOME/.cabsnap;
       mkdir -p $HOME/.ghc $HOME/.cabal/lib $HOME/.cabal/share $HOME/.cabal/bin;
-      cabal install --only-dependencies --enable-tests cacophony.cabal cryptonite/;
+      cabal install --only-dependencies --enable-tests cacophony.cabal;
       if [ "$GHCVER" = "7.10.1" ]; then cabal install Cabal-1.22.4.0; fi;
     fi
 
@@ -71,7 +69,7 @@ install:
       cp -a $HOME/.cabal/lib $HOME/.cabal/share $HOME/.cabal/bin installplan.txt $HOME/.cabsnap/;
     fi
 
-  - cabal install cryptonite/
+  - cabal install
 
 script:
   - cabal configure --enable-tests -v2  # -v2 provides useful information for debugging

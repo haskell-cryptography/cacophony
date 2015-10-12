@@ -74,9 +74,14 @@ noiseSNR2 :: (Cipher c, Curve d)
 noiseSNR2 = do
   e <- tokenWE
   tokenDHEE
+  tokenDHES
   return e
 
 noiseSNI2 :: (Cipher c, Curve d)
           => ByteString
           -> Descriptor c d ByteString
-noiseSNI2 = undefined
+noiseSNI2 buf = do
+  rest <- tokenRE buf
+  tokenDHEE
+  tokenDHSE
+  return rest

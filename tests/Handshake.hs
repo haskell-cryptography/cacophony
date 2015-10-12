@@ -5,10 +5,11 @@ import Imports
 import Instances()
 
 import Crypto.Noise.Handshake
-import Crypto.Noise.Types
 import Crypto.Noise.Cipher
 import Crypto.Noise.Cipher.ChaChaPoly1305
+import Crypto.Noise.Curve
 import Crypto.Noise.Curve.Curve25519
+import Crypto.Noise.Types
 
 import Data.ByteString (ByteString)
 
@@ -44,7 +45,51 @@ doNN pt = ioProperty $ do
     encrypt cs p = fst $ encryptPayload p cs
     decrypt cs ct = fst $ decryptPayload ct cs
 
+--------------------------------------------------------------------------------
+-- Noise_SN
+
+hsnSN :: ScrubbedBytes
+hsnSN = convert ("Noise_SN_25519_ChaChaPoly" :: ByteString)
+
+doSN :: Plaintext -> Property
+doSN pt = ioProperty $ do
+  aliceStaticKey@(_, aliceStaticPK) <- curveGenKey :: IO (KeyPair Curve25519)
+
+  let aliceSN = handshakeState
+                hsnSN
+                (Just aliceStaticKey)
+                Nothing
+                Nothing
+                Nothing
+                Nothing :: HandshakeState ChaChaPoly1305 Curve25519
+
+      bobSN = handshakeState
+              hsnSN
+              Nothing
+              Nothing
+              (Just aliceStaticPK)
+              Nothing
+              (Just noiseSNR0) :: HandshakeState ChaChaPoly1305 Curve25519
+
+  (aliceToBob1, aliceSN') <- writeHandshakeMsg aliceSN noiseSNI1 emptyPT
+  let (_, bobSN') = readHandshakeMsg bobSN aliceToBob1 noiseSNR1
+
+  (bobToAlice1, csBob1, csBob2) <- writeHandshakeMsgFinal bobSN' noiseSNR2 emptyPT
+  let (_, csAlice1, csAlice2) = readHandshakeMsgFinal aliceSN' bobToAlice1 noiseSNI2
+
+  return $ conjoin
+    [ (decrypt csBob1 . encrypt csAlice1) pt === pt
+    , (decrypt csBob2 . encrypt csAlice2) pt === pt
+    , (decrypt csAlice1 . encrypt csBob1) pt === pt
+    , (decrypt csAlice2 . encrypt csBob2) pt === pt
+    ]
+
+  where
+    encrypt cs p = fst $ encryptPayload p cs
+    decrypt cs ct = fst $ decryptPayload ct cs
+
 tests :: TestTree
 tests = testGroup "Handshakes"
   [ testProperty "Noise_NN" $ property doNN
+  , testProperty "Noise_SN" $ property doSN
   ]

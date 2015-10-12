@@ -14,7 +14,7 @@ module Crypto.Noise.Internal.CipherState
     decryptAndIncrement
   ) where
 
-import Data.Maybe (fromJust)
+import Data.Maybe (fromMaybe)
 
 import Crypto.Noise.Cipher
 
@@ -32,5 +32,6 @@ encryptAndIncrement ad plaintext cs@CipherState{..} = (ct, newState)
 decryptAndIncrement :: Cipher c => AssocData -> Ciphertext c -> CipherState c -> (Plaintext, CipherState c)
 decryptAndIncrement ad ct cs@CipherState{..} = (pt, newState)
   where
-    pt       = fromJust $ cipherDecrypt csk csn ad ct
+    pt       = fromMaybe (error "decryptAndIncrement: error decrypting ciphertext")
+                         (cipherDecrypt csk csn ad ct)
     newState = cs { csn = cipherIncNonce csn }

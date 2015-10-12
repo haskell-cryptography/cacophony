@@ -31,7 +31,7 @@ import Control.Monad.State
 
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B (append, splitAt)
-import Data.Maybe (fromJust)
+import Data.Maybe (fromMaybe)
 
 import Crypto.Noise.Cipher
 import Crypto.Noise.Curve
@@ -91,7 +91,7 @@ instance (Monad m, Cipher c, Curve d) => MonadHandshake (DescriptorT c d m) wher
 
   tokenWS = do
     hs <- get
-    let pk         = curvePubToBytes . snd . fromJust $ hs ^. hssLocalStaticKey
+    let pk         = curvePubToBytes . snd . getLocalStaticKey $ hs
         shs        = hs ^. hssSymmetricHandshake
         (ct, shs') = encryptAndHash ((Plaintext . convert) pk) shs
     put $ hs & hssSymmetricHandshake .~ shs'
@@ -100,8 +100,8 @@ instance (Monad m, Cipher c, Curve d) => MonadHandshake (DescriptorT c d m) wher
   tokenDHEE = do
     hs <- get
     let shs      = hs ^. hssSymmetricHandshake
-        ~(sk, _) = fromJust $ hs ^. hssLocalEphemeralKey
-        rpk      = fromJust $ hs ^. hssRemoteEphemeralKey
+        ~(sk, _) = getLocalEphemeralKey hs
+        rpk      = getRemoteEphemeralKey hs
         dh       = curveDH sk rpk
         shs'     = mixKey dh shs
     put $ hs & hssSymmetricHandshake .~ shs'
@@ -109,8 +109,8 @@ instance (Monad m, Cipher c, Curve d) => MonadHandshake (DescriptorT c d m) wher
   tokenDHES = do
     hs <- get
     let shs      = hs ^. hssSymmetricHandshake
-        ~(sk, _) = fromJust $ hs ^. hssLocalEphemeralKey
-        rpk      = fromJust $ hs ^. hssRemoteStaticKey
+        ~(sk, _) = getLocalEphemeralKey hs
+        rpk      = getRemoteStaticKey hs
         dh       = curveDH sk rpk
         shs'     = mixKey dh shs
     put $ hs & hssSymmetricHandshake .~ shs'
@@ -118,8 +118,8 @@ instance (Monad m, Cipher c, Curve d) => MonadHandshake (DescriptorT c d m) wher
   tokenDHSE = do
     hs <- get
     let shs      = hs ^. hssSymmetricHandshake
-        ~(sk, _) = fromJust $ hs ^. hssLocalStaticKey
-        rpk      = fromJust $ hs ^. hssRemoteEphemeralKey
+        ~(sk, _) = getLocalStaticKey hs
+        rpk      = getRemoteEphemeralKey hs
         dh       = curveDH sk rpk
         shs'     = mixKey dh shs
     put $ hs & hssSymmetricHandshake .~ shs'
@@ -127,11 +127,27 @@ instance (Monad m, Cipher c, Curve d) => MonadHandshake (DescriptorT c d m) wher
   tokenDHSS = do
     hs <- get
     let shs      = hs ^. hssSymmetricHandshake
-        ~(sk, _) = fromJust $ hs ^. hssLocalStaticKey
-        rpk      = fromJust $ hs ^. hssRemoteStaticKey
+        ~(sk, _) = getLocalStaticKey hs
+        rpk      = getRemoteStaticKey hs
         dh       = curveDH sk rpk
         shs'     = mixKey dh shs
     put $ hs & hssSymmetricHandshake .~ shs'
+
+getLocalStaticKey :: (Cipher c, Curve d) => HandshakeState c d -> KeyPair d
+getLocalStaticKey hs = fromMaybe (error "local static key not set")
+                                 (hs ^. hssLocalStaticKey)
+
+getLocalEphemeralKey :: (Cipher c, Curve d) => HandshakeState c d -> KeyPair d
+getLocalEphemeralKey hs = fromMaybe (error "local ephemeral key not set")
+                                    (hs ^. hssLocalEphemeralKey)
+
+getRemoteStaticKey :: (Cipher c, Curve d) => HandshakeState c d -> PublicKey d
+getRemoteStaticKey hs = fromMaybe (error "remote static key not set")
+                                  (hs ^. hssRemoteStaticKey)
+
+getRemoteEphemeralKey :: (Cipher c, Curve d) => HandshakeState c d -> PublicKey d
+getRemoteEphemeralKey hs = fromMaybe (error "remote ephemeral key not set")
+                                     (hs ^. hssRemoteEphemeralKey)
 
 tokenPreX :: (MonadState (HandshakeState c d) m, Cipher c, Curve d)
           => Lens' (HandshakeState c d) (Maybe (PublicKey d))
@@ -139,7 +155,7 @@ tokenPreX :: (MonadState (HandshakeState c d) m, Cipher c, Curve d)
 tokenPreX keyToView = do
   hs <- get
   let shs  = hs ^. hssSymmetricHandshake
-      pk   = fromJust $ hs ^. keyToView
+      pk   = fromMaybe (error "tokenPreX: remote key not set") (hs ^. keyToView)
       shs' = mixHash (curvePubToBytes pk) shs
   put $ hs & hssSymmetricHandshake .~ shs'
 

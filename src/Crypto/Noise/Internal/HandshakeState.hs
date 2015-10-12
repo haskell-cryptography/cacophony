@@ -60,8 +60,10 @@ runDescriptorT :: Monad m => DescriptorT c d m a -> HandshakeState c d -> m (a, 
 runDescriptorT = runStateT . unD
 
 class Monad m => MonadHandshake m where
-  tokenPreS :: m ()
-  tokenPreE :: m ()
+  tokenPreIS :: m ()
+  tokenPreRS :: m ()
+  tokenPreIE :: m ()
+  tokenPreRE :: m ()
   tokenRE   :: ByteString -> m ByteString
   tokenRS   :: ByteString -> m ByteString
   tokenWE   :: MonadIO m => m ByteString
@@ -72,9 +74,13 @@ class Monad m => MonadHandshake m where
   tokenDHSS :: m ()
 
 instance (Monad m, Cipher c, Curve d) => MonadHandshake (DescriptorT c d m) where
-  tokenPreS = tokenPreX hssRemoteStaticKey
+  tokenPreIS = tokenPreIX hssLocalStaticKey
 
-  tokenPreE = tokenPreX hssRemoteEphemeralKey
+  tokenPreRS = tokenPreRX hssRemoteStaticKey
+
+  tokenPreIE = tokenPreIX hssLocalEphemeralKey
+
+  tokenPreRE = tokenPreRX hssRemoteEphemeralKey
 
   tokenRE buf = tokenRX buf hssRemoteEphemeralKey
 
@@ -149,13 +155,23 @@ getRemoteEphemeralKey :: (Cipher c, Curve d) => HandshakeState c d -> PublicKey 
 getRemoteEphemeralKey hs = fromMaybe (error "remote ephemeral key not set")
                                      (hs ^. hssRemoteEphemeralKey)
 
-tokenPreX :: (MonadState (HandshakeState c d) m, Cipher c, Curve d)
-          => Lens' (HandshakeState c d) (Maybe (PublicKey d))
-          -> m ()
-tokenPreX keyToView = do
+tokenPreIX :: (MonadState (HandshakeState c d) m, Cipher c, Curve d)
+           => Lens' (HandshakeState c d) (Maybe (KeyPair d))
+           -> m ()
+tokenPreIX keyToView = do
+  hs <- get
+  let shs     = hs ^. hssSymmetricHandshake
+      (_, pk) = fromMaybe (error "tokenPreIX: local key not set") (hs ^. keyToView)
+      shs'    = mixHash (curvePubToBytes pk) shs
+  put $ hs & hssSymmetricHandshake .~ shs'
+
+tokenPreRX :: (MonadState (HandshakeState c d) m, Cipher c, Curve d)
+           => Lens' (HandshakeState c d) (Maybe (PublicKey d))
+           -> m ()
+tokenPreRX keyToView = do
   hs <- get
   let shs  = hs ^. hssSymmetricHandshake
-      pk   = fromMaybe (error "tokenPreX: remote key not set") (hs ^. keyToView)
+      pk   = fromMaybe (error "tokenPreRX: remote key not set") (hs ^. keyToView)
       shs' = mixHash (curvePubToBytes pk) shs
   put $ hs & hssSymmetricHandshake .~ shs'
 

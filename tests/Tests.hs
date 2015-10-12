@@ -2,15 +2,15 @@ module Main where
 
 import Imports
 
-import qualified Handshake
 import qualified CipherState
 import qualified SymmetricHandshakeState
+import qualified Handshake
 
 tests :: TestTree
 tests = testGroup "cacophony"
-  [ Handshake.tests
-  , CipherState.tests
+  [ CipherState.tests
   , SymmetricHandshakeState.tests
+  , Handshake.tests
   ]
 
 main :: IO ()

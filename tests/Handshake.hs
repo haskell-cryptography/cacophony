@@ -13,8 +13,8 @@ import Crypto.Noise.Types
 
 import Data.ByteString (ByteString)
 
-emptyPT :: Plaintext
-emptyPT = Plaintext $ convert ("" :: ByteString)
+sampleHSPT :: Plaintext
+sampleHSPT = Plaintext $ convert ("cacophony" :: ByteString)
 
 --------------------------------------------------------------------------------
 -- Noise_NN
@@ -28,17 +28,19 @@ bobNN = handshakeState hsnNN Nothing Nothing Nothing Nothing Nothing
 
 doNN :: Plaintext -> Property
 doNN pt = ioProperty $ do
-  (aliceToBob1, aliceNN') <- writeHandshakeMsg aliceNN noiseNNI1 emptyPT
-  let (_, bobNN') = readHandshakeMsg bobNN aliceToBob1 noiseNNR1
+  (aliceToBob1, aliceNN') <- writeHandshakeMsg aliceNN noiseNNI1 sampleHSPT
+  let (hsptFromAlice1, bobNN') = readHandshakeMsg bobNN aliceToBob1 noiseNNR1
 
-  (bobToAlice1, csBob1, csBob2) <- writeHandshakeMsgFinal bobNN' noiseNNR2 emptyPT
-  let (_, csAlice1, csAlice2) = readHandshakeMsgFinal aliceNN' bobToAlice1 noiseNNI2
+  (bobToAlice1, csBob1, csBob2) <- writeHandshakeMsgFinal bobNN' noiseNNR2 sampleHSPT
+  let (hsptFromBob1, csAlice1, csAlice2) = readHandshakeMsgFinal aliceNN' bobToAlice1 noiseNNI2
 
   return $ conjoin
     [ (decrypt csBob1 . encrypt csAlice1) pt === pt
     , (decrypt csBob2 . encrypt csAlice2) pt === pt
     , (decrypt csAlice1 . encrypt csBob1) pt === pt
     , (decrypt csAlice2 . encrypt csBob2) pt === pt
+    , hsptFromAlice1 === sampleHSPT
+    , hsptFromBob1   === sampleHSPT
     ]
 
   where
@@ -61,7 +63,7 @@ doSN pt = ioProperty $ do
                 Nothing
                 Nothing
                 Nothing
-                Nothing :: HandshakeState ChaChaPoly1305 Curve25519
+                (Just noiseSNI0) :: HandshakeState ChaChaPoly1305 Curve25519
 
       bobSN = handshakeState
               hsnSN
@@ -71,17 +73,19 @@ doSN pt = ioProperty $ do
               Nothing
               (Just noiseSNR0) :: HandshakeState ChaChaPoly1305 Curve25519
 
-  (aliceToBob1, aliceSN') <- writeHandshakeMsg aliceSN noiseSNI1 emptyPT
-  let (_, bobSN') = readHandshakeMsg bobSN aliceToBob1 noiseSNR1
+  (aliceToBob1, aliceSN') <- writeHandshakeMsg aliceSN noiseSNI1 sampleHSPT
+  let (hsptFromAlice1, bobSN') = readHandshakeMsg bobSN aliceToBob1 noiseSNR1
 
-  (bobToAlice1, csBob1, csBob2) <- writeHandshakeMsgFinal bobSN' noiseSNR2 emptyPT
-  let (_, csAlice1, csAlice2) = readHandshakeMsgFinal aliceSN' bobToAlice1 noiseSNI2
+  (bobToAlice1, csBob1, csBob2) <- writeHandshakeMsgFinal bobSN' noiseSNR2 sampleHSPT
+  let (hsptFromBob1, csAlice1, csAlice2) = readHandshakeMsgFinal aliceSN' bobToAlice1 noiseSNI2
 
   return $ conjoin
     [ (decrypt csBob1 . encrypt csAlice1) pt === pt
     , (decrypt csBob2 . encrypt csAlice2) pt === pt
     , (decrypt csAlice1 . encrypt csBob1) pt === pt
     , (decrypt csAlice2 . encrypt csBob2) pt === pt
+    , hsptFromAlice1 === sampleHSPT
+    , hsptFromBob1   === sampleHSPT
     ]
 
   where

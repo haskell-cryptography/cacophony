@@ -13,6 +13,7 @@ module Crypto.Noise.Internal.Descriptor
     noiseNNR2,
     noiseNNI2,
     -- ** Noise_SN
+    noiseSNI0,
     noiseSNR0,
     noiseSNI1,
     noiseSNR1,
@@ -56,9 +57,13 @@ noiseNNI2 buf = do
 --------------------------------------------------------------------------------
 -- Noise_SN
 
+noiseSNI0 :: (Cipher c, Curve d)
+          => Descriptor c d ()
+noiseSNI0 = tokenPreIS
+
 noiseSNR0 :: (Cipher c, Curve d)
           => Descriptor c d ()
-noiseSNR0 = tokenPreS
+noiseSNR0 = tokenPreRS
 
 noiseSNI1 :: (Cipher c, Curve d)
           => DescriptorIO c d ByteString

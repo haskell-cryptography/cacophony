@@ -1,4 +1,4 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TemplateHaskell #-}
 ----------------------------------------------------------------
 -- |
 -- Module      : Crypto.Noise.Internal.SymmetricHandshakeState
@@ -8,7 +8,11 @@
 
 module Crypto.Noise.Internal.SymmetricHandshakeState
   ( -- * Types
-    SymmetricHandshakeState(..),
+    SymmetricHandshakeState(SymmetricHandshakeState),
+    -- * Lenses
+    shsCipher,
+    shsHasKey,
+    shsh,
     -- * Functions
     symmetricHandshake,
     mixKey,
@@ -18,15 +22,19 @@ module Crypto.Noise.Internal.SymmetricHandshakeState
     split
   ) where
 
+import Control.Lens
+
 import Crypto.Noise.Cipher
 import Crypto.Noise.Internal.CipherState
 import Crypto.Noise.Types
 
 data SymmetricHandshakeState c =
-  SymmetricHandshakeState { shsCipher :: CipherState c
-                          , shsHasKey :: Bool
-                          , shsh      :: Digest c
+  SymmetricHandshakeState { _shsCipher :: CipherState c
+                          , _shsHasKey :: Bool
+                          , _shsh      :: Digest c
                           }
+
+$(makeLenses ''SymmetricHandshakeState)
 
 symmetricHandshake :: Cipher c => ScrubbedBytes -> SymmetricHandshakeState c
 symmetricHandshake hsn = SymmetricHandshakeState cs False h
@@ -35,38 +43,37 @@ symmetricHandshake hsn = SymmetricHandshakeState cs False h
     cs = CipherState (cipherHashToKey h) cipherZeroNonce
 
 mixKey :: Cipher c => ScrubbedBytes -> SymmetricHandshakeState c -> SymmetricHandshakeState c
-mixKey d shs@SymmetricHandshakeState{..} = shs { shsCipher = cs, shsHasKey = True }
+mixKey d shs = shs & shsCipher .~ cs & shsHasKey .~ True
   where
-    gk   = cipherGetKey (csk shsCipher) (csn shsCipher)
+    gk   = cipherGetKey (shs ^. shsCipher . csk) (shs ^. shsCipher . csn)
     hmac = cipherHMAC gk d
     cs   = CipherState (cipherHashToKey hmac) cipherZeroNonce
 
 mixHash :: Cipher c => ScrubbedBytes -> SymmetricHandshakeState c -> SymmetricHandshakeState c
-mixHash d shs@SymmetricHandshakeState{..} =
-  shs { shsh = cipherHash $ cipherHashToBytes shsh `append` d }
+mixHash d shs = shs & shsh %~ cipherHash . (`append` d) . cipherHashToBytes
 
 encryptAndHash :: Cipher c => Plaintext -> SymmetricHandshakeState c -> (ScrubbedBytes, SymmetricHandshakeState c)
-encryptAndHash (Plaintext pt) shs@SymmetricHandshakeState{..}
-  | shsHasKey = (cipherTextToBytes ct, kshs)
+encryptAndHash (Plaintext pt) shs
+  | shs ^. shsHasKey = (cipherTextToBytes ct, kshs)
   | otherwise = (pt, nkshs)
   where
-    (ct, cs) = encryptAndIncrement (AssocData (cipherHashToBytes shsh)) (Plaintext pt) shsCipher
-    kshs     = mixHash (cipherTextToBytes ct) shs { shsCipher = cs }
+    (ct, cs) = encryptAndIncrement (AssocData (cipherHashToBytes (shs ^. shsh))) (Plaintext pt) (shs ^. shsCipher)
+    kshs     = mixHash (cipherTextToBytes ct) shs & shsCipher .~ cs
     nkshs    = mixHash pt shs
 
 decryptAndHash :: Cipher c => Ciphertext c -> SymmetricHandshakeState c -> (Plaintext, SymmetricHandshakeState c)
-decryptAndHash ct shs@SymmetricHandshakeState{..}
-  | shsHasKey = (pt, shs')
+decryptAndHash ct shs
+  | shs ^. shsHasKey = (pt, kshs')
   | otherwise = (Plaintext (cipherTextToBytes ct), nkshs')
   where
-    (pt, cs) = decryptAndIncrement (AssocData (cipherHashToBytes shsh)) ct shsCipher
-    shs'     = mixHash (cipherTextToBytes ct) shs { shsCipher = cs }
+    (pt, cs) = decryptAndIncrement (AssocData (cipherHashToBytes (shs ^. shsh))) ct (shs ^. shsCipher)
+    kshs'    = mixHash (cipherTextToBytes ct) (shs & shsCipher .~ cs)
     nkshs'   = mixHash (cipherTextToBytes ct) shs
 
 split :: Cipher c => SymmetricHandshakeState c -> (CipherState c, CipherState c)
-split SymmetricHandshakeState{..} = (cs1, cs2)
+split shs = (cs1, cs2)
   where
-    cs1k = cipherGetKey (csk shsCipher) (csn shsCipher)
-    cs1  = CipherState { csk = cs1k, csn = cipherZeroNonce }
-    cs2k = cipherGetKey (csk shsCipher) (cipherIncNonce (csn shsCipher))
-    cs2  = CipherState { csk = cs2k, csn = cipherZeroNonce }
+    cs1k = cipherGetKey (shs ^. shsCipher . csk) (shs ^. shsCipher . csn)
+    cs1  = CipherState cs1k cipherZeroNonce
+    cs2k = cipherGetKey (shs ^. shsCipher . csk) (cipherIncNonce (shs ^. shsCipher . csn))
+    cs2  = CipherState cs2k cipherZeroNonce

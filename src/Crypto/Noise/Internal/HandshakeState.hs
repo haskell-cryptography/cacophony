@@ -166,7 +166,7 @@ tokenRX :: (MonadState (HandshakeState c d) m, Cipher c, Curve d)
 tokenRX buf keyToUpdate = do
   hs <- get
 
-  let hasKey    = shsHasKey $ hs ^. hssSymmetricHandshake
+  let hasKey    = hs ^. hssSymmetricHandshake . shsHasKey
       (b, rest) = B.splitAt (d hasKey) buf
       ct        = cipherBytesToText . convert $ b
       shs       = hs ^. hssSymmetricHandshake

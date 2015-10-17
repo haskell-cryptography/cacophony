@@ -19,6 +19,7 @@ import Crypto.Noise.Types
 class Cipher c where
   data Ciphertext   c :: *
   data SymmetricKey c :: *
+  data ChainingKey  c :: *
   data Nonce        c :: *
   data Digest       c :: *
 
@@ -27,10 +28,11 @@ class Cipher c where
   cipherDecrypt     :: SymmetricKey c -> Nonce c -> AssocData -> Ciphertext c -> Maybe Plaintext
   cipherZeroNonce   :: Nonce c
   cipherIncNonce    :: Nonce c -> Nonce c
-  cipherGetKey      :: SymmetricKey c -> Nonce c -> SymmetricKey c
   cipherHash        :: ScrubbedBytes -> Digest c
-  cipherHMAC        :: SymmetricKey c -> ScrubbedBytes -> Digest c
-  cipherHashToKey   :: Digest c -> SymmetricKey c
+  cipherHKDF        :: ChainingKey c -> ScrubbedBytes -> (ChainingKey c, SymmetricKey c)
+  cipherHashToSK    :: Digest c -> SymmetricKey c
+  cipherHashToCK    :: Digest c -> ChainingKey c
+  cipherChainToSym  :: ChainingKey c -> SymmetricKey c
   cipherHashToBytes :: Digest c -> ScrubbedBytes
   cipherTextToBytes :: Ciphertext c -> ScrubbedBytes
   cipherBytesToText :: ScrubbedBytes -> Ciphertext c

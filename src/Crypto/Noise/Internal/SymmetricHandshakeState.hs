@@ -23,6 +23,7 @@ module Crypto.Noise.Internal.SymmetricHandshakeState
   ) where
 
 import Control.Lens
+import Data.ByteString (empty)
 
 import Crypto.Noise.Cipher
 import Crypto.Noise.Internal.CipherState
@@ -31,23 +32,26 @@ import Crypto.Noise.Types
 data SymmetricHandshakeState c =
   SymmetricHandshakeState { _shsCipher :: CipherState c
                           , _shsHasKey :: Bool
+                          , _shsck     :: ChainingKey c
                           , _shsh      :: Digest c
                           }
 
 $(makeLenses ''SymmetricHandshakeState)
 
 symmetricHandshake :: Cipher c => ScrubbedBytes -> SymmetricHandshakeState c
-symmetricHandshake hsn = SymmetricHandshakeState cs False h
+symmetricHandshake hsn = SymmetricHandshakeState cs False ck h
   where
     h  = cipherHash $ convert hsn
-    cs = CipherState (cipherHashToKey h) cipherZeroNonce
+    ck = cipherHashToCK h
+    cs = CipherState (cipherHashToSK h) cipherZeroNonce
 
 mixKey :: Cipher c => ScrubbedBytes -> SymmetricHandshakeState c -> SymmetricHandshakeState c
-mixKey d shs = shs & shsCipher .~ cs & shsHasKey .~ True
+mixKey d shs = shs & shsCipher .~ cs
+                   & shsHasKey .~ True
+                   & shsck     .~ ck
   where
-    gk   = cipherGetKey (shs ^. shsCipher . csk) (shs ^. shsCipher . csn)
-    hmac = cipherHMAC gk d
-    cs   = CipherState (cipherHashToKey hmac) cipherZeroNonce
+    (ck, k) = cipherHKDF (shs ^. shsck) d
+    cs      = CipherState k cipherZeroNonce
 
 mixHash :: Cipher c => ScrubbedBytes -> SymmetricHandshakeState c -> SymmetricHandshakeState c
 mixHash d shs = shs & shsh %~ cipherHash . (`append` d) . cipherHashToBytes
@@ -73,7 +77,6 @@ decryptAndHash ct shs
 split :: Cipher c => SymmetricHandshakeState c -> (CipherState c, CipherState c)
 split shs = (cs1, cs2)
   where
-    cs1k = cipherGetKey (shs ^. shsCipher . csk) (shs ^. shsCipher . csn)
-    cs1  = CipherState cs1k cipherZeroNonce
-    cs2k = cipherGetKey (shs ^. shsCipher . csk) (cipherIncNonce (shs ^. shsCipher . csn))
+    (cs1k, cs2k) = cipherHKDF (shs ^. shsck) (convert empty)
+    cs1  = CipherState (cipherChainToSym cs1k) cipherZeroNonce
     cs2  = CipherState cs2k cipherZeroNonce

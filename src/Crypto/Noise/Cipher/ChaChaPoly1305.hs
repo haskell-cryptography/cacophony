@@ -28,6 +28,7 @@ data ChaChaPoly1305
 instance Cipher ChaChaPoly1305 where
   newtype Ciphertext   ChaChaPoly1305 = CTCCP1305 (ScrubbedBytes, P.Auth)
   newtype SymmetricKey ChaChaPoly1305 = SKCCP1305 ScrubbedBytes
+  newtype ChainingKey  ChaChaPoly1305 = CKCCP1305 ScrubbedBytes
   newtype Nonce        ChaChaPoly1305 = NCCP1305  CCP.Nonce
   newtype Digest       ChaChaPoly1305 = DCCP1305  (H.Digest H.SHA256)
 
@@ -36,10 +37,11 @@ instance Cipher ChaChaPoly1305 where
   cipherDecrypt     = decrypt
   cipherZeroNonce   = zeroNonce
   cipherIncNonce    = incNonce
-  cipherGetKey      = getKey
   cipherHash        = hash
-  cipherHMAC        = hmac
-  cipherHashToKey   = hashToKey
+  cipherHKDF        = hkdf
+  cipherHashToSK    = hashToSK
+  cipherHashToCK    = hashToCK
+  cipherChainToSym  = chainToSym
   cipherHashToBytes = hashToBytes
   cipherTextToBytes = ctToBytes
   cipherBytesToText = bytesToCt
@@ -74,21 +76,30 @@ zeroNonce = NCCP1305 . throwCryptoError $ CCP.nonce8 constant iv
 incNonce :: Nonce ChaChaPoly1305 -> Nonce ChaChaPoly1305
 incNonce (NCCP1305 n) = NCCP1305 $ CCP.incrementNonce n
 
-getKey :: SymmetricKey ChaChaPoly1305 -> Nonce ChaChaPoly1305 -> SymmetricKey ChaChaPoly1305
-getKey k n = SKCCP1305 ct
-  where
-    (CTCCP1305 (ct, _)) = encrypt k n (AssocData empty) (Plaintext zeroes)
-    zeroes = convert . BS.replicate 32 $ 0
-    empty = convert ("" :: ByteString)
-
 hash :: ScrubbedBytes -> Digest ChaChaPoly1305
 hash bs = DCCP1305 $ H.hash bs
 
-hmac :: SymmetricKey ChaChaPoly1305 -> ScrubbedBytes -> Digest ChaChaPoly1305
-hmac (SKCCP1305 k) d = DCCP1305 $ (M.hmacGetDigest . M.hmac k) d
+hkdf :: ChainingKey ChaChaPoly1305 -> ScrubbedBytes -> (ChainingKey ChaChaPoly1305, SymmetricKey ChaChaPoly1305)
+hkdf (CKCCP1305 ck) d = (CKCCP1305 ck', SKCCP1305 sk)
+  where
+    x01   = convert ("\x01" :: ByteString) :: ScrubbedBytes
+    x02   = convert ("\x02" :: ByteString) :: ScrubbedBytes
 
-hashToKey :: Digest ChaChaPoly1305 -> SymmetricKey ChaChaPoly1305
-hashToKey (DCCP1305 d) = SKCCP1305 $ convert d
+    hmac1 = M.hmac ck d :: M.HMAC H.SHA256
+    temp  = convert . M.hmacGetDigest $ hmac1 :: ScrubbedBytes
+    hmac2 = M.hmac temp x01 :: M.HMAC H.SHA256
+    hmac3 = M.hmac temp (convert hmac2 `append` x02) :: M.HMAC H.SHA256
+    ck'   = convert . M.hmacGetDigest $ hmac2
+    sk    = convert . M.hmacGetDigest $ hmac3
+
+chainToSym :: ChainingKey ChaChaPoly1305 -> SymmetricKey ChaChaPoly1305
+chainToSym (CKCCP1305 ck) = SKCCP1305 . convert $ ck
+
+hashToSK :: Digest ChaChaPoly1305 -> SymmetricKey ChaChaPoly1305
+hashToSK (DCCP1305 d) = SKCCP1305 . convert $ d
+
+hashToCK :: Digest ChaChaPoly1305 -> ChainingKey ChaChaPoly1305
+hashToCK (DCCP1305 d) = CKCCP1305 . convert $ d
 
 hashToBytes :: Digest ChaChaPoly1305 -> ScrubbedBytes
 hashToBytes (DCCP1305 d) = convert d

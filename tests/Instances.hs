@@ -40,6 +40,6 @@ instance Arbitrary AssocData where
 instance Arbitrary (CipherState ChaChaPoly1305) where
   arbitrary = do
     h <- arbitrary
-    let k = cipherHashToKey . cipherHash $ h
+    let k = cipherHashToSK . cipherHash $ h
         n = cipherZeroNonce
     return $ CipherState k n

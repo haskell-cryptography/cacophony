@@ -196,10 +196,57 @@ doKK pt = ioProperty $ do
     encrypt cs p = fst $ encryptPayload p cs
     decrypt cs ct = fst $ decryptPayload ct cs
 
+--------------------------------------------------------------------------------
+-- Noise_NE
+
+hsnNE :: ScrubbedBytes
+hsnNE = makeHSN "Noise_NE"
+
+doNE :: Plaintext -> Property
+doNE pt = ioProperty $ do
+  bobStaticKey@(_, bobStaticPK) <- curveGenKey :: IO (KeyPair Curve25519)
+  bobEphemeralKey@(_, bobEphemeralPK) <- curveGenKey :: IO (KeyPair Curve25519)
+
+  let aliceNE = handshakeState
+                hsnNE
+                Nothing
+                Nothing
+                (Just bobStaticPK)
+                (Just bobEphemeralPK)
+                (Just noiseNEI0) :: HandshakeState ChaChaPoly1305 Curve25519 SHA256
+
+      bobNE = handshakeState
+              hsnNE
+              (Just bobStaticKey)
+              (Just bobEphemeralKey)
+              Nothing
+              Nothing
+              (Just noiseNER0) :: HandshakeState ChaChaPoly1305 Curve25519 SHA256
+
+  (aliceToBob1, aliceNE') <- writeHandshakeMsg aliceNE noiseNEI1 sampleHSPT
+  let (hsptFromAlice1, bobNE') = readHandshakeMsg bobNE aliceToBob1 noiseNER1
+
+  (bobToAlice1, csBob1, csBob2) <- writeHandshakeMsgFinal bobNE' noiseNER2 sampleHSPT
+  let (hsptFromBob1, csAlice1, csAlice2) = readHandshakeMsgFinal aliceNE' bobToAlice1 noiseNEI2
+
+  return $ conjoin
+    [ (decrypt csBob1 . encrypt csAlice1) pt === pt
+    , (decrypt csBob2 . encrypt csAlice2) pt === pt
+    , (decrypt csAlice1 . encrypt csBob1) pt === pt
+    , (decrypt csAlice2 . encrypt csBob2) pt === pt
+    , hsptFromAlice1 === sampleHSPT
+    , hsptFromBob1   === sampleHSPT
+    ]
+
+  where
+    encrypt cs p = fst $ encryptPayload p cs
+    decrypt cs ct = fst $ decryptPayload ct cs
+
 tests :: TestTree
 tests = testGroup "Handshakes"
   [ testProperty "Noise_NN" $ property doNN
   , testProperty "Noise_KN" $ property doKN
   , testProperty "Noise_NK" $ property doNK
   , testProperty "Noise_KK" $ property doKK
+  , testProperty "Noise_NE" $ property doNE
   ]

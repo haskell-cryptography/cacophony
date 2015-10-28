@@ -718,6 +718,52 @@ doXX pt = ioProperty $ do
     encrypt cs p = fst $ encryptPayload p cs
     decrypt cs ct = fst $ decryptPayload ct cs
 
+--------------------------------------------------------------------------------
+-- Noise_IX
+
+hsnIX :: ScrubbedBytes
+hsnIX = makeHSN "Noise_IX"
+
+doIX :: Plaintext -> Property
+doIX pt = ioProperty $ do
+  aliceStaticKey <- curveGenKey :: IO (KeyPair Curve25519)
+  bobStaticKey <- curveGenKey :: IO (KeyPair Curve25519)
+
+  let aliceIX = handshakeState
+                hsnIX
+                (Just aliceStaticKey)
+                Nothing
+                Nothing
+                Nothing
+                Nothing :: HandshakeState ChaChaPoly1305 Curve25519 SHA256
+
+      bobIX = handshakeState
+              hsnIX
+              (Just bobStaticKey)
+              Nothing
+              Nothing
+              Nothing
+              Nothing :: HandshakeState ChaChaPoly1305 Curve25519 SHA256
+
+  (aliceToBob1, aliceIX') <- writeHandshakeMsg aliceIX noiseIXI1 sampleHSPT
+  let (hsptFromAlice1, bobIX') = readHandshakeMsg bobIX aliceToBob1 noiseIXR1
+
+  (bobToAlice1, csBob1, csBob2) <- writeHandshakeMsgFinal bobIX' noiseIXR2 sampleHSPT
+  let (hsptFromBob1, csAlice1, csAlice2) = readHandshakeMsgFinal aliceIX' bobToAlice1 noiseIXI2
+
+  return $ conjoin
+    [ (decrypt csBob1 . encrypt csAlice1) pt === pt
+    , (decrypt csBob2 . encrypt csAlice2) pt === pt
+    , (decrypt csAlice1 . encrypt csBob1) pt === pt
+    , (decrypt csAlice2 . encrypt csBob2) pt === pt
+    , hsptFromAlice1 === sampleHSPT
+    , hsptFromBob1   === sampleHSPT
+    ]
+
+  where
+    encrypt cs p = fst $ encryptPayload p cs
+    decrypt cs ct = fst $ decryptPayload ct cs
+
 tests :: TestTree
 tests = testGroup "Handshakes"
   [ testProperty "Noise_NN" $ property doNN

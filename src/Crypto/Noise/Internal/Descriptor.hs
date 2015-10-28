@@ -109,9 +109,15 @@ module Crypto.Noise.Internal.Descriptor
     noiseXXR2,
     noiseXXI2,
     noiseXXI3,
-    noiseXXR3
+    noiseXXR3,
+    -- * Noise_IX
+    noiseIXI1,
+    noiseIXR1,
+    noiseIXR2,
+    noiseIXI2
   ) where
 
+import Control.Monad ((>=>))
 import Data.ByteString (ByteString, append)
 
 import Crypto.Noise.Cipher
@@ -784,3 +790,39 @@ noiseXXR3 buf = do
   rest <- tokenRS buf
   tokenDHES
   return rest
+
+--------------------------------------------------------------------------------
+-- Noise_IX
+
+noiseIXI1 :: (Cipher c, Curve d, Hash h)
+          => DescriptorIO c d h ByteString
+noiseIXI1 = do
+  s <- tokenWS
+  e <- tokenWE
+  return $ e `append` s
+
+noiseIXR1 :: (Cipher c, Curve d, Hash h)
+          => ByteString
+          -> Descriptor c d h ByteString
+noiseIXR1 = tokenRS >=> tokenRE
+
+noiseIXR2 :: (Cipher c, Curve d, Hash h)
+          => DescriptorIO c d h ByteString
+noiseIXR2 = do
+  e <- tokenWE
+  tokenDHEE
+  tokenDHES
+  s <- tokenWS
+  tokenDHSE
+  return $ e `append` s
+
+noiseIXI2 :: (Cipher c, Curve d, Hash h)
+          => ByteString
+          -> Descriptor c d h ByteString
+noiseIXI2 buf = do
+  rest <- tokenRE buf
+  tokenDHEE
+  tokenDHSE
+  rest' <- tokenRS rest
+  tokenDHES
+  return rest'

@@ -40,7 +40,7 @@ module Crypto.Noise.Internal.Descriptor
     noiseNER1,
     noiseNER2,
     noiseNEI2,
-     -- * Noise_KE
+    -- * Noise_KE
     noiseKEI0,
     noiseKER0,
     noiseKEI1,
@@ -167,14 +167,14 @@ noiseNKI2 buf = do
 noiseKKI0 :: (Cipher c, Curve d, Hash h)
           => Descriptor c d h ()
 noiseKKI0 = do
-  tokenPreLS
   tokenPreRS
+  tokenPreLS
 
 noiseKKR0 :: (Cipher c, Curve d, Hash h)
           => Descriptor c d h ()
 noiseKKR0 = do
-  tokenPreRS
   tokenPreLS
+  tokenPreRS
 
 noiseKKI1 :: (Cipher c, Curve d, Hash h)
           => DescriptorIO c d h ByteString
@@ -263,16 +263,16 @@ noiseNEI2 buf = do
 noiseKEI0 :: (Cipher c, Curve d, Hash h)
           => Descriptor c d h ()
 noiseKEI0 = do
-  tokenPreLS
   tokenPreRS
   tokenPreRE
+  tokenPreLS
 
 noiseKER0 :: (Cipher c, Curve d, Hash h)
           => Descriptor c d h ()
 noiseKER0 = do
-  tokenPreRS
   tokenPreLS
   tokenPreLE
+  tokenPreRS
 
 noiseKEI1 :: (Cipher c, Curve d, Hash h)
           => DescriptorIO c d h ByteString

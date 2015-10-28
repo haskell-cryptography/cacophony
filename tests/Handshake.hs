@@ -621,6 +621,53 @@ doXE pt = ioProperty $ do
     encrypt cs p = fst $ encryptPayload p cs
     decrypt cs ct = fst $ decryptPayload ct cs
 
+--------------------------------------------------------------------------------
+-- Noise_IE
+
+hsnIE :: ScrubbedBytes
+hsnIE = makeHSN "Noise_IE"
+
+doIE :: Plaintext -> Property
+doIE pt = ioProperty $ do
+  aliceStaticKey@(_, aliceStaticPK) <- curveGenKey :: IO (KeyPair Curve25519)
+  bobStaticKey@(_, bobStaticPK) <- curveGenKey :: IO (KeyPair Curve25519)
+  bobEphemeralKey@(_, bobEphemeralPK) <- curveGenKey :: IO (KeyPair Curve25519)
+
+  let aliceIE = handshakeState
+                hsnIE
+                (Just aliceStaticKey)
+                Nothing
+                (Just bobStaticPK)
+                (Just bobEphemeralPK)
+                (Just noiseIEI0) :: HandshakeState ChaChaPoly1305 Curve25519 SHA256
+
+      bobIE = handshakeState
+              hsnIE
+              (Just bobStaticKey)
+              (Just bobEphemeralKey)
+              (Just aliceStaticPK)
+              Nothing
+              (Just noiseIER0) :: HandshakeState ChaChaPoly1305 Curve25519 SHA256
+
+  (aliceToBob1, aliceIE') <- writeHandshakeMsg aliceIE noiseIEI1 sampleHSPT
+  let (hsptFromAlice1, bobIE') = readHandshakeMsg bobIE aliceToBob1 noiseIER1
+
+  (bobToAlice1, csBob1, csBob2) <- writeHandshakeMsgFinal bobIE' noiseIER2 sampleHSPT
+  let (hsptFromBob1, csAlice1, csAlice2) = readHandshakeMsgFinal aliceIE' bobToAlice1 noiseIEI2
+
+  return $ conjoin
+    [ (decrypt csBob1 . encrypt csAlice1) pt === pt
+    , (decrypt csBob2 . encrypt csAlice2) pt === pt
+    , (decrypt csAlice1 . encrypt csBob1) pt === pt
+    , (decrypt csAlice2 . encrypt csBob2) pt === pt
+    , hsptFromAlice1 === sampleHSPT
+    , hsptFromBob1   === sampleHSPT
+    ]
+
+  where
+    encrypt cs p = fst $ encryptPayload p cs
+    decrypt cs ct = fst $ decryptPayload ct cs
+
 tests :: TestTree
 tests = testGroup "Handshakes"
   [ testProperty "Noise_NN" $ property doNN
@@ -636,4 +683,5 @@ tests = testGroup "Handshakes"
   , testProperty "Noise_XK" $ property doXK
   , testProperty "Noise_IK" $ property doIK
   , testProperty "Noise_XE" $ property doXE
+  , testProperty "Noise_IE" $ property doIE
   ]

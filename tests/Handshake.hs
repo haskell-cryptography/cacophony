@@ -474,6 +474,56 @@ doIN pt = ioProperty $ do
     encrypt cs p = fst $ encryptPayload p cs
     decrypt cs ct = fst $ decryptPayload ct cs
 
+--------------------------------------------------------------------------------
+-- Noise_XK
+
+hsnXK :: ScrubbedBytes
+hsnXK = makeHSN "Noise_XK"
+
+doXK :: Plaintext -> Property
+doXK pt = ioProperty $ do
+  aliceStaticKey <- curveGenKey :: IO (KeyPair Curve25519)
+  bobStaticKey@(_, bobStaticPK) <- curveGenKey :: IO (KeyPair Curve25519)
+
+  let aliceXK = handshakeState
+                hsnXK
+                (Just aliceStaticKey)
+                Nothing
+                (Just bobStaticPK)
+                Nothing
+                (Just noiseXKI0) :: HandshakeState ChaChaPoly1305 Curve25519 SHA256
+
+      bobXK = handshakeState
+              hsnXK
+              (Just bobStaticKey)
+              Nothing
+              Nothing
+              Nothing
+              (Just noiseXKR0) :: HandshakeState ChaChaPoly1305 Curve25519 SHA256
+
+  (aliceToBob1, aliceXK') <- writeHandshakeMsg aliceXK noiseXKI1 sampleHSPT
+  let (hsptFromAlice1, bobXK') = readHandshakeMsg bobXK aliceToBob1 noiseXKR1
+
+  (bobToAlice1, bobXK'') <- writeHandshakeMsg bobXK' noiseXKR2 sampleHSPT
+  let (hsptFromBob1, aliceXK'') = readHandshakeMsg aliceXK' bobToAlice1 noiseXKI2
+
+  (aliceToBob2, csAlice1, csAlice2) <- writeHandshakeMsgFinal aliceXK'' noiseXKI3 sampleHSPT
+  let (hsptFromBob2, csBob1, csBob2) = readHandshakeMsgFinal bobXK'' aliceToBob2 noiseXKR3
+
+  return $ conjoin
+    [ (decrypt csBob1 . encrypt csAlice1) pt === pt
+    , (decrypt csBob2 . encrypt csAlice2) pt === pt
+    , (decrypt csAlice1 . encrypt csBob1) pt === pt
+    , (decrypt csAlice2 . encrypt csBob2) pt === pt
+    , hsptFromAlice1 === sampleHSPT
+    , hsptFromBob1   === sampleHSPT
+    , hsptFromBob2   === sampleHSPT
+    ]
+
+  where
+    encrypt cs p = fst $ encryptPayload p cs
+    decrypt cs ct = fst $ decryptPayload ct cs
+
 tests :: TestTree
 tests = testGroup "Handshakes"
   [ testProperty "Noise_NN" $ property doNN
@@ -486,4 +536,5 @@ tests = testGroup "Handshakes"
   , testProperty "Noise_KX" $ property doKX
   , testProperty "Noise_XN" $ property doXN
   , testProperty "Noise_IN" $ property doIN
+  , testProperty "Noise_XK" $ property doXK
   ]

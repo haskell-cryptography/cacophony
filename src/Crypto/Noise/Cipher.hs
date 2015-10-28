@@ -19,21 +19,14 @@ import Crypto.Noise.Types
 class Cipher c where
   data Ciphertext   c :: *
   data SymmetricKey c :: *
-  data ChainingKey  c :: *
   data Nonce        c :: *
-  data Digest       c :: *
 
-  cipherName        :: c -> ScrubbedBytes
+  cipherName        :: proxy c -> ScrubbedBytes
   cipherEncrypt     :: SymmetricKey c -> Nonce c -> AssocData -> Plaintext -> Ciphertext c
   cipherDecrypt     :: SymmetricKey c -> Nonce c -> AssocData -> Ciphertext c -> Maybe Plaintext
   cipherZeroNonce   :: Nonce c
   cipherIncNonce    :: Nonce c -> Nonce c
-  cipherHash        :: ScrubbedBytes -> Digest c
-  cipherHKDF        :: ChainingKey c -> ScrubbedBytes -> (ChainingKey c, SymmetricKey c)
-  cipherHashToSK    :: Digest c -> SymmetricKey c
-  cipherHashToCK    :: Digest c -> ChainingKey c
-  cipherChainToSym  :: ChainingKey c -> SymmetricKey c
-  cipherHashToBytes :: Digest c -> ScrubbedBytes
+  cipherBytesToSym  :: ScrubbedBytes -> SymmetricKey c
   cipherTextToBytes :: Ciphertext c -> ScrubbedBytes
   cipherBytesToText :: ScrubbedBytes -> Ciphertext c
 

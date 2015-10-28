@@ -24,8 +24,8 @@ instance Curve Curve25519 where
   newtype PublicKey Curve25519 = PK25519 C.PublicKey
   newtype SecretKey Curve25519 = SK25519 C.SecretKey
 
-  curveName _     = convert ("25519" :: ByteString)
-  curveLen _      = 32
+  curveName   _   = convert ("25519" :: ByteString)
+  curveLength _   = 32
   curveGenKey     = genKey
   curveDH         = dh
   curvePubToBytes = pubToBytes

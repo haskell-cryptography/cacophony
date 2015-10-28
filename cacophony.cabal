@@ -51,6 +51,8 @@ library
     Crypto.Noise.Curve
     Crypto.Noise.Curve.Curve25519
     Crypto.Noise.Handshake
+    Crypto.Noise.Hash
+    Crypto.Noise.Hash.SHA256
     Crypto.Noise.Internal.CipherState
     Crypto.Noise.Internal.SymmetricHandshakeState
     Crypto.Noise.Internal.HandshakeState

@@ -19,8 +19,8 @@ class Curve c where
   data PublicKey c :: *
   data SecretKey c :: *
 
-  curveName       :: c -> ScrubbedBytes
-  curveLen        :: c -> Int
+  curveName       :: proxy c -> ScrubbedBytes
+  curveLength     :: proxy c -> Int
   curveGenKey     :: IO (KeyPair c)
   curveDH         :: SecretKey c -> PublicKey c -> ScrubbedBytes
   curvePubToBytes :: PublicKey c -> ScrubbedBytes

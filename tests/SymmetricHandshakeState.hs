@@ -10,10 +10,11 @@ import Data.ByteString (ByteString)
 
 import Crypto.Noise.Cipher
 import Crypto.Noise.Cipher.ChaChaPoly1305
+import Crypto.Noise.Hash.SHA256
 import Crypto.Noise.Internal.SymmetricHandshakeState
 import Crypto.Noise.Types
 
-shs :: SymmetricHandshakeState ChaChaPoly1305
+shs :: SymmetricHandshakeState ChaChaPoly1305 SHA256
 shs = symmetricHandshake $ convert ("handshake name" :: ByteString)
 
 roundTripProp :: Plaintext -> Property

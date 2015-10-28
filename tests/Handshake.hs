@@ -4,25 +4,38 @@ module Handshake where
 import Imports
 import Instances()
 
+import Data.Proxy
+
 import Crypto.Noise.Handshake
 import Crypto.Noise.Cipher
 import Crypto.Noise.Cipher.ChaChaPoly1305
 import Crypto.Noise.Curve
 import Crypto.Noise.Curve.Curve25519
+import Crypto.Noise.Hash
+import Crypto.Noise.Hash.SHA256
 import Crypto.Noise.Types
 
 import Data.ByteString (ByteString)
+import qualified Data.ByteArray as BA (concat)
 
 sampleHSPT :: Plaintext
 sampleHSPT = Plaintext $ convert ("cacophony" :: ByteString)
+
+makeHSN :: ByteString -> ScrubbedBytes
+makeHSN hs = BA.concat [convert hs, u, a, u, b, u, c]
+  where
+    a = curveName  (Proxy :: Proxy Curve25519)
+    b = cipherName (Proxy :: Proxy ChaChaPoly1305)
+    c = hashName   (Proxy :: Proxy SHA256)
+    u = convert    ("_" :: ByteString)
 
 --------------------------------------------------------------------------------
 -- Noise_NN
 
 hsnNN :: ScrubbedBytes
-hsnNN = convert ("Noise_NN_25519_ChaChaPoly" :: ByteString)
+hsnNN = makeHSN "Noise_NN"
 
-aliceNN, bobNN :: HandshakeState ChaChaPoly1305 Curve25519
+aliceNN, bobNN :: HandshakeState ChaChaPoly1305 Curve25519 SHA256
 aliceNN = handshakeState hsnNN Nothing Nothing Nothing Nothing Nothing
 bobNN = handshakeState hsnNN Nothing Nothing Nothing Nothing Nothing
 
@@ -51,7 +64,7 @@ doNN pt = ioProperty $ do
 -- Noise_SN
 
 hsnSN :: ScrubbedBytes
-hsnSN = convert ("Noise_SN_25519_ChaChaPoly" :: ByteString)
+hsnSN = makeHSN "Noise_SN"
 
 doSN :: Plaintext -> Property
 doSN pt = ioProperty $ do
@@ -63,7 +76,7 @@ doSN pt = ioProperty $ do
                 Nothing
                 Nothing
                 Nothing
-                (Just noiseSNI0) :: HandshakeState ChaChaPoly1305 Curve25519
+                (Just noiseSNI0) :: HandshakeState ChaChaPoly1305 Curve25519 SHA256
 
       bobSN = handshakeState
               hsnSN
@@ -71,7 +84,7 @@ doSN pt = ioProperty $ do
               Nothing
               (Just aliceStaticPK)
               Nothing
-              (Just noiseSNR0) :: HandshakeState ChaChaPoly1305 Curve25519
+              (Just noiseSNR0) :: HandshakeState ChaChaPoly1305 Curve25519 SHA256
 
   (aliceToBob1, aliceSN') <- writeHandshakeMsg aliceSN noiseSNI1 sampleHSPT
   let (hsptFromAlice1, bobSN') = readHandshakeMsg bobSN aliceToBob1 noiseSNR1

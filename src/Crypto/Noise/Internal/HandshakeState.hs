@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings, FlexibleInstances,
     GeneralizedNewtypeDeriving, TemplateHaskell,
-    RankNTypes, FlexibleContexts #-}
+    RankNTypes, FlexibleContexts, ScopedTypeVariables #-}
 ----------------------------------------------------------------
 -- |
 -- Module      : Crypto.Noise.Internal.HandshakeState
@@ -32,15 +32,17 @@ import Control.Monad.State
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B (append, splitAt)
 import Data.Maybe (fromMaybe)
+import Data.Proxy
 
 import Crypto.Noise.Cipher
 import Crypto.Noise.Curve
+import Crypto.Noise.Hash
 import Crypto.Noise.Internal.CipherState
 import Crypto.Noise.Internal.SymmetricHandshakeState
 import Crypto.Noise.Types
 
-data HandshakeState c d =
-  HandshakeState { _hssSymmetricHandshake :: SymmetricHandshakeState c
+data HandshakeState c d h =
+  HandshakeState { _hssSymmetricHandshake :: SymmetricHandshakeState c h
                  , _hssLocalStaticKey     :: Maybe (KeyPair d)
                  , _hssLocalEphemeralKey  :: Maybe (KeyPair d)
                  , _hssRemoteStaticKey    :: Maybe (PublicKey d)
@@ -49,14 +51,14 @@ data HandshakeState c d =
 
 $(makeLenses ''HandshakeState)
 
-newtype DescriptorT c d m a = DescriptorT { unD :: StateT (HandshakeState c d) m a }
-  deriving (Functor, Applicative, Monad, MonadIO, MonadState(HandshakeState c d))
+newtype DescriptorT c d h m a = DescriptorT { unD :: StateT (HandshakeState c d h) m a }
+  deriving (Functor, Applicative, Monad, MonadIO, MonadState(HandshakeState c d h))
 
-type Descriptor c d a = DescriptorT c d Identity a
+type Descriptor c d h a = DescriptorT c d h Identity a
 
-type DescriptorIO c d a = DescriptorT c d IO a
+type DescriptorIO c d h a = DescriptorT c d h IO a
 
-runDescriptorT :: Monad m => DescriptorT c d m a -> HandshakeState c d -> m (a, HandshakeState c d)
+runDescriptorT :: Monad m => DescriptorT c d h m a -> HandshakeState c d h -> m (a, HandshakeState c d h)
 runDescriptorT = runStateT . unD
 
 class Monad m => MonadHandshake m where
@@ -73,7 +75,7 @@ class Monad m => MonadHandshake m where
   tokenDHSE :: m ()
   tokenDHSS :: m ()
 
-instance (Monad m, Cipher c, Curve d) => MonadHandshake (DescriptorT c d m) where
+instance (Monad m, Cipher c, Curve d, Hash h) => MonadHandshake (DescriptorT c d h m) where
   tokenPreWS = tokenPreWX hssLocalStaticKey
 
   tokenPreRS = tokenPreRX hssRemoteStaticKey
@@ -139,24 +141,24 @@ instance (Monad m, Cipher c, Curve d) => MonadHandshake (DescriptorT c d m) wher
         shs'     = mixKey dh shs
     put $ hs & hssSymmetricHandshake .~ shs'
 
-getLocalStaticKey :: (Cipher c, Curve d) => HandshakeState c d -> KeyPair d
+getLocalStaticKey :: (Cipher c, Curve d) => HandshakeState c d h -> KeyPair d
 getLocalStaticKey hs = fromMaybe (error "local static key not set")
                                  (hs ^. hssLocalStaticKey)
 
-getLocalEphemeralKey :: (Cipher c, Curve d) => HandshakeState c d -> KeyPair d
+getLocalEphemeralKey :: (Cipher c, Curve d) => HandshakeState c d h -> KeyPair d
 getLocalEphemeralKey hs = fromMaybe (error "local ephemeral key not set")
                                     (hs ^. hssLocalEphemeralKey)
 
-getRemoteStaticKey :: (Cipher c, Curve d) => HandshakeState c d -> PublicKey d
+getRemoteStaticKey :: (Cipher c, Curve d) => HandshakeState c d h -> PublicKey d
 getRemoteStaticKey hs = fromMaybe (error "remote static key not set")
                                   (hs ^. hssRemoteStaticKey)
 
-getRemoteEphemeralKey :: (Cipher c, Curve d) => HandshakeState c d -> PublicKey d
+getRemoteEphemeralKey :: (Cipher c, Curve d) => HandshakeState c d h -> PublicKey d
 getRemoteEphemeralKey hs = fromMaybe (error "remote ephemeral key not set")
                                      (hs ^. hssRemoteEphemeralKey)
 
-tokenPreWX :: (MonadState (HandshakeState c d) m, Cipher c, Curve d)
-           => Lens' (HandshakeState c d) (Maybe (KeyPair d))
+tokenPreWX :: (MonadState (HandshakeState c d h) m, Cipher c, Curve d, Hash h)
+           => Lens' (HandshakeState c d h) (Maybe (KeyPair d))
            -> m ()
 tokenPreWX keyToView = do
   hs <- get
@@ -165,8 +167,8 @@ tokenPreWX keyToView = do
       shs'    = mixHash (curvePubToBytes pk) shs
   put $ hs & hssSymmetricHandshake .~ shs'
 
-tokenPreRX :: (MonadState (HandshakeState c d) m, Cipher c, Curve d)
-           => Lens' (HandshakeState c d) (Maybe (PublicKey d))
+tokenPreRX :: (MonadState (HandshakeState c d h) m, Cipher c, Curve d, Hash h)
+           => Lens' (HandshakeState c d h) (Maybe (PublicKey d))
            -> m ()
 tokenPreRX keyToView = do
   hs <- get
@@ -175,9 +177,9 @@ tokenPreRX keyToView = do
       shs' = mixHash (curvePubToBytes pk) shs
   put $ hs & hssSymmetricHandshake .~ shs'
 
-tokenRX :: (MonadState (HandshakeState c d) m, Cipher c, Curve d)
+tokenRX :: forall c d h m. (MonadState (HandshakeState c d h) m, Cipher c, Curve d, Hash h)
        => ByteString
-       -> Lens' (HandshakeState c d) (Maybe (PublicKey d))
+       -> Lens' (HandshakeState c d h) (Maybe (PublicKey d))
        -> m ByteString
 tokenRX buf keyToUpdate = do
   hs <- get
@@ -193,39 +195,40 @@ tokenRX buf keyToUpdate = do
   return rest
 
   where
+    len           = curveLength (Proxy :: Proxy d)
     d hk
-      | hk        = 32 + 16
-      | otherwise = 32 -- this should call curveLen!
+      | hk        = len + 16
+      | otherwise = len
 
-handshakeState :: (Cipher c, Curve d)
+handshakeState :: (Cipher c, Curve d, Hash h)
                => ScrubbedBytes
                -> Maybe (KeyPair d)
                -> Maybe (KeyPair d)
                -> Maybe (PublicKey d)
                -> Maybe (PublicKey d)
-               -> Maybe (Descriptor c d ())
-               -> HandshakeState c d
+               -> Maybe (Descriptor c d h ())
+               -> HandshakeState c d h
 handshakeState hn ls le rs re = maybe hs hs'
   where
     hs = HandshakeState (symmetricHandshake hn) ls le rs re
     hs' desc = snd . runIdentity $ runDescriptorT desc hs
 
-writeHandshakeMsg :: (Cipher c, Curve d)
-                      => HandshakeState c d
-                      -> DescriptorIO c d ByteString
+writeHandshakeMsg :: (Cipher c, Curve d, Hash h)
+                      => HandshakeState c d h
+                      -> DescriptorIO c d h ByteString
                       -> Plaintext
-                      -> IO (ByteString, HandshakeState c d)
+                      -> IO (ByteString, HandshakeState c d h)
 writeHandshakeMsg hs desc payload = do
   (d, hs') <- runDescriptorT desc hs
   let (ep, shs') = encryptAndHash payload $ hs' ^. hssSymmetricHandshake
       hs''       = hs' & hssSymmetricHandshake .~ shs'
   return (d `B.append` convert ep, hs'')
 
-readHandshakeMsg :: (Cipher c, Curve d)
-                     => HandshakeState c d
+readHandshakeMsg :: (Cipher c, Curve d, Hash h)
+                     => HandshakeState c d h
                      -> ByteString
-                     -> (ByteString -> Descriptor c d ByteString)
-                     -> (Plaintext, HandshakeState c d)
+                     -> (ByteString -> Descriptor c d h ByteString)
+                     -> (Plaintext, HandshakeState c d h)
 readHandshakeMsg hs buf desc = (dp, hs'')
   where
     (d, hs')   = runIdentity $ runDescriptorT (desc buf) hs
@@ -233,9 +236,9 @@ readHandshakeMsg hs buf desc = (dp, hs'')
                  $ hs' ^. hssSymmetricHandshake
     hs''       = hs' & hssSymmetricHandshake .~ shs'
 
-writeHandshakeMsgFinal :: (Cipher c, Curve d)
-                       => HandshakeState c d
-                       -> DescriptorIO c d ByteString
+writeHandshakeMsgFinal :: (Cipher c, Curve d, Hash h)
+                       => HandshakeState c d h
+                       -> DescriptorIO c d h ByteString
                        -> Plaintext
                        -> IO (ByteString, CipherState c, CipherState c)
 writeHandshakeMsgFinal hs desc payload = do
@@ -243,10 +246,10 @@ writeHandshakeMsgFinal hs desc payload = do
   let (cs1, cs2) = split $ hs' ^. hssSymmetricHandshake
   return (d, cs1, cs2)
 
-readHandshakeMsgFinal :: (Cipher c, Curve d)
-                      => HandshakeState c d
+readHandshakeMsgFinal :: (Cipher c, Curve d, Hash h)
+                      => HandshakeState c d h
                       -> ByteString
-                      -> (ByteString -> Descriptor c d ByteString)
+                      -> (ByteString -> Descriptor c d h ByteString)
                       -> (Plaintext, CipherState c, CipherState c)
 readHandshakeMsgFinal hs buf desc = (pt, cs1, cs2)
   where

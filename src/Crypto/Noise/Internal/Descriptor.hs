@@ -51,8 +51,15 @@ module Crypto.Noise.Internal.Descriptor
     noiseNXI1,
     noiseNXR1,
     noiseNXR2,
-    noiseNXI2
-   ) where
+    noiseNXI2,
+    -- * Noise_KX
+    noiseKXI0,
+    noiseKXR0,
+    noiseKXI1,
+    noiseKXR1,
+    noiseKXR2,
+    noiseKXI2
+    ) where
 
 import Data.ByteString (ByteString, append)
 
@@ -342,6 +349,47 @@ noiseNXI2 :: (Cipher c, Curve d, Hash h)
 noiseNXI2 buf = do
   rest <- tokenRE buf
   tokenDHEE
+  rest' <- tokenRS rest
+  tokenDHES
+  return rest'
+
+--------------------------------------------------------------------------------
+-- Noise_KX
+
+noiseKXI0 :: (Cipher c, Curve d, Hash h)
+          => Descriptor c d h ()
+noiseKXI0 = tokenPreLS
+
+noiseKXR0 :: (Cipher c, Curve d, Hash h)
+          => Descriptor c d h ()
+noiseKXR0 = tokenPreRS
+
+noiseKXI1 :: (Cipher c, Curve d, Hash h)
+          => DescriptorIO c d h ByteString
+noiseKXI1 = tokenWE
+
+noiseKXR1 :: (Cipher c, Curve d, Hash h)
+          => ByteString
+          -> Descriptor c d h ByteString
+noiseKXR1 = tokenRE
+
+noiseKXR2 :: (Cipher c, Curve d, Hash h)
+          => DescriptorIO c d h ByteString
+noiseKXR2 = do
+  e <- tokenWE
+  tokenDHEE
+  tokenDHES
+  s <- tokenWS
+  tokenDHSE
+  return $ e `append` s
+
+noiseKXI2 :: (Cipher c, Curve d, Hash h)
+          => ByteString
+          -> Descriptor c d h ByteString
+noiseKXI2 buf = do
+  rest <- tokenRE buf
+  tokenDHEE
+  tokenDHSE
   rest' <- tokenRS rest
   tokenDHES
   return rest'

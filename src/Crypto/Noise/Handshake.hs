@@ -8,6 +8,8 @@
 module Crypto.Noise.Handshake
   ( -- * Types
     HandshakeState,
+    Descriptor,
+    DescriptorIO,
     -- * Functions
     getRemoteStaticKey,
     handshakeState,

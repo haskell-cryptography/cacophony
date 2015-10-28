@@ -62,9 +62,9 @@ runDescriptorT :: Monad m => DescriptorT c d h m a -> HandshakeState c d h -> m 
 runDescriptorT = runStateT . unD
 
 class Monad m => MonadHandshake m where
-  tokenPreWS :: m ()
+  tokenPreLS :: m ()
   tokenPreRS :: m ()
-  tokenPreWE :: m ()
+  tokenPreLE :: m ()
   tokenPreRE :: m ()
   tokenRE   :: ByteString -> m ByteString
   tokenRS   :: ByteString -> m ByteString
@@ -76,11 +76,11 @@ class Monad m => MonadHandshake m where
   tokenDHSS :: m ()
 
 instance (Monad m, Cipher c, Curve d, Hash h) => MonadHandshake (DescriptorT c d h m) where
-  tokenPreWS = tokenPreWX hssLocalStaticKey
+  tokenPreLS = tokenPreLX hssLocalStaticKey
 
   tokenPreRS = tokenPreRX hssRemoteStaticKey
 
-  tokenPreWE = tokenPreWX hssLocalEphemeralKey
+  tokenPreLE = tokenPreLX hssLocalEphemeralKey
 
   tokenPreRE = tokenPreRX hssRemoteEphemeralKey
 
@@ -157,13 +157,13 @@ getRemoteEphemeralKey :: (Cipher c, Curve d) => HandshakeState c d h -> PublicKe
 getRemoteEphemeralKey hs = fromMaybe (error "remote ephemeral key not set")
                                      (hs ^. hssRemoteEphemeralKey)
 
-tokenPreWX :: (MonadState (HandshakeState c d h) m, Cipher c, Curve d, Hash h)
+tokenPreLX :: (MonadState (HandshakeState c d h) m, Cipher c, Curve d, Hash h)
            => Lens' (HandshakeState c d h) (Maybe (KeyPair d))
            -> m ()
-tokenPreWX keyToView = do
+tokenPreLX keyToView = do
   hs <- get
   let shs     = hs ^. hssSymmetricHandshake
-      (_, pk) = fromMaybe (error "tokenPreIX: local key not set") (hs ^. keyToView)
+      (_, pk) = fromMaybe (error "tokenPreLX: local key not set") (hs ^. keyToView)
       shs'    = mixHash (curvePubToBytes pk) shs
   put $ hs & hssSymmetricHandshake .~ shs'
 

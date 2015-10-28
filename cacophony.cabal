@@ -1,6 +1,6 @@
 name:          cacophony
 version:       0.1.0.0
-description:   A library implementing the Noise protocol.
+synopsis:      A library implementing the Noise protocol.
 license:       PublicDomain
 license-file:  LICENSE
 author:        John Galt
@@ -11,6 +11,9 @@ category:      Cryptography
 build-type:    Simple
 cabal-version: >=1.10
 tested-with:   GHC == 7.10.1, GHC == 7.10.2
+description:
+  This library implements the <https://github.com/trevp/noise/blob/master/noise.md Noise>
+  protocol.
 
 extra-source-files:
   .travis.yml

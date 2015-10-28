@@ -9,6 +9,7 @@ module Crypto.Noise.Handshake
   ( -- * Types
     HandshakeState,
     -- * Functions
+    getRemoteStaticKey,
     handshakeState,
     writeHandshakeMsg,
     readHandshakeMsg,

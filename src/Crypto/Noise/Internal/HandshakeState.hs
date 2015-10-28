@@ -17,6 +17,7 @@ module Crypto.Noise.Internal.HandshakeState
     DescriptorIO,
     -- * Functions
     runDescriptorT,
+    getRemoteStaticKey,
     handshakeState,
     writeHandshakeMsg,
     readHandshakeMsg,
@@ -141,19 +142,19 @@ instance (Monad m, Cipher c, Curve d, Hash h) => MonadHandshake (DescriptorT c d
         shs'     = mixKey dh shs
     put $ hs & hssSymmetricHandshake .~ shs'
 
-getLocalStaticKey :: (Cipher c, Curve d) => HandshakeState c d h -> KeyPair d
+getLocalStaticKey :: Curve d => HandshakeState c d h -> KeyPair d
 getLocalStaticKey hs = fromMaybe (error "local static key not set")
                                  (hs ^. hssLocalStaticKey)
 
-getLocalEphemeralKey :: (Cipher c, Curve d) => HandshakeState c d h -> KeyPair d
+getLocalEphemeralKey :: Curve d => HandshakeState c d h -> KeyPair d
 getLocalEphemeralKey hs = fromMaybe (error "local ephemeral key not set")
                                     (hs ^. hssLocalEphemeralKey)
 
-getRemoteStaticKey :: (Cipher c, Curve d) => HandshakeState c d h -> PublicKey d
+getRemoteStaticKey :: Curve d => HandshakeState c d h -> PublicKey d
 getRemoteStaticKey hs = fromMaybe (error "remote static key not set")
                                   (hs ^. hssRemoteStaticKey)
 
-getRemoteEphemeralKey :: (Cipher c, Curve d) => HandshakeState c d h -> PublicKey d
+getRemoteEphemeralKey :: Curve d => HandshakeState c d h -> PublicKey d
 getRemoteEphemeralKey hs = fromMaybe (error "remote ephemeral key not set")
                                      (hs ^. hssRemoteEphemeralKey)
 

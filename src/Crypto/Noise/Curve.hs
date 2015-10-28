@@ -15,15 +15,38 @@ module Crypto.Noise.Curve
 
 import Data.ByteArray (ScrubbedBytes)
 
+-- | Typeclass for EC curves.
 class Curve c where
+  -- | Represents a public key.
   data PublicKey c :: *
+
+  -- | Represents a secret key.
   data SecretKey c :: *
 
-  curveName       :: proxy c -> ScrubbedBytes
-  curveLength     :: proxy c -> Int
-  curveGenKey     :: IO (KeyPair c)
-  curveDH         :: SecretKey c -> PublicKey c -> ScrubbedBytes
-  curvePubToBytes :: PublicKey c -> ScrubbedBytes
-  curveBytesToPub :: ScrubbedBytes -> PublicKey c
+  -- | Returns the name of the curve. This is used when generating
+  --   the handshake name.
+  curveName        :: proxy c -> ScrubbedBytes
 
+  -- | Returns the length of public keys for this Curve in bytes.
+  curveLength      :: proxy c -> Int
+
+  -- | Generates a KeyPair.
+  curveGenKey      :: IO (KeyPair c)
+
+  -- | Performs ECDH.
+  curveDH          :: SecretKey c -> PublicKey c -> ScrubbedBytes
+
+  -- | Exports a PublicKey.
+  curvePubToBytes  :: PublicKey c -> ScrubbedBytes
+
+  -- | Imports a PublicKey.
+  curveBytesToPub  :: ScrubbedBytes -> PublicKey c
+
+  -- | Exports a SecretKey.
+  curveSecToBytes  :: SecretKey c -> ScrubbedBytes
+
+  -- | Imports a SecretKey.
+  curveBytesToPair :: ScrubbedBytes -> KeyPair c
+
+-- | Represents a private/public EC keypair for a given Curve.
 type KeyPair c = (SecretKey c, PublicKey c)

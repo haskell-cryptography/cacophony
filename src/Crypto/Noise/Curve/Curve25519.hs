@@ -24,12 +24,14 @@ instance Curve Curve25519 where
   newtype PublicKey Curve25519 = PK25519 C.PublicKey
   newtype SecretKey Curve25519 = SK25519 C.SecretKey
 
-  curveName   _   = convert ("25519" :: ByteString)
-  curveLength _   = 32
-  curveGenKey     = genKey
-  curveDH         = dh
-  curvePubToBytes = pubToBytes
-  curveBytesToPub = bytesToPub
+  curveName   _    = convert ("25519" :: ByteString)
+  curveLength _    = 32
+  curveGenKey      = genKey
+  curveDH          = dh
+  curvePubToBytes  = pubToBytes
+  curveBytesToPub  = bytesToPub
+  curveSecToBytes  = secToBytes
+  curveBytesToPair = bytesToPair
 
 genKey :: IO (KeyPair Curve25519)
 genKey = do
@@ -46,3 +48,12 @@ pubToBytes (PK25519 pk) = convert pk
 
 bytesToPub :: ScrubbedBytes -> PublicKey Curve25519
 bytesToPub b = PK25519 . either error id $ C.publicKey b
+
+secToBytes :: SecretKey Curve25519 -> ScrubbedBytes
+secToBytes (SK25519 sk) = convert sk
+
+bytesToPair :: ScrubbedBytes -> KeyPair Curve25519
+bytesToPair bs = (SK25519 sk, PK25519 pk)
+  where
+    sk = either error id $ C.secretKey bs
+    pk = C.toPublic sk

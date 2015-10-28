@@ -668,6 +668,56 @@ doIE pt = ioProperty $ do
     encrypt cs p = fst $ encryptPayload p cs
     decrypt cs ct = fst $ decryptPayload ct cs
 
+--------------------------------------------------------------------------------
+-- Noise_XX
+
+hsnXX :: ScrubbedBytes
+hsnXX = makeHSN "Noise_XX"
+
+doXX :: Plaintext -> Property
+doXX pt = ioProperty $ do
+  aliceStaticKey <- curveGenKey :: IO (KeyPair Curve25519)
+  bobStaticKey <- curveGenKey :: IO (KeyPair Curve25519)
+
+  let aliceXX = handshakeState
+                hsnXX
+                (Just aliceStaticKey)
+                Nothing
+                Nothing
+                Nothing
+                Nothing :: HandshakeState ChaChaPoly1305 Curve25519 SHA256
+
+      bobXX = handshakeState
+              hsnXX
+              (Just bobStaticKey)
+              Nothing
+              Nothing
+              Nothing
+              Nothing :: HandshakeState ChaChaPoly1305 Curve25519 SHA256
+
+  (aliceToBob1, aliceXX') <- writeHandshakeMsg aliceXX noiseXXI1 sampleHSPT
+  let (hsptFromAlice1, bobXX') = readHandshakeMsg bobXX aliceToBob1 noiseXXR1
+
+  (bobToAlice1, bobXX'') <- writeHandshakeMsg bobXX' noiseXXR2 sampleHSPT
+  let (hsptFromBob1, aliceXX'') = readHandshakeMsg aliceXX' bobToAlice1 noiseXXI2
+
+  (aliceToBob2, csAlice1, csAlice2) <- writeHandshakeMsgFinal aliceXX'' noiseXXI3 sampleHSPT
+  let (hsptFromBob2, csBob1, csBob2) = readHandshakeMsgFinal bobXX'' aliceToBob2 noiseXXR3
+
+  return $ conjoin
+    [ (decrypt csBob1 . encrypt csAlice1) pt === pt
+    , (decrypt csBob2 . encrypt csAlice2) pt === pt
+    , (decrypt csAlice1 . encrypt csBob1) pt === pt
+    , (decrypt csAlice2 . encrypt csBob2) pt === pt
+    , hsptFromAlice1 === sampleHSPT
+    , hsptFromBob1   === sampleHSPT
+    , hsptFromBob2   === sampleHSPT
+    ]
+
+  where
+    encrypt cs p = fst $ encryptPayload p cs
+    decrypt cs ct = fst $ decryptPayload ct cs
+
 tests :: TestTree
 tests = testGroup "Handshakes"
   [ testProperty "Noise_NN" $ property doNN
@@ -684,4 +734,5 @@ tests = testGroup "Handshakes"
   , testProperty "Noise_IK" $ property doIK
   , testProperty "Noise_XE" $ property doXE
   , testProperty "Noise_IE" $ property doIE
+  , testProperty "Noise_XX" $ property doXX
   ]

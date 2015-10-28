@@ -42,6 +42,7 @@ import Crypto.Noise.Internal.CipherState
 import Crypto.Noise.Internal.SymmetricHandshakeState
 import Crypto.Noise.Types
 
+-- | Contains the state of a handshake.
 data HandshakeState c d h =
   HandshakeState { _hssSymmetricHandshake :: SymmetricHandshakeState c h
                  , _hssLocalStaticKey     :: Maybe (KeyPair d)
@@ -55,8 +56,13 @@ $(makeLenses ''HandshakeState)
 newtype DescriptorT c d h m a = DescriptorT { unD :: StateT (HandshakeState c d h) m a }
   deriving (Functor, Applicative, Monad, MonadIO, MonadState(HandshakeState c d h))
 
+-- | Represents a series of operations that can be performed on a Noise
+--   message.
 type Descriptor c d h a = DescriptorT c d h Identity a
 
+-- | Represents a series of operations that will result in a Noise message.
+--   This must be done in IO to facilitate the generation of ephemeral
+--   keys.
 type DescriptorIO c d h a = DescriptorT c d h IO a
 
 runDescriptorT :: Monad m => DescriptorT c d h m a -> HandshakeState c d h -> m (a, HandshakeState c d h)
@@ -150,6 +156,9 @@ getLocalEphemeralKey :: Curve d => HandshakeState c d h -> KeyPair d
 getLocalEphemeralKey hs = fromMaybe (error "local ephemeral key not set")
                                     (hs ^. hssLocalEphemeralKey)
 
+-- | Returns the remote party's public static key. This is useful when
+--   the static key has been transmitted to you and you want to save it for
+--   future use.
 getRemoteStaticKey :: Curve d => HandshakeState c d h -> PublicKey d
 getRemoteStaticKey hs = fromMaybe (error "remote static key not set")
                                   (hs ^. hssRemoteStaticKey)
@@ -201,23 +210,39 @@ tokenRX buf keyToUpdate = do
       | hk        = len + 16
       | otherwise = len
 
+-- | Constructs a HandshakeState. The keys you need to provide are
+--   dependent on the type of handshake you are using. If you fail to
+--   provide a key that your handshake type depends on, you will receive an
+--   error such as "local static key not set".
 handshakeState :: (Cipher c, Curve d, Hash h)
                => ScrubbedBytes
+               -- ^ Handshake name
                -> Maybe (KeyPair d)
+               -- ^ Local static key
                -> Maybe (KeyPair d)
+               -- ^ Local ephemeral key
                -> Maybe (PublicKey d)
+               -- ^ Remote public static key
                -> Maybe (PublicKey d)
+               -- ^ Remote public ephemeral key
                -> Maybe (Descriptor c d h ())
+               -- ^ Pre-message processing descriptor
                -> HandshakeState c d h
 handshakeState hn ls le rs re = maybe hs hs'
   where
     hs = HandshakeState (symmetricHandshake hn) ls le rs re
     hs' desc = snd . runIdentity $ runDescriptorT desc hs
 
+-- | Creates a handshake message. The plaintext can be left empty if no
+--   plaintext is to be transmitted. All subsequent handshake processing
+--   must use the returned state.
 writeHandshakeMsg :: (Cipher c, Curve d, Hash h)
                       => HandshakeState c d h
+                      -- ^ The handshake state
                       -> DescriptorIO c d h ByteString
+                      -- ^ A descriptor for this particular message
                       -> Plaintext
+                      -- ^ Optional message to transmit
                       -> IO (ByteString, HandshakeState c d h)
 writeHandshakeMsg hs desc payload = do
   (d, hs') <- runDescriptorT desc hs
@@ -225,10 +250,15 @@ writeHandshakeMsg hs desc payload = do
       hs''       = hs' & hssSymmetricHandshake .~ shs'
   return (d `B.append` convert ep, hs'')
 
+-- | Reads a handshake message. All subsequent handshake processing must
+--   use the returned state.
 readHandshakeMsg :: (Cipher c, Curve d, Hash h)
                      => HandshakeState c d h
+                     -- ^ The handshake state
                      -> ByteString
+                     -- ^ The handshake message received
                      -> (ByteString -> Descriptor c d h ByteString)
+                     -- ^ A descriptor for this particular message
                      -> (Plaintext, HandshakeState c d h)
 readHandshakeMsg hs buf desc = (dp, hs'')
   where
@@ -237,38 +267,56 @@ readHandshakeMsg hs buf desc = (dp, hs'')
                  $ hs' ^. hssSymmetricHandshake
     hs''       = hs' & hssSymmetricHandshake .~ shs'
 
+-- | The final call of a handshake negotiation. Used to generate a pair of
+--   CipherStates, one for each transmission direction.
 writeHandshakeMsgFinal :: (Cipher c, Curve d, Hash h)
                        => HandshakeState c d h
+                       -- ^ The handshake state
                        -> DescriptorIO c d h ByteString
+                       -- ^ A descriptor for this particular message
                        -> Plaintext
+                       -- ^ Optional message to transmit
                        -> IO (ByteString, CipherState c, CipherState c)
 writeHandshakeMsgFinal hs desc payload = do
   (d, hs') <- writeHandshakeMsg hs desc payload
   let (cs1, cs2) = split $ hs' ^. hssSymmetricHandshake
   return (d, cs1, cs2)
 
+-- | The final call of a handshake negotiation. Used to generate a pair of
+--   CipherStates, one for each transmission direction.
 readHandshakeMsgFinal :: (Cipher c, Curve d, Hash h)
                       => HandshakeState c d h
+                      -- ^ The handshake state
                       -> ByteString
+                      -- ^ The handshake message received
                       -> (ByteString -> Descriptor c d h ByteString)
+                      -- ^ A descriptor for this particular message
                       -> (Plaintext, CipherState c, CipherState c)
 readHandshakeMsgFinal hs buf desc = (pt, cs1, cs2)
   where
     (pt, hs')  = readHandshakeMsg hs buf desc
     (cs1, cs2) = split $ hs' ^. hssSymmetricHandshake
 
+-- | Encrypts a payload. The returned 'CipherState' must be used for all
+--   subsequent calls.
 encryptPayload :: Cipher c
                => Plaintext
+               -- ^ The data to encrypt
                -> CipherState c
+               -- ^ The CipherState to use for encryption
                -> (ByteString, CipherState c)
 encryptPayload pt cs = ((convert . cipherTextToBytes) ct, cs')
   where
     (ct, cs') = encryptAndIncrement ad pt cs
     ad = AssocData $ convert ("" :: ByteString)
 
+-- | Decrypts a payload. The returned 'CipherState' must be used for all
+--   subsequent calls.
 decryptPayload :: Cipher c
                => ByteString
+               -- ^ The data to decrypt
                -> CipherState c
+               -- ^ The CipherState to use for decryption
                -> (Plaintext, CipherState c)
 decryptPayload ct cs = (pt, cs')
   where

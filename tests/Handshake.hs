@@ -6,6 +6,7 @@ import Instances()
 
 import Data.Proxy
 
+import Crypto.Noise.Descriptors
 import Crypto.Noise.Handshake
 import Crypto.Noise.Cipher
 import Crypto.Noise.Cipher.ChaChaPoly1305

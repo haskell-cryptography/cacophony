@@ -1,11 +1,11 @@
 ----------------------------------------------------------------
 -- |
--- Module      : Crypto.Noise.Internal.Descriptor
+-- Module      : Crypto.Noise.Descriptors
 -- Maintainer  : John Galt <centromere@users.noreply.github.com>
 -- Stability   : experimental
 -- Portability : POSIX
 
-module Crypto.Noise.Internal.Descriptor
+module Crypto.Noise.Descriptors
   ( -- * Functions
     -- ** Noise_NN
     noiseNNI1,

@@ -18,10 +18,7 @@ module Crypto.Noise.Handshake
     writeHandshakeMsgFinal,
     readHandshakeMsgFinal,
     encryptPayload,
-    decryptPayload,
-    -- * Modules
-    module Crypto.Noise.Internal.Descriptor
+    decryptPayload
   ) where
 
 import Crypto.Noise.Internal.HandshakeState
-import Crypto.Noise.Internal.Descriptor

@@ -50,13 +50,13 @@ library
     Crypto.Noise.Cipher.ChaChaPoly1305
     Crypto.Noise.Curve
     Crypto.Noise.Curve.Curve25519
+    Crypto.Noise.Descriptors
     Crypto.Noise.Handshake
     Crypto.Noise.Hash
     Crypto.Noise.Hash.SHA256
     Crypto.Noise.Internal.CipherState
     Crypto.Noise.Internal.SymmetricHandshakeState
     Crypto.Noise.Internal.HandshakeState
-    Crypto.Noise.Internal.Descriptor
     Crypto.Noise.Types
   ghc-options:      -rtsopts -with-rtsopts=-N -Wall -fwarn-tabs
 

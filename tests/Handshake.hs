@@ -570,6 +570,57 @@ doIK pt = ioProperty $ do
     encrypt cs p = fst $ encryptPayload p cs
     decrypt cs ct = fst $ decryptPayload ct cs
 
+--------------------------------------------------------------------------------
+-- Noise_XE
+
+hsnXE :: ScrubbedBytes
+hsnXE = makeHSN "Noise_XE"
+
+doXE :: Plaintext -> Property
+doXE pt = ioProperty $ do
+  aliceStaticKey <- curveGenKey :: IO (KeyPair Curve25519)
+  bobStaticKey@(_, bobStaticPK) <- curveGenKey :: IO (KeyPair Curve25519)
+  bobEphemeralKey@(_, bobEphemeralPK) <- curveGenKey :: IO (KeyPair Curve25519)
+
+  let aliceXE = handshakeState
+                hsnXE
+                (Just aliceStaticKey)
+                Nothing
+                (Just bobStaticPK)
+                (Just bobEphemeralPK)
+                (Just noiseXEI0) :: HandshakeState ChaChaPoly1305 Curve25519 SHA256
+
+      bobXE = handshakeState
+              hsnXE
+              (Just bobStaticKey)
+              (Just bobEphemeralKey)
+              Nothing
+              Nothing
+              (Just noiseXER0) :: HandshakeState ChaChaPoly1305 Curve25519 SHA256
+
+  (aliceToBob1, aliceXE') <- writeHandshakeMsg aliceXE noiseXEI1 sampleHSPT
+  let (hsptFromAlice1, bobXE') = readHandshakeMsg bobXE aliceToBob1 noiseXER1
+
+  (bobToAlice1, bobXE'') <- writeHandshakeMsg bobXE' noiseXER2 sampleHSPT
+  let (hsptFromBob1, aliceXE'') = readHandshakeMsg aliceXE' bobToAlice1 noiseXEI2
+
+  (aliceToBob2, csAlice1, csAlice2) <- writeHandshakeMsgFinal aliceXE'' noiseXEI3 sampleHSPT
+  let (hsptFromBob2, csBob1, csBob2) = readHandshakeMsgFinal bobXE'' aliceToBob2 noiseXER3
+
+  return $ conjoin
+    [ (decrypt csBob1 . encrypt csAlice1) pt === pt
+    , (decrypt csBob2 . encrypt csAlice2) pt === pt
+    , (decrypt csAlice1 . encrypt csBob1) pt === pt
+    , (decrypt csAlice2 . encrypt csBob2) pt === pt
+    , hsptFromAlice1 === sampleHSPT
+    , hsptFromBob1   === sampleHSPT
+    , hsptFromBob2   === sampleHSPT
+    ]
+
+  where
+    encrypt cs p = fst $ encryptPayload p cs
+    decrypt cs ct = fst $ decryptPayload ct cs
+
 tests :: TestTree
 tests = testGroup "Handshakes"
   [ testProperty "Noise_NN" $ property doNN
@@ -584,4 +635,5 @@ tests = testGroup "Handshakes"
   , testProperty "Noise_IN" $ property doIN
   , testProperty "Noise_XK" $ property doXK
   , testProperty "Noise_IK" $ property doIK
+  , testProperty "Noise_XE" $ property doXE
   ]

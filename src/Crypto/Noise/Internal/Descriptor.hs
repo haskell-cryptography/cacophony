@@ -12,20 +12,20 @@ module Crypto.Noise.Internal.Descriptor
     noiseNNR1,
     noiseNNR2,
     noiseNNI2,
-    -- ** Noise_SN
-    noiseSNI0,
-    noiseSNR0,
-    noiseSNI1,
-    noiseSNR1,
-    noiseSNR2,
-    noiseSNI2,
-    -- * Noise_NS
-    noiseNSI0,
-    noiseNSR0,
-    noiseNSI1,
-    noiseNSR1,
-    noiseNSR2,
-    noiseNSI2
+    -- ** Noise_KN
+    noiseKNI0,
+    noiseKNR0,
+    noiseKNI1,
+    noiseKNR1,
+    noiseKNR2,
+    noiseKNI2,
+    -- * Noise_NK
+    noiseNKI0,
+    noiseNKR0,
+    noiseNKI1,
+    noiseNKR1,
+    noiseNKR2,
+    noiseNKI2
   ) where
 
 import Data.ByteString (ByteString)
@@ -63,79 +63,79 @@ noiseNNI2 buf = do
   return rest
 
 --------------------------------------------------------------------------------
--- Noise_SN
+-- Noise_KN
 
-noiseSNI0 :: (Cipher c, Curve d, Hash h)
+noiseKNI0 :: (Cipher c, Curve d, Hash h)
           => Descriptor c d h ()
-noiseSNI0 = tokenPreWS
+noiseKNI0 = tokenPreWS
 
-noiseSNR0 :: (Cipher c, Curve d, Hash h)
+noiseKNR0 :: (Cipher c, Curve d, Hash h)
           => Descriptor c d h ()
-noiseSNR0 = tokenPreRS
+noiseKNR0 = tokenPreRS
 
-noiseSNI1 :: (Cipher c, Curve d, Hash h)
+noiseKNI1 :: (Cipher c, Curve d, Hash h)
           => DescriptorIO c d h ByteString
-noiseSNI1 = tokenWE
+noiseKNI1 = tokenWE
 
-noiseSNR1 :: (Cipher c, Curve d, Hash h)
+noiseKNR1 :: (Cipher c, Curve d, Hash h)
           => ByteString
           -> Descriptor c d h ByteString
-noiseSNR1 = tokenRE
+noiseKNR1 = tokenRE
 
-noiseSNR2 :: (Cipher c, Curve d, Hash h)
+noiseKNR2 :: (Cipher c, Curve d, Hash h)
           => DescriptorIO c d h ByteString
-noiseSNR2 = do
+noiseKNR2 = do
   e <- tokenWE
   tokenDHEE
   tokenDHES
   return e
 
-noiseSNI2 :: (Cipher c, Curve d, Hash h)
+noiseKNI2 :: (Cipher c, Curve d, Hash h)
           => ByteString
           -> Descriptor c d h ByteString
-noiseSNI2 buf = do
+noiseKNI2 buf = do
   rest <- tokenRE buf
   tokenDHEE
   tokenDHSE
   return rest
 
 --------------------------------------------------------------------------------
--- Noise_NS
+-- Noise_NK
 
-noiseNSI0 :: (Cipher c, Curve d, Hash h)
+noiseNKI0 :: (Cipher c, Curve d, Hash h)
           => Descriptor c d h ()
-noiseNSI0 = tokenPreRS
+noiseNKI0 = tokenPreRS
 
-noiseNSR0 :: (Cipher c, Curve d, Hash h)
+noiseNKR0 :: (Cipher c, Curve d, Hash h)
           => Descriptor c d h ()
-noiseNSR0 = tokenPreWS
+noiseNKR0 = tokenPreWS
 
-noiseNSI1 :: (Cipher c, Curve d, Hash h)
+noiseNKI1 :: (Cipher c, Curve d, Hash h)
           => DescriptorIO c d h ByteString
-noiseNSI1 = do
+noiseNKI1 = do
   e <- tokenWE
   tokenDHES
   return e
 
-noiseNSR1 :: (Cipher c, Curve d, Hash h)
+noiseNKR1 :: (Cipher c, Curve d, Hash h)
           => ByteString
           -> Descriptor c d h ByteString
-noiseNSR1 buf = do
+noiseNKR1 buf = do
   rest <- tokenRE buf
   tokenDHSE
   return rest
 
-noiseNSR2 :: (Cipher c, Curve d, Hash h)
+noiseNKR2 :: (Cipher c, Curve d, Hash h)
           => DescriptorIO c d h ByteString
-noiseNSR2 = do
+noiseNKR2 = do
   e <- tokenWE
   tokenDHEE
   return e
 
-noiseNSI2 :: (Cipher c, Curve d, Hash h)
+noiseNKI2 :: (Cipher c, Curve d, Hash h)
           => ByteString
           -> Descriptor c d h ByteString
-noiseNSI2 buf = do
+noiseNKI2 buf = do
   rest <- tokenRE buf
   tokenDHEE
   return rest

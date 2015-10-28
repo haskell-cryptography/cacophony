@@ -6,7 +6,7 @@
 -- Portability : POSIX
 
 module Crypto.Noise.Types
-  (  -- * Types
+  ( -- * Types
     ScrubbedBytes,
     -- * Functions
     convert,

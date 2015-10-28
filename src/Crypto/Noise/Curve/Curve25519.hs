@@ -18,6 +18,7 @@ import Data.ByteString (ByteString)
 import Crypto.Noise.Curve
 import Crypto.Noise.Types
 
+-- | Represents curve25519 curve.
 data Curve25519
 
 instance Curve Curve25519 where

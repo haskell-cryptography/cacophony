@@ -18,6 +18,7 @@ import Data.ByteString (ByteString)
 import Crypto.Noise.Hash
 import Crypto.Noise.Types
 
+-- | Represents the SHA256 hash.
 data SHA256
 
 instance Hash SHA256 where

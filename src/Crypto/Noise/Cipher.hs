@@ -52,7 +52,8 @@ class Cipher c where
   -- | Increments a nonce.
   cipherIncNonce    :: Nonce c -> Nonce c
 
-  -- | Imports a symmetric key.
+  -- | Imports a symmetric key. If the input is greater than 32 bytes, it
+  --   is truncated.
   cipherBytesToSym  :: ScrubbedBytes -> SymmetricKey c
 
   -- | Exports a Ciphertext. The authentication tag follows the

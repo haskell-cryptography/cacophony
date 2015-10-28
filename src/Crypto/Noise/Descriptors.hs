@@ -4,7 +4,27 @@
 -- Maintainer  : John Galt <centromere@users.noreply.github.com>
 -- Stability   : experimental
 -- Portability : POSIX
-
+--
+-- This module contains all of the descriptors for all the handshakes
+-- specified in the protocol. The first two characters of the name
+-- represent the handshake the descriptor belongs to (NN, KN, NK, etc). The
+-- next character represents whether the descriptor is intended to be used
+-- by the @I@nitiator or the @R@esponder. Finally, the number indicates
+-- the step of the handshake in which the descriptor is intended to be used.
+-- Regular handshake steps begin at 1, but descriptors for pre-messages are
+-- numbered 0. The descriptors for pre-messages are intended to be passed
+-- to the 'handshakeState' function. The (de-)serialization of pre-messages
+-- is beyond the scope of this library, but public keys can be
+-- imported/exported using the 'curveBytesToPub' and 'curvePubToBytes'
+-- functions.
+--
+-- For example, in Noise_NN, Alice passes noiseNNI1 to 'writeHandshakeMsg'.
+-- The resulting ByteString is transmitted to Bob, where he passes the
+-- noiseNNR1 descriptor to 'readHandshakeMsg'. This covers the __@-> e@__
+-- step of the handshake. Next, Bob passes noiseNNR2 to
+-- 'writeHandshakeMsgFinal' and transmits the resulting ByteString to Alice.
+-- Finally, Alice passes noiseNNI2 to 'readHandshakeMsgFinal'. This covers
+-- the __@<- e, dhee@__ step of the handshake.
 module Crypto.Noise.Descriptors
   ( -- * Functions
     -- ** Noise_NN

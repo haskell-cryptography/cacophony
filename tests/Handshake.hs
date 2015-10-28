@@ -35,12 +35,12 @@ makeHSN hs = BA.concat [convert hs, u, a, u, b, u, c]
 hsnNN :: ScrubbedBytes
 hsnNN = makeHSN "Noise_NN"
 
-aliceNN, bobNN :: HandshakeState ChaChaPoly1305 Curve25519 SHA256
-aliceNN = handshakeState hsnNN Nothing Nothing Nothing Nothing Nothing
-bobNN = handshakeState hsnNN Nothing Nothing Nothing Nothing Nothing
-
 doNN :: Plaintext -> Property
 doNN pt = ioProperty $ do
+  let aliceNN = handshakeState hsnNN Nothing Nothing Nothing Nothing Nothing
+                :: HandshakeState ChaChaPoly1305 Curve25519 SHA256
+      bobNN   = handshakeState hsnNN Nothing Nothing Nothing Nothing Nothing
+                :: HandshakeState ChaChaPoly1305 Curve25519 SHA256
   (aliceToBob1, aliceNN') <- writeHandshakeMsg aliceNN noiseNNI1 sampleHSPT
   let (hsptFromAlice1, bobNN') = readHandshakeMsg bobNN aliceToBob1 noiseNNR1
 

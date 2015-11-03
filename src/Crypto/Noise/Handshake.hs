@@ -12,6 +12,7 @@ module Crypto.Noise.Handshake
     HandshakeState,
     Descriptor,
     DescriptorIO,
+    CipherState,
     -- * Functions
     getRemoteStaticKey,
     handshakeState,
@@ -24,3 +25,4 @@ module Crypto.Noise.Handshake
   ) where
 
 import Crypto.Noise.Internal.HandshakeState
+import Crypto.Noise.Internal.CipherState

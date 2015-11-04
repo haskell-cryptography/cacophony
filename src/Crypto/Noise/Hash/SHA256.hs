@@ -13,7 +13,6 @@ module Crypto.Noise.Hash.SHA256
 
 import qualified Crypto.Hash as H
 import qualified Crypto.MAC.HMAC as M
-import Data.ByteString (ByteString)
 
 import Crypto.Noise.Hash
 import Crypto.Noise.Types
@@ -25,7 +24,7 @@ instance Hash SHA256 where
   newtype ChainingKey SHA256 = HCKSHA256 ScrubbedBytes
   newtype Digest      SHA256 = HDSHA256  (H.Digest H.SHA256)
 
-  hashName   _  = convert ("SHA256" :: ByteString)
+  hashName   _  = bsToSB' "SHA256"
   hashLength _  = 32
   hash          = hash'
   hashHKDF      = hkdf
@@ -39,8 +38,8 @@ hash' bs = HDSHA256 $ H.hash bs
 hkdf :: ChainingKey SHA256 -> ScrubbedBytes -> (ChainingKey SHA256, ScrubbedBytes)
 hkdf (HCKSHA256 ck) d = (HCKSHA256 ck', sk)
   where
-    x01   = convert ("\x01" :: ByteString) :: ScrubbedBytes
-    x02   = convert ("\x02" :: ByteString) :: ScrubbedBytes
+    x01   = bsToSB' "\x01"
+    x02   = bsToSB' "\x02"
 
     hmac1 = M.hmac ck d :: M.HMAC H.SHA256
     temp  = convert . M.hmacGetDigest $ hmac1 :: ScrubbedBytes

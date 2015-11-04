@@ -15,7 +15,6 @@ import Crypto.Error (throwCryptoError)
 import qualified Crypto.Cipher.ChaChaPoly1305 as CCP
 import qualified Crypto.MAC.Poly1305 as P
 import qualified Data.ByteArray as B (take, drop, length)
-import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS (replicate)
 
 import Crypto.Noise.Cipher
@@ -29,7 +28,7 @@ instance Cipher ChaChaPoly1305 where
   newtype SymmetricKey ChaChaPoly1305 = SKCCP1305 ScrubbedBytes
   newtype Nonce        ChaChaPoly1305 = NCCP1305  CCP.Nonce
 
-  cipherName _      = convert ("ChaChaPoly" :: ByteString)
+  cipherName _      = bsToSB' "ChaChaPoly"
   cipherEncrypt     = encrypt
   cipherDecrypt     = decrypt
   cipherZeroNonce   = zeroNonce

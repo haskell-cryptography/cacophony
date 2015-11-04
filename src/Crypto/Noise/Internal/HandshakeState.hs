@@ -308,7 +308,7 @@ encryptPayload :: Cipher c
 encryptPayload pt cs = ((convert . cipherTextToBytes) ct, cs')
   where
     (ct, cs') = encryptAndIncrement ad pt cs
-    ad = AssocData $ convert ("" :: ByteString)
+    ad = AssocData . bsToSB' $ ""
 
 -- | Decrypts a payload. The returned 'CipherState' must be used for all
 --   subsequent calls.
@@ -321,4 +321,4 @@ decryptPayload :: Cipher c
 decryptPayload ct cs = (pt, cs')
   where
     (pt, cs') = decryptAndIncrement ad ((cipherBytesToText . convert) ct) cs
-    ad = AssocData $ convert ("" :: ByteString)
+    ad = AssocData . bsToSB' $ ""

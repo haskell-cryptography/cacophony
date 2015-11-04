@@ -10,7 +10,25 @@ module Crypto.Noise.Types
     ScrubbedBytes,
     -- * Functions
     convert,
-    append
+    append,
+    bsToSB,
+    bsToSB',
+    sbToBS,
+    sbToBS'
   ) where
 
 import Data.ByteArray (ScrubbedBytes, convert, append)
+import qualified Data.ByteString as BS (ByteString)
+import qualified Data.ByteString.Lazy as BL (ByteString, toStrict, fromStrict)
+
+bsToSB :: BL.ByteString -> ScrubbedBytes
+bsToSB = convert . BL.toStrict
+
+bsToSB' :: BS.ByteString -> ScrubbedBytes
+bsToSB' = convert
+
+sbToBS :: ScrubbedBytes -> BL.ByteString
+sbToBS = BL.fromStrict . convert
+
+sbToBS' :: ScrubbedBytes -> BS.ByteString
+sbToBS' = convert

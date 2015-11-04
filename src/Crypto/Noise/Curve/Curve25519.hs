@@ -13,7 +13,6 @@ module Crypto.Noise.Curve.Curve25519
 
 import Crypto.Random.Entropy
 import qualified Crypto.PubKey.Curve25519 as C
-import Data.ByteString (ByteString)
 
 import Crypto.Noise.Curve
 import Crypto.Noise.Types
@@ -25,7 +24,7 @@ instance Curve Curve25519 where
   newtype PublicKey Curve25519 = PK25519 C.PublicKey
   newtype SecretKey Curve25519 = SK25519 C.SecretKey
 
-  curveName   _    = convert ("25519" :: ByteString)
+  curveName   _    = bsToSB' "25519"
   curveLength _    = 32
   curveGenKey      = genKey
   curveDH          = dh

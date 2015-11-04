@@ -2,7 +2,7 @@
 ----------------------------------------------------------------
 -- |
 -- Module      : Crypto.Noise.Cipher.ChaChaPoly1305
--- Maintainer  : John Galt <centromere@users.noreply.github.com>
+-- Maintainer  : John Galt <jgalt@centromere.net>
 -- Stability   : experimental
 -- Portability : POSIX
 

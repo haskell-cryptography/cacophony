@@ -4,7 +4,7 @@ synopsis:      A library implementing the Noise protocol.
 license:       PublicDomain
 license-file:  LICENSE
 author:        John Galt
-maintainer:    centromere@users.noreply.github.com
+maintainer:    jgalt@centromere.net
 homepage:      https://github.com/centromere/cacophony
 bug-reports:   https://github.com/centromere/cacophony/issues
 category:      Cryptography
@@ -80,22 +80,23 @@ executable echo-server
   main-is:          Main.hs
 
   if flag(build-examples)
-    build-depends:  aeson,
-                    async,
-                    auto-update,
-                    base >=4.8 && <4.9,
-                    base64-bytestring,
-                    bytestring,
-                    cacophony,
-                    fast-logger,
-                    memory,
-                    pipes,
-                    pipes-aeson,
-                    pipes-network,
-                    pipes-parse,
-                    text,
-                    unix,
-                    unix-time
+    build-depends:
+      aeson,
+      async,
+      auto-update,
+      base >=4.8 && <4.9,
+      base64-bytestring,
+      bytestring,
+      cacophony,
+      fast-logger,
+      memory,
+      pipes,
+      pipes-aeson,
+      pipes-network,
+      pipes-parse,
+      text,
+      unix,
+      unix-time
   else
     buildable: False
 

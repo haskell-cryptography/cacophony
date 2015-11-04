@@ -1,7 +1,7 @@
 ----------------------------------------------------------------
 -- |
 -- Module      : Crypto.Noise.Types
--- Maintainer  : John Galt <centromere@users.noreply.github.com>
+-- Maintainer  : John Galt <jgalt@centromere.net>
 -- Stability   : experimental
 -- Portability : POSIX
 

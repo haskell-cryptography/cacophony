@@ -2,22 +2,23 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Instances where
 
-import Control.Monad (liftM, replicateM)
-import qualified Data.ByteArray as BA
-import qualified Data.ByteString as BS
+import Control.Monad   (liftM, replicateM)
+import Data.ByteString (pack)
 import Test.QuickCheck
 
 import Crypto.Noise.Cipher
 import Crypto.Noise.Internal.CipherState
+import Crypto.Noise.Types (ScrubbedBytes, bsToSB', sbEq,
+                           sbToBS')
 
 instance Eq Plaintext where
-  (Plaintext pt1) == (Plaintext pt2) = pt1 `BA.eq` pt2
+  (Plaintext pt1) == (Plaintext pt2) = pt1 `sbEq` pt2
 
 instance Show Plaintext where
-  show (Plaintext pt) = show (BA.convert pt :: BS.ByteString)
+  show (Plaintext pt) = show . sbToBS' $ pt
 
 instance Show AssocData where
-  show (AssocData ad) = show (BA.convert ad :: BS.ByteString)
+  show (AssocData ad) = show . sbToBS' $ ad
 
 instance Show (SymmetricKey a) where
   show _ = "<symmetric key>"
@@ -27,8 +28,8 @@ instance Show (Nonce a) where
 
 deriving instance Show (CipherState a)
 
-instance Arbitrary BA.ScrubbedBytes where
-  arbitrary = BA.convert `liftM` BS.pack <$> arbitrary
+instance Arbitrary ScrubbedBytes where
+  arbitrary = bsToSB' `liftM` pack <$> arbitrary
 
 instance Arbitrary Plaintext where
   arbitrary = Plaintext `liftM` arbitrary
@@ -38,5 +39,5 @@ instance Arbitrary AssocData where
 
 instance Cipher c => Arbitrary (CipherState c) where
   arbitrary = do
-    a <- (BA.convert . BS.pack) <$> replicateM 32 arbitrary
+    a <- (bsToSB' . pack) <$> replicateM 32 arbitrary
     return $ CipherState (cipherBytesToSym a) cipherZeroNonce

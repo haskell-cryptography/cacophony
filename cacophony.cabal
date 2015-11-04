@@ -80,7 +80,6 @@ test-suite test-cacophony
     base >= 4.8 && < 4.9,
     bytestring,
     cacophony,
-    memory,
     mtl,
     QuickCheck,
     tasty,

@@ -17,18 +17,17 @@ import Crypto.Noise.Hash.SHA256
 import Crypto.Noise.Types
 
 import Data.ByteString (ByteString)
-import qualified Data.ByteArray as BA (concat)
 
 sampleHSPT :: Plaintext
-sampleHSPT = Plaintext $ convert ("cacophony" :: ByteString)
+sampleHSPT = Plaintext . bsToSB' $ "cacophony"
 
 makeHSN :: ByteString -> ScrubbedBytes
-makeHSN hs = BA.concat [convert hs, u, a, u, b, u, c]
+makeHSN hs = concatSB [convert hs, u, a, u, b, u, c]
   where
     a = curveName  (Proxy :: Proxy Curve25519)
     b = cipherName (Proxy :: Proxy ChaChaPoly1305)
     c = hashName   (Proxy :: Proxy SHA256)
-    u = convert    ("_" :: ByteString)
+    u = bsToSB' "_"
 
 --------------------------------------------------------------------------------
 -- Noise_NN

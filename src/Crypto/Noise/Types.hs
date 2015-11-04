@@ -11,15 +11,21 @@ module Crypto.Noise.Types
     -- * Functions
     convert,
     append,
+    concatSB,
     bsToSB,
     bsToSB',
     sbToBS,
-    sbToBS'
+    sbToBS',
+    sbEq
   ) where
 
-import Data.ByteArray (ScrubbedBytes, convert, append)
+import Data.ByteArray (ScrubbedBytes, concat, convert, append, eq)
 import qualified Data.ByteString as BS (ByteString)
 import qualified Data.ByteString.Lazy as BL (ByteString, toStrict, fromStrict)
+import Prelude hiding (concat)
+
+concatSB :: [ScrubbedBytes] -> ScrubbedBytes
+concatSB = concat
 
 bsToSB :: BL.ByteString -> ScrubbedBytes
 bsToSB = convert . BL.toStrict
@@ -32,3 +38,6 @@ sbToBS = BL.fromStrict . convert
 
 sbToBS' :: ScrubbedBytes -> BS.ByteString
 sbToBS' = convert
+
+sbEq :: ScrubbedBytes -> ScrubbedBytes -> Bool
+sbEq = eq

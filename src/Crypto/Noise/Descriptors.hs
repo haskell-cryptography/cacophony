@@ -134,7 +134,22 @@ module Crypto.Noise.Descriptors
     noiseIXI1,
     noiseIXR1,
     noiseIXR2,
-    noiseIXI2
+    noiseIXI2,
+    -- * Noise_N
+    noiseNI0,
+    noiseNR0,
+    noiseNI1,
+    noiseNR1,
+    -- * Noise_K
+    noiseKI0,
+    noiseKR0,
+    noiseKI1,
+    noiseKR1,
+     -- * Noise_X
+    noiseXI0,
+    noiseXR0,
+    noiseXI1,
+    noiseXR1
   ) where
 
 import Control.Monad ((>=>))
@@ -819,7 +834,7 @@ noiseIXI1 :: (Cipher c, Curve d, Hash h)
 noiseIXI1 = do
   s <- tokenWS
   e <- tokenWE
-  return $ e `append` s
+  return $ s `append` e
 
 noiseIXR1 :: (Cipher c, Curve d, Hash h)
           => ByteString
@@ -845,4 +860,92 @@ noiseIXI2 buf = do
   tokenDHSE
   rest' <- tokenRS rest
   tokenDHES
+  return rest'
+
+--------------------------------------------------------------------------------
+-- Noise_N
+
+noiseNI0 :: (Cipher c, Curve d, Hash h)
+         => Descriptor c d h ()
+noiseNI0 = tokenPreRS
+
+noiseNR0 :: (Cipher c, Curve d, Hash h)
+         => Descriptor c d h ()
+noiseNR0 = tokenPreLS
+
+noiseNI1 :: (Cipher c, Curve d, Hash h)
+        => DescriptorIO c d h ByteString
+noiseNI1 = do
+  e <- tokenWE
+  tokenDHES
+  return e
+
+noiseNR1 :: (Cipher c, Curve d, Hash h)
+        => ByteString
+        -> Descriptor c d h ByteString
+noiseNR1 buf = do
+  rest <- tokenRE buf
+  tokenDHSE
+  return rest
+
+--------------------------------------------------------------------------------
+-- Noise_K
+
+noiseKI0 :: (Cipher c, Curve d, Hash h)
+         => Descriptor c d h ()
+noiseKI0 = do
+  tokenPreRS
+  tokenPreLS
+
+noiseKR0 :: (Cipher c, Curve d, Hash h)
+         => Descriptor c d h ()
+noiseKR0 = do
+  tokenPreLS
+  tokenPreRS
+
+noiseKI1 :: (Cipher c, Curve d, Hash h)
+          => DescriptorIO c d h ByteString
+noiseKI1 = do
+  e <- tokenWE
+  tokenDHES
+  tokenDHSS
+  return e
+
+noiseKR1 :: (Cipher c, Curve d, Hash h)
+          => ByteString
+          -> Descriptor c d h ByteString
+noiseKR1 buf = do
+  rest <- tokenRE buf
+  tokenDHSE
+  tokenDHSS
+  return rest
+
+--------------------------------------------------------------------------------
+-- Noise_X
+
+noiseXI0 :: (Cipher c, Curve d, Hash h)
+         => Descriptor c d h ()
+noiseXI0 = tokenPreRS
+
+noiseXR0 :: (Cipher c, Curve d, Hash h)
+         => Descriptor c d h ()
+noiseXR0 = tokenPreLS
+
+noiseXI1 :: (Cipher c, Curve d, Hash h)
+          => DescriptorIO c d h ByteString
+noiseXI1 = do
+  e <- tokenWE
+  tokenDHES
+  s <- tokenWS
+  tokenDHSS
+  return $ e `append` s
+
+noiseXR1 :: (Cipher c, Curve d, Hash h)
+          => ByteString
+          -> Descriptor c d h ByteString
+noiseXR1 buf = do
+  rest <- tokenRE buf
+  tokenDHSE
+  rest' <- tokenRS rest
+  tokenDHSS
   return rest'

@@ -15,6 +15,7 @@ module Crypto.Noise.Internal.HandshakeState
     HandshakeState,
     MessagePattern,
     MessagePatternIO,
+    HandshakePattern,
     -- * Functions
     runMessagePatternT,
     getRemoteStaticKey,
@@ -42,16 +43,10 @@ import Crypto.Noise.Internal.CipherState
 import Crypto.Noise.Internal.SymmetricState
 import Crypto.Noise.Types
 
--- | Contains the state of a handshake.
-data HandshakeState c d h =
-  HandshakeState { _hssSymmetricState :: SymmetricState c h
-                 , _hssLocalStaticKey     :: Maybe (KeyPair d)
-                 , _hssLocalEphemeralKey  :: Maybe (KeyPair d)
-                 , _hssRemoteStaticKey    :: Maybe (PublicKey d)
-                 , _hssRemoteEphemeralKey :: Maybe (PublicKey d)
-                 }
-
-$(makeLenses ''HandshakeState)
+-- | Represents a series of message patterns, the first for writing and the
+--   second for reading.
+type HandshakePattern c d h = ( [MessagePatternIO c d h ByteString]
+                              , [ByteString -> MessagePattern c d h ByteString])
 
 newtype MessagePatternT c d h m a = MessagePatternT { unD :: StateT (HandshakeState c d h) m a }
   deriving (Functor, Applicative, Monad, MonadIO, MonadState(HandshakeState c d h))
@@ -67,6 +62,18 @@ type MessagePatternIO c d h a = MessagePatternT c d h IO a
 
 runMessagePatternT :: Monad m => MessagePatternT c d h m a -> HandshakeState c d h -> m (a, HandshakeState c d h)
 runMessagePatternT = runStateT . unD
+
+-- | Contains the state of a handshake.
+data HandshakeState c d h =
+  HandshakeState { _hssSymmetricState     :: SymmetricState c h
+                 , _hssLocalStaticKey     :: Maybe (KeyPair d)
+                 , _hssLocalEphemeralKey  :: Maybe (KeyPair d)
+                 , _hssRemoteStaticKey    :: Maybe (PublicKey d)
+                 , _hssRemoteEphemeralKey :: Maybe (PublicKey d)
+                 , _hssHandshakePattern   :: HandshakePattern c d h
+                 }
+
+$(makeLenses ''HandshakeState)
 
 class Monad m => MonadHandshake m where
   tokenPreLS :: m ()
@@ -227,58 +234,60 @@ handshakeState :: (Cipher c, Curve d, Hash h)
                -- ^ Remote public ephemeral key
                -> Maybe (MessagePattern c d h ())
                -- ^ Pre-message processing pattern
+               -> HandshakePattern c d h
+               -- ^ The handshake pattern to use
                -> HandshakeState c d h
-handshakeState hn ls le rs re = maybe hs hs'
+handshakeState hn ls le rs re pmp hsp = maybe hs hs' pmp
   where
-    hs = HandshakeState (symmetricHandshake hn) ls le rs re
+    hs = HandshakeState (symmetricHandshake hn) ls le rs re hsp
     hs' desc = snd . runIdentity $ runMessagePatternT desc hs
 
 -- | Creates a handshake message. The plaintext can be left empty if no
 --   plaintext is to be transmitted. All subsequent handshake processing
 --   must use the returned state.
 writeHandshakeMsg :: (Cipher c, Curve d, Hash h)
-                      => HandshakeState c d h
-                      -- ^ The handshake state
-                      -> MessagePatternIO c d h ByteString
-                      -- ^ A pattern for this particular message
-                      -> Plaintext
-                      -- ^ Optional message to transmit
-                      -> IO (ByteString, HandshakeState c d h)
-writeHandshakeMsg hs desc payload = do
-  (d, hs') <- runMessagePatternT desc hs
+                  => HandshakeState c d h
+                  -- ^ The handshake state
+                  -> Plaintext
+                  -- ^ Optional message to transmit
+                  -> IO (ByteString, HandshakeState c d h)
+writeHandshakeMsg hs payload = do
+  let (wmp:wmps, rmp) = hs ^. hssHandshakePattern
+
+  (d, hs') <- runMessagePatternT wmp hs
+
   let (ep, shs') = encryptAndHash payload $ hs' ^. hssSymmetricState
       hs''       = hs' & hssSymmetricState .~ shs'
+                       & hssHandshakePattern .~ (wmps, rmp)
   return (d `B.append` convert ep, hs'')
 
 -- | Reads a handshake message. All subsequent handshake processing must
 --   use the returned state.
 readHandshakeMsg :: (Cipher c, Curve d, Hash h)
-                     => HandshakeState c d h
-                     -- ^ The handshake state
-                     -> ByteString
-                     -- ^ The handshake message received
-                     -> (ByteString -> MessagePattern c d h ByteString)
-                     -- ^ A pattern for this particular message
-                     -> (Plaintext, HandshakeState c d h)
-readHandshakeMsg hs buf desc = (dp, hs'')
+                 => HandshakeState c d h
+                 -- ^ The handshake state
+                 -> ByteString
+                 -- ^ The handshake message received
+                 -> (Plaintext, HandshakeState c d h)
+readHandshakeMsg hs buf = (dp, hs'')
   where
-    (d, hs')   = runIdentity $ runMessagePatternT (desc buf) hs
+    (wmp, rmp:rmps) = hs ^. hssHandshakePattern
+    (d, hs')   = runIdentity $ runMessagePatternT (rmp buf) hs
     (dp, shs') = decryptAndHash (cipherBytesToText (convert d))
                  $ hs' ^. hssSymmetricState
     hs''       = hs' & hssSymmetricState .~ shs'
+                     & hssHandshakePattern .~ (wmp, rmps)
 
 -- | The final call of a handshake negotiation. Used to generate a pair of
 --   CipherStates, one for each transmission direction.
 writeHandshakeMsgFinal :: (Cipher c, Curve d, Hash h)
                        => HandshakeState c d h
                        -- ^ The handshake state
-                       -> MessagePatternIO c d h ByteString
-                       -- ^ A pattern for this particular message
                        -> Plaintext
                        -- ^ Optional message to transmit
                        -> IO (ByteString, CipherState c, CipherState c)
-writeHandshakeMsgFinal hs desc payload = do
-  (d, hs') <- writeHandshakeMsg hs desc payload
+writeHandshakeMsgFinal hs payload = do
+  (d, hs') <- writeHandshakeMsg hs payload
   let (cs1, cs2) = split $ hs' ^. hssSymmetricState
   return (d, cs1, cs2)
 
@@ -289,12 +298,10 @@ readHandshakeMsgFinal :: (Cipher c, Curve d, Hash h)
                       -- ^ The handshake state
                       -> ByteString
                       -- ^ The handshake message received
-                      -> (ByteString -> MessagePattern c d h ByteString)
-                      -- ^ A pattern for this particular message
                       -> (Plaintext, CipherState c, CipherState c)
-readHandshakeMsgFinal hs buf desc = (pt, cs1, cs2)
+readHandshakeMsgFinal hs buf = (pt, cs1, cs2)
   where
-    (pt, hs')  = readHandshakeMsg hs buf desc
+    (pt, hs')  = readHandshakeMsg hs buf
     (cs1, cs2) = split $ hs' ^. hssSymmetricState
 
 -- | Encrypts a payload. The returned 'CipherState' must be used for all

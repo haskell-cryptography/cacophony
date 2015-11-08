@@ -12,6 +12,7 @@ module Crypto.Noise.Handshake
     HandshakeState,
     MessagePattern,
     MessagePatternIO,
+    HandshakePattern,
     CipherState,
     -- * Functions
     getRemoteStaticKey,

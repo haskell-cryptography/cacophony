@@ -1,12 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Handshake where
 
-import Data.ByteString (ByteString)
-
-import Crypto.Noise.MessagePatterns
-import Crypto.Noise.Handshake
 import Crypto.Noise.Cipher
 import Crypto.Noise.Curve
+import Crypto.Noise.Handshake
 import Crypto.Noise.Hash
 import Crypto.Noise.Types
 
@@ -42,36 +39,34 @@ mkHandshakeProp :: HandshakeType
                 -> Property
 mkHandshakeProp ht =
   case ht of
-    NoiseNN -> twoMessage noiseNNIHS noiseNNRHS noiseNNI1 noiseNNR1 noiseNNR2 noiseNNI2
-    NoiseKN -> twoMessage noiseKNIHS noiseKNRHS noiseKNI1 noiseKNR1 noiseKNR2 noiseKNI2
-    NoiseNK -> twoMessage noiseNKIHS noiseNKRHS noiseNKI1 noiseNKR1 noiseNKR2 noiseNKI2
-    NoiseKK -> twoMessage noiseKKIHS noiseKKRHS noiseKKI1 noiseKKR1 noiseKKR2 noiseKKI2
-    NoiseNE -> twoMessage noiseNEIHS noiseNERHS noiseNEI1 noiseNER1 noiseNER2 noiseNEI2
-    NoiseKE -> twoMessage noiseKEIHS noiseKERHS noiseKEI1 noiseKER1 noiseKER2 noiseKEI2
-    NoiseNX -> twoMessage noiseNXIHS noiseNXRHS noiseNXI1 noiseNXR1 noiseNXR2 noiseNXI2
-    NoiseKX -> twoMessage noiseKXIHS noiseKXRHS noiseKXI1 noiseKXR1 noiseKXR2 noiseKXI2
-    NoiseXN -> threeMessage noiseXNIHS noiseXNRHS noiseXNI1 noiseXNR1 noiseXNR2 noiseXNI2 noiseXNI3 noiseXNR3
-    NoiseIN -> twoMessage noiseINIHS noiseINRHS noiseINI1 noiseINR1 noiseINR2 noiseINI2
-    NoiseXK -> threeMessage noiseXKIHS noiseXKRHS noiseXKI1 noiseXKR1 noiseXKR2 noiseXKI2 noiseXKI3 noiseXKR3
-    NoiseIK -> twoMessage noiseIKIHS noiseIKRHS noiseIKI1 noiseIKR1 noiseIKR2 noiseIKI2
-    NoiseXE -> threeMessage noiseXEIHS noiseXERHS noiseXEI1 noiseXER1 noiseXER2 noiseXEI2 noiseXEI3 noiseXER3
-    NoiseIE -> twoMessage noiseIEIHS noiseIERHS noiseIEI1 noiseIER1 noiseIER2 noiseIEI2
-    NoiseXX -> threeMessage noiseXXIHS noiseXXRHS noiseXXI1 noiseXXR1 noiseXXR2 noiseXXI2 noiseXXI3 noiseXXR3
-    NoiseIX -> twoMessage noiseIXIHS noiseIXRHS noiseIXI1 noiseIXR1 noiseIXR2 noiseIXI2
-    NoiseN  -> oneMessage noiseNIHS noiseNRHS noiseNI1 noiseNR1
-    NoiseK  -> oneMessage noiseKIHS noiseKRHS noiseKI1 noiseKR1
-    NoiseX  -> oneMessage noiseXIHS noiseXRHS noiseXI1 noiseXR1
+    NoiseNN -> twoMessage noiseNNIHS noiseNNRHS
+    NoiseKN -> twoMessage noiseKNIHS noiseKNRHS
+    NoiseNK -> twoMessage noiseNKIHS noiseNKRHS
+    NoiseKK -> twoMessage noiseKKIHS noiseKKRHS
+    NoiseNE -> twoMessage noiseNEIHS noiseNERHS
+    NoiseKE -> twoMessage noiseKEIHS noiseKERHS
+    NoiseNX -> twoMessage noiseNXIHS noiseNXRHS
+    NoiseKX -> twoMessage noiseKXIHS noiseKXRHS
+    NoiseXN -> threeMessage noiseXNIHS noiseXNRHS
+    NoiseIN -> twoMessage noiseINIHS noiseINRHS
+    NoiseXK -> threeMessage noiseXKIHS noiseXKRHS
+    NoiseIK -> twoMessage noiseIKIHS noiseIKRHS
+    NoiseXE -> threeMessage noiseXEIHS noiseXERHS
+    NoiseIE -> twoMessage noiseIEIHS noiseIERHS
+    NoiseXX -> threeMessage noiseXXIHS noiseXXRHS
+    NoiseIX -> twoMessage noiseIXIHS noiseIXRHS
+    NoiseN  -> oneMessage noiseNIHS noiseNRHS
+    NoiseK  -> oneMessage noiseKIHS noiseKRHS
+    NoiseX  -> oneMessage noiseXIHS noiseXRHS
 
 oneMessage :: (Cipher c, Curve d, Hash h)
            => HandshakeState c d h
            -> HandshakeState c d h
-           -> MessagePatternIO c d h ByteString
-           -> (ByteString -> MessagePattern c d h ByteString)
            -> Plaintext
            -> Property
-oneMessage ihs rhs noiseI1 noiseR1 pt = ioProperty $ do
-  (aliceToBob1, csAlice1, _) <- writeHandshakeMsgFinal ihs noiseI1 sampleHSPT
-  let (hsptFromBob1, csBob1, _) = readHandshakeMsgFinal rhs aliceToBob1 noiseR1
+oneMessage ihs rhs pt = ioProperty $ do
+  (aliceToBob1, csAlice1, _) <- writeHandshakeMsgFinal ihs sampleHSPT
+  let (hsptFromBob1, csBob1, _) = readHandshakeMsgFinal rhs aliceToBob1
 
   return $ conjoin
     [ (decrypt csBob1 . encrypt csAlice1) pt === pt
@@ -86,18 +81,14 @@ oneMessage ihs rhs noiseI1 noiseR1 pt = ioProperty $ do
 twoMessage :: (Cipher c, Curve d, Hash h)
            => HandshakeState c d h
            -> HandshakeState c d h
-           -> MessagePatternIO c d h ByteString
-           -> (ByteString -> MessagePattern c d h ByteString)
-           -> MessagePatternIO c d h ByteString
-           -> (ByteString -> MessagePattern c d h ByteString)
            -> Plaintext
            -> Property
-twoMessage ihs rhs noiseI1 noiseR1 noiseR2 noiseI2 pt = ioProperty $ do
-  (aliceToBob1, ihs') <- writeHandshakeMsg ihs noiseI1 sampleHSPT
-  let (hsptFromAlice1, rhs') = readHandshakeMsg rhs aliceToBob1 noiseR1
+twoMessage ihs rhs pt = ioProperty $ do
+  (aliceToBob1, ihs') <- writeHandshakeMsg ihs sampleHSPT
+  let (hsptFromAlice1, rhs') = readHandshakeMsg rhs aliceToBob1
 
-  (bobToAlice1, csBob1, csBob2) <- writeHandshakeMsgFinal rhs' noiseR2 sampleHSPT
-  let (hsptFromBob1, csAlice1, csAlice2) = readHandshakeMsgFinal ihs' bobToAlice1 noiseI2
+  (bobToAlice1, csBob1, csBob2) <- writeHandshakeMsgFinal rhs' sampleHSPT
+  let (hsptFromBob1, csAlice1, csAlice2) = readHandshakeMsgFinal ihs' bobToAlice1
 
   return $ conjoin
     [ (decrypt csBob1 . encrypt csAlice1) pt === pt
@@ -115,24 +106,18 @@ twoMessage ihs rhs noiseI1 noiseR1 noiseR2 noiseI2 pt = ioProperty $ do
 threeMessage :: (Cipher c, Curve d, Hash h)
              => HandshakeState c d h
              -> HandshakeState c d h
-             -> MessagePatternIO c d h ByteString
-             -> (ByteString -> MessagePattern c d h ByteString)
-             -> MessagePatternIO c d h ByteString
-             -> (ByteString -> MessagePattern c d h ByteString)
-             -> MessagePatternIO c d h ByteString
-             -> (ByteString -> MessagePattern c d h ByteString)
              -> Plaintext
              -> Property
-threeMessage ihs rhs noiseI1 noiseR1 noiseR2 noiseI2 noiseI3 noiseR3 pt =
+threeMessage ihs rhs pt =
   ioProperty $ do
-    (aliceToBob1, ihs') <- writeHandshakeMsg ihs noiseI1 sampleHSPT
-    let (hsptFromAlice1, rhs') = readHandshakeMsg rhs aliceToBob1 noiseR1
+    (aliceToBob1, ihs') <- writeHandshakeMsg ihs sampleHSPT
+    let (hsptFromAlice1, rhs') = readHandshakeMsg rhs aliceToBob1
 
-    (bobToAlice1, rhs'') <- writeHandshakeMsg rhs' noiseR2 sampleHSPT
-    let (hsptFromBob1, ihs'') = readHandshakeMsg ihs' bobToAlice1 noiseI2
+    (bobToAlice1, rhs'') <- writeHandshakeMsg rhs' sampleHSPT
+    let (hsptFromBob1, ihs'') = readHandshakeMsg ihs' bobToAlice1
 
-    (aliceToBob2, csAlice1, csAlice2) <- writeHandshakeMsgFinal ihs'' noiseI3 sampleHSPT
-    let (hsptFromBob2, csBob1, csBob2) = readHandshakeMsgFinal rhs'' aliceToBob2 noiseR3
+    (aliceToBob2, csAlice1, csAlice2) <- writeHandshakeMsgFinal ihs'' sampleHSPT
+    let (hsptFromBob2, csBob1, csBob2) = readHandshakeMsgFinal rhs'' aliceToBob2
 
     return $ conjoin
       [ (decrypt csBob1 . encrypt csAlice1) pt === pt

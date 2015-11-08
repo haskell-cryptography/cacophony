@@ -17,14 +17,6 @@
 -- is beyond the scope of this library, but public keys can be
 -- imported/exported using the 'curveBytesToPub' and 'curvePubToBytes'
 -- functions.
---
--- For example, in Noise_NN, Alice passes noiseNNI1 to 'writeHandshakeMsg'.
--- The resulting ByteString is transmitted to Bob, where he passes the
--- noiseNNR1 pattern to 'readHandshakeMsg'. This covers the __@-> e@__
--- step of the handshake. Next, Bob passes noiseNNR2 to
--- 'writeHandshakeMsgFinal' and transmits the resulting ByteString to Alice.
--- Finally, Alice passes noiseNNI2 to 'readHandshakeMsgFinal'. This covers
--- the __@<- e, dhee@__ step of the handshake.
 module Crypto.Noise.MessagePatterns
   ( -- * Functions
     -- ** Noise_NN

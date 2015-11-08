@@ -3,13 +3,13 @@ module Main where
 import Imports
 
 import qualified CipherState
-import qualified SymmetricHandshakeState
+import qualified SymmetricState
 import qualified Handshake
 
 tests :: TestTree
 tests = testGroup "cacophony"
   [ CipherState.tests
-  , SymmetricHandshakeState.tests
+  , SymmetricState.tests
   , Handshake.tests
   ]
 

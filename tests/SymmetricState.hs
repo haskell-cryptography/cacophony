@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module SymmetricHandshakeState where
+module SymmetricState where
 
 import Imports
 import Instances()
@@ -9,10 +9,10 @@ import Control.Monad.State (runState, state)
 import Crypto.Noise.Cipher
 import Crypto.Noise.Cipher.ChaChaPoly1305
 import Crypto.Noise.Hash.SHA256
-import Crypto.Noise.Internal.SymmetricHandshakeState
+import Crypto.Noise.Internal.SymmetricState
 import Crypto.Noise.Types
 
-shs :: SymmetricHandshakeState ChaChaPoly1305 SHA256
+shs :: SymmetricState ChaChaPoly1305 SHA256
 shs = symmetricHandshake $ bsToSB' "handshake name"
 
 roundTripProp :: Plaintext -> Property
@@ -31,7 +31,7 @@ manyRoundTripsProp pts = (fst . manyDecrypts . manyEncrypts) pts === pts
     manyDecrypts (cts, _) = doMany decrypt cts shs
 
 tests :: TestTree
-tests = testGroup "SymmetricHandshake"
+tests = testGroup "SymmetricState"
   [ testProperty "ChaChaPoly1305 one roundtrip" $ property roundTripProp
   , testProperty "ChaChaPoly1305 many roundtrips" $ property manyRoundTripsProp
   ]

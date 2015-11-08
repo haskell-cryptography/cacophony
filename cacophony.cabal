@@ -60,7 +60,7 @@ library
     Crypto.Noise.Hash
     Crypto.Noise.Hash.SHA256
     Crypto.Noise.Internal.CipherState
-    Crypto.Noise.Internal.SymmetricHandshakeState
+    Crypto.Noise.Internal.SymmetricState
     Crypto.Noise.Internal.HandshakeState
     Crypto.Noise.Types
   ghc-options:      -rtsopts -with-rtsopts=-N -Wall -fwarn-tabs
@@ -93,7 +93,7 @@ test-suite test-cacophony
     HandshakeStates,
     Imports,
     Instances,
-    SymmetricHandshakeState
+    SymmetricState
 
 test-suite hlint
   type:             exitcode-stdio-1.0

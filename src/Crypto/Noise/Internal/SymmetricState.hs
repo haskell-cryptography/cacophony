@@ -1,14 +1,14 @@
 {-# LANGUAGE TemplateHaskell, FlexibleContexts, ScopedTypeVariables #-}
 ----------------------------------------------------------------
 -- |
--- Module      : Crypto.Noise.Internal.SymmetricHandshakeState
+-- Module      : Crypto.Noise.Internal.SymmetricState
 -- Maintainer  : John Galt <jgalt@centromere.net>
 -- Stability   : experimental
 -- Portability : POSIX
 
-module Crypto.Noise.Internal.SymmetricHandshakeState
+module Crypto.Noise.Internal.SymmetricState
   ( -- * Types
-    SymmetricHandshakeState(SymmetricHandshakeState),
+    SymmetricState(SymmetricState),
     -- * Lenses
     shsCipher,
     shsHasKey,
@@ -32,17 +32,17 @@ import Crypto.Noise.Hash
 import Crypto.Noise.Internal.CipherState
 import Crypto.Noise.Types
 
-data SymmetricHandshakeState c h =
-  SymmetricHandshakeState { _shsCipher :: CipherState c
-                          , _shsHasKey :: Bool
-                          , _shsck     :: ChainingKey h
-                          , _shsh      :: Either ScrubbedBytes (Digest h)
-                          }
+data SymmetricState c h =
+  SymmetricState { _shsCipher :: CipherState c
+                 , _shsHasKey :: Bool
+                 , _shsck     :: ChainingKey h
+                 , _shsh      :: Either ScrubbedBytes (Digest h)
+                 }
 
-$(makeLenses ''SymmetricHandshakeState)
+$(makeLenses ''SymmetricState)
 
-symmetricHandshake :: forall c h. (Cipher c, Hash h) => ScrubbedBytes -> SymmetricHandshakeState c h
-symmetricHandshake hsn = SymmetricHandshakeState cs False ck hsn'
+symmetricHandshake :: forall c h. (Cipher c, Hash h) => ScrubbedBytes -> SymmetricState c h
+symmetricHandshake hsn = SymmetricState cs False ck hsn'
   where
     hashLen    = hashLength (Proxy :: Proxy h)
     shouldHash = BA.length hsn > hashLen
@@ -53,7 +53,7 @@ symmetricHandshake hsn = SymmetricHandshakeState cs False ck hsn'
     ck         = hashBytesToCK . shshBytes $ hsn'
     cs         = CipherState undefined undefined
 
-mixKey :: (Cipher c, Hash h) => ScrubbedBytes -> SymmetricHandshakeState c h -> SymmetricHandshakeState c h
+mixKey :: (Cipher c, Hash h) => ScrubbedBytes -> SymmetricState c h -> SymmetricState c h
 mixKey d shs = shs & shsCipher .~ cs
                    & shsHasKey .~ True
                    & shsck     .~ ck
@@ -61,10 +61,10 @@ mixKey d shs = shs & shsCipher .~ cs
     (ck, k) = hashHKDF (shs ^. shsck) d
     cs      = CipherState (cipherBytesToSym k) cipherZeroNonce
 
-mixHash :: (Cipher c, Hash h) => ScrubbedBytes -> SymmetricHandshakeState c h -> SymmetricHandshakeState c h
+mixHash :: (Cipher c, Hash h) => ScrubbedBytes -> SymmetricState c h -> SymmetricState c h
 mixHash d shs = shs & shsh %~ Right . hash . (`append` d) . shshBytes
 
-encryptAndHash :: (Cipher c, Hash h) => Plaintext -> SymmetricHandshakeState c h -> (ScrubbedBytes, SymmetricHandshakeState c h)
+encryptAndHash :: (Cipher c, Hash h) => Plaintext -> SymmetricState c h -> (ScrubbedBytes, SymmetricState c h)
 encryptAndHash (Plaintext pt) shs
   | shs ^. shsHasKey = (cipherTextToBytes ct, kshs)
   | otherwise = (pt, nkshs)
@@ -73,7 +73,7 @@ encryptAndHash (Plaintext pt) shs
     kshs     = mixHash (cipherTextToBytes ct) shs & shsCipher .~ cs
     nkshs    = mixHash pt shs
 
-decryptAndHash :: (Cipher c, Hash h) => Ciphertext c -> SymmetricHandshakeState c h -> (Plaintext, SymmetricHandshakeState c h)
+decryptAndHash :: (Cipher c, Hash h) => Ciphertext c -> SymmetricState c h -> (Plaintext, SymmetricState c h)
 decryptAndHash ct shs
   | shs ^. shsHasKey = (pt, kshs')
   | otherwise = (Plaintext (cipherTextToBytes ct), nkshs')
@@ -82,7 +82,7 @@ decryptAndHash ct shs
     kshs'    = mixHash (cipherTextToBytes ct) (shs & shsCipher .~ cs)
     nkshs'   = mixHash (cipherTextToBytes ct) shs
 
-split :: (Cipher c, Hash h) => SymmetricHandshakeState c h -> (CipherState c, CipherState c)
+split :: (Cipher c, Hash h) => SymmetricState c h -> (CipherState c, CipherState c)
 split shs = (cs1, cs2)
   where
     (cs1k, cs2k) = hashHKDF (shs ^. shsck) (convert empty)

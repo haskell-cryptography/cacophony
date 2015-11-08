@@ -54,115 +54,115 @@ import Crypto.Noise.Internal.HandshakeState
 import Crypto.Noise.MessagePatterns
 
 noiseNNI :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseNNI = ([noiseNNI1], [noiseNNI2])
+noiseNNI = HandshakePattern Nothing [noiseNNI1] [noiseNNI2]
 
 noiseNNR :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseNNR = ([noiseNNR2], [noiseNNR1])
+noiseNNR = HandshakePattern Nothing [noiseNNR2] [noiseNNR1]
 
 noiseKNI :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseKNI = ([noiseKNI1], [noiseKNI2])
+noiseKNI = HandshakePattern (Just noiseKNI0) [noiseKNI1] [noiseKNI2]
 
 noiseKNR :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseKNR = ([noiseKNR2], [noiseKNR1])
+noiseKNR = HandshakePattern (Just noiseKNR0 )[noiseKNR2] [noiseKNR1]
 
 noiseNKI :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseNKI = ([noiseNKI1], [noiseNKI2])
+noiseNKI = HandshakePattern (Just noiseNKI0) [noiseNKI1] [noiseNKI2]
 
 noiseNKR :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseNKR = ([noiseNKR2], [noiseNKR1])
+noiseNKR = HandshakePattern (Just noiseNKR0) [noiseNKR2] [noiseNKR1]
 
 noiseKKI :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseKKI = ([noiseKKI1], [noiseKKI2])
+noiseKKI = HandshakePattern (Just noiseKKI0) [noiseKKI1] [noiseKKI2]
 
 noiseKKR :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseKKR = ([noiseKKR2], [noiseKKR1])
+noiseKKR = HandshakePattern (Just noiseKKR0) [noiseKKR2] [noiseKKR1]
 
 noiseNEI :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseNEI = ([noiseNEI1], [noiseNEI2])
+noiseNEI = HandshakePattern (Just noiseNEI0) [noiseNEI1] [noiseNEI2]
 
 noiseNER :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseNER = ([noiseNER2], [noiseNER1])
+noiseNER = HandshakePattern (Just noiseNER0) [noiseNER2] [noiseNER1]
 
 noiseKEI :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseKEI = ([noiseKEI1], [noiseKEI2])
+noiseKEI = HandshakePattern (Just noiseKEI0) [noiseKEI1] [noiseKEI2]
 
 noiseKER :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseKER = ([noiseKER2], [noiseKER1])
+noiseKER = HandshakePattern (Just noiseKER0) [noiseKER2] [noiseKER1]
 
 noiseNXI :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseNXI = ([noiseNXI1], [noiseNXI2])
+noiseNXI = HandshakePattern Nothing [noiseNXI1] [noiseNXI2]
 
 noiseNXR :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseNXR = ([noiseNXR2], [noiseNXR1])
+noiseNXR = HandshakePattern Nothing [noiseNXR2] [noiseNXR1]
 
 noiseKXI :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseKXI = ([noiseKXI1], [noiseKXI2])
+noiseKXI = HandshakePattern (Just noiseKXI0) [noiseKXI1] [noiseKXI2]
 
 noiseKXR :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseKXR = ([noiseKXR2], [noiseKXR1])
+noiseKXR = HandshakePattern (Just noiseKXR0) [noiseKXR2] [noiseKXR1]
 
 noiseXNI :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseXNI = ([noiseXNI1, noiseXNI3], [noiseXNI2])
+noiseXNI = HandshakePattern Nothing [noiseXNI1, noiseXNI3] [noiseXNI2]
 
 noiseXNR :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseXNR = ([noiseXNR2], [noiseXNR1, noiseXNR3])
+noiseXNR = HandshakePattern Nothing [noiseXNR2] [noiseXNR1, noiseXNR3]
 
 noiseINI :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseINI = ([noiseINI1], [noiseINI2])
+noiseINI = HandshakePattern Nothing[noiseINI1] [noiseINI2]
 
 noiseINR :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseINR = ([noiseINR2], [noiseINR1])
+noiseINR = HandshakePattern Nothing [noiseINR2] [noiseINR1]
 
 noiseXKI :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseXKI = ([noiseXKI1, noiseXKI3], [noiseXKI2])
+noiseXKI = HandshakePattern (Just noiseXKI0) [noiseXKI1, noiseXKI3] [noiseXKI2]
 
 noiseXKR :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseXKR = ([noiseXKR2], [noiseXKR1, noiseXKR3])
+noiseXKR = HandshakePattern (Just noiseXKR0) [noiseXKR2] [noiseXKR1, noiseXKR3]
 
 noiseIKI :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseIKI = ([noiseIKI1], [noiseIKI2])
+noiseIKI = HandshakePattern (Just noiseIKI0) [noiseIKI1] [noiseIKI2]
 
 noiseIKR :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseIKR = ([noiseIKR2], [noiseIKR1])
+noiseIKR = HandshakePattern (Just noiseIKR0) [noiseIKR2] [noiseIKR1]
 
 noiseXEI :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseXEI = ([noiseXEI1, noiseXEI3], [noiseXEI2])
+noiseXEI = HandshakePattern (Just noiseXEI0) [noiseXEI1, noiseXEI3] [noiseXEI2]
 
 noiseXER :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseXER = ([noiseXER2], [noiseXER1, noiseXER3])
+noiseXER = HandshakePattern (Just noiseXER0) [noiseXER2] [noiseXER1, noiseXER3]
 
 noiseIEI :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseIEI = ([noiseIEI1], [noiseIEI2])
+noiseIEI = HandshakePattern (Just noiseIEI0) [noiseIEI1] [noiseIEI2]
 
 noiseIER :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseIER = ([noiseIER2], [noiseIER1])
+noiseIER = HandshakePattern (Just noiseIER0) [noiseIER2] [noiseIER1]
 
 noiseXXI :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseXXI = ([noiseXXI1, noiseXXI3], [noiseXXI2])
+noiseXXI = HandshakePattern Nothing [noiseXXI1, noiseXXI3] [noiseXXI2]
 
 noiseXXR :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseXXR = ([noiseXXR2], [noiseXXR1, noiseXXR3])
+noiseXXR = HandshakePattern Nothing [noiseXXR2] [noiseXXR1, noiseXXR3]
 
 noiseIXI :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseIXI = ([noiseIXI1], [noiseIXI2])
+noiseIXI = HandshakePattern Nothing [noiseIXI1] [noiseIXI2]
 
 noiseIXR :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseIXR = ([noiseIXR2], [noiseIXR1])
+noiseIXR = HandshakePattern Nothing [noiseIXR2] [noiseIXR1]
 
 noiseNI :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseNI = ([noiseNI1], [])
+noiseNI = HandshakePattern (Just noiseNI0) [noiseNI1] []
 
 noiseNR :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseNR = ([], [noiseNR1])
+noiseNR = HandshakePattern (Just noiseNR0) [] [noiseNR1]
 
 noiseKI :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseKI = ([noiseKI1], [])
+noiseKI = HandshakePattern (Just noiseKI0) [noiseKI1] []
 
 noiseKR :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseKR = ([], [noiseKR1])
+noiseKR = HandshakePattern (Just noiseKR0) [] [noiseKR1]
 
 noiseXI :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseXI = ([noiseXI1], [])
+noiseXI = HandshakePattern (Just noiseXI0) [noiseXI1] []
 
 noiseXR :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseXR = ([], [noiseXR1])
+noiseXR = HandshakePattern (Just noiseXR0) [] [noiseXR1]

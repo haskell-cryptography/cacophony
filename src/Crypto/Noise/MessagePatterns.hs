@@ -359,16 +359,16 @@ noiseNEI2 buf = do
 noiseKEI0 :: (Cipher c, Curve d, Hash h)
           => MessagePattern c d h ()
 noiseKEI0 = do
+  tokenPreLS
   tokenPreRS
   tokenPreRE
-  tokenPreLS
 
 noiseKER0 :: (Cipher c, Curve d, Hash h)
           => MessagePattern c d h ()
 noiseKER0 = do
+  tokenPreRS
   tokenPreLS
   tokenPreLE
-  tokenPreRS
 
 noiseKEI1 :: (Cipher c, Curve d, Hash h)
           => MessagePatternIO c d h ByteString

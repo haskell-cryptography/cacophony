@@ -1,18 +1,18 @@
 ----------------------------------------------------------------
 -- |
--- Module      : Crypto.Noise.Descriptors
+-- Module      : Crypto.Noise.MessagePatterns
 -- Maintainer  : John Galt <jgalt@centromere.net>
 -- Stability   : experimental
 -- Portability : POSIX
 --
--- This module contains all of the descriptors for all the handshakes
+-- This module contains all of the message patterns for all the handshakes
 -- specified in the protocol. The first two characters of the name
--- represent the handshake the descriptor belongs to (NN, KN, NK, etc). The
--- next character represents whether the descriptor is intended to be used
--- by the @I@nitiator or the @R@esponder. Finally, the number indicates
--- the step of the handshake in which the descriptor is intended to be used.
--- Regular handshake steps begin at 1, but descriptors for pre-messages are
--- numbered 0. The descriptors for pre-messages are intended to be passed
+-- represent the handshake the pattern belongs to (NN, KN, NK, etc). The
+-- next character represents whether the pattern is intended to be used
+-- by the __I__nitiator or the __R__esponder. Finally, the number indicates
+-- the step of the handshake in which the pattern is intended to be used.
+-- Regular handshake steps begin at 1, but patterns for pre-messages are
+-- numbered 0. The patterns for pre-messages are intended to be passed
 -- to the 'handshakeState' function. The (de-)serialization of pre-messages
 -- is beyond the scope of this library, but public keys can be
 -- imported/exported using the 'curveBytesToPub' and 'curvePubToBytes'
@@ -20,12 +20,12 @@
 --
 -- For example, in Noise_NN, Alice passes noiseNNI1 to 'writeHandshakeMsg'.
 -- The resulting ByteString is transmitted to Bob, where he passes the
--- noiseNNR1 descriptor to 'readHandshakeMsg'. This covers the __@-> e@__
+-- noiseNNR1 pattern to 'readHandshakeMsg'. This covers the __@-> e@__
 -- step of the handshake. Next, Bob passes noiseNNR2 to
 -- 'writeHandshakeMsgFinal' and transmits the resulting ByteString to Alice.
 -- Finally, Alice passes noiseNNI2 to 'readHandshakeMsgFinal'. This covers
 -- the __@<- e, dhee@__ step of the handshake.
-module Crypto.Noise.Descriptors
+module Crypto.Noise.MessagePatterns
   ( -- * Functions
     -- ** Noise_NN
     noiseNNI1,
@@ -164,16 +164,16 @@ import Crypto.Noise.Internal.HandshakeState
 -- Noise_NN
 
 noiseNNI1 :: (Cipher c, Curve d, Hash h)
-          => DescriptorIO c d h ByteString
+          => MessagePatternIO c d h ByteString
 noiseNNI1 = tokenWE
 
 noiseNNR1 :: (Cipher c, Curve d, Hash h)
           => ByteString
-          -> Descriptor c d h ByteString
+          -> MessagePattern c d h ByteString
 noiseNNR1 = tokenRE
 
 noiseNNR2 :: (Cipher c, Curve d, Hash h)
-          => DescriptorIO c d h ByteString
+          => MessagePatternIO c d h ByteString
 noiseNNR2 = do
   e <- tokenWE
   tokenDHEE
@@ -181,7 +181,7 @@ noiseNNR2 = do
 
 noiseNNI2 :: (Cipher c, Curve d, Hash h)
           => ByteString
-          -> Descriptor c d h ByteString
+          -> MessagePattern c d h ByteString
 noiseNNI2 buf = do
   rest <- tokenRE buf
   tokenDHEE
@@ -191,24 +191,24 @@ noiseNNI2 buf = do
 -- Noise_KN
 
 noiseKNI0 :: (Cipher c, Curve d, Hash h)
-          => Descriptor c d h ()
+          => MessagePattern c d h ()
 noiseKNI0 = tokenPreLS
 
 noiseKNR0 :: (Cipher c, Curve d, Hash h)
-          => Descriptor c d h ()
+          => MessagePattern c d h ()
 noiseKNR0 = tokenPreRS
 
 noiseKNI1 :: (Cipher c, Curve d, Hash h)
-          => DescriptorIO c d h ByteString
+          => MessagePatternIO c d h ByteString
 noiseKNI1 = tokenWE
 
 noiseKNR1 :: (Cipher c, Curve d, Hash h)
           => ByteString
-          -> Descriptor c d h ByteString
+          -> MessagePattern c d h ByteString
 noiseKNR1 = tokenRE
 
 noiseKNR2 :: (Cipher c, Curve d, Hash h)
-          => DescriptorIO c d h ByteString
+          => MessagePatternIO c d h ByteString
 noiseKNR2 = do
   e <- tokenWE
   tokenDHEE
@@ -217,7 +217,7 @@ noiseKNR2 = do
 
 noiseKNI2 :: (Cipher c, Curve d, Hash h)
           => ByteString
-          -> Descriptor c d h ByteString
+          -> MessagePattern c d h ByteString
 noiseKNI2 buf = do
   rest <- tokenRE buf
   tokenDHEE
@@ -228,15 +228,15 @@ noiseKNI2 buf = do
 -- Noise_NK
 
 noiseNKI0 :: (Cipher c, Curve d, Hash h)
-          => Descriptor c d h ()
+          => MessagePattern c d h ()
 noiseNKI0 = tokenPreRS
 
 noiseNKR0 :: (Cipher c, Curve d, Hash h)
-          => Descriptor c d h ()
+          => MessagePattern c d h ()
 noiseNKR0 = tokenPreLS
 
 noiseNKI1 :: (Cipher c, Curve d, Hash h)
-          => DescriptorIO c d h ByteString
+          => MessagePatternIO c d h ByteString
 noiseNKI1 = do
   e <- tokenWE
   tokenDHES
@@ -244,14 +244,14 @@ noiseNKI1 = do
 
 noiseNKR1 :: (Cipher c, Curve d, Hash h)
           => ByteString
-          -> Descriptor c d h ByteString
+          -> MessagePattern c d h ByteString
 noiseNKR1 buf = do
   rest <- tokenRE buf
   tokenDHSE
   return rest
 
 noiseNKR2 :: (Cipher c, Curve d, Hash h)
-          => DescriptorIO c d h ByteString
+          => MessagePatternIO c d h ByteString
 noiseNKR2 = do
   e <- tokenWE
   tokenDHEE
@@ -259,7 +259,7 @@ noiseNKR2 = do
 
 noiseNKI2 :: (Cipher c, Curve d, Hash h)
           => ByteString
-          -> Descriptor c d h ByteString
+          -> MessagePattern c d h ByteString
 noiseNKI2 buf = do
   rest <- tokenRE buf
   tokenDHEE
@@ -269,19 +269,19 @@ noiseNKI2 buf = do
 -- Noise_KK
 
 noiseKKI0 :: (Cipher c, Curve d, Hash h)
-          => Descriptor c d h ()
+          => MessagePattern c d h ()
 noiseKKI0 = do
   tokenPreRS
   tokenPreLS
 
 noiseKKR0 :: (Cipher c, Curve d, Hash h)
-          => Descriptor c d h ()
+          => MessagePattern c d h ()
 noiseKKR0 = do
   tokenPreLS
   tokenPreRS
 
 noiseKKI1 :: (Cipher c, Curve d, Hash h)
-          => DescriptorIO c d h ByteString
+          => MessagePatternIO c d h ByteString
 noiseKKI1 = do
   e <- tokenWE
   tokenDHES
@@ -290,7 +290,7 @@ noiseKKI1 = do
 
 noiseKKR1 :: (Cipher c, Curve d, Hash h)
           => ByteString
-          -> Descriptor c d h ByteString
+          -> MessagePattern c d h ByteString
 noiseKKR1 buf = do
   rest <- tokenRE buf
   tokenDHSE
@@ -298,7 +298,7 @@ noiseKKR1 buf = do
   return rest
 
 noiseKKR2 :: (Cipher c, Curve d, Hash h)
-          => DescriptorIO c d h ByteString
+          => MessagePatternIO c d h ByteString
 noiseKKR2 = do
   e <- tokenWE
   tokenDHEE
@@ -307,7 +307,7 @@ noiseKKR2 = do
 
 noiseKKI2 :: (Cipher c, Curve d, Hash h)
           => ByteString
-          -> Descriptor c d h ByteString
+          -> MessagePattern c d h ByteString
 noiseKKI2 buf = do
   rest <- tokenRE buf
   tokenDHEE
@@ -318,19 +318,19 @@ noiseKKI2 buf = do
 -- Noise_NE
 
 noiseNEI0 :: (Cipher c, Curve d, Hash h)
-          => Descriptor c d h ()
+          => MessagePattern c d h ()
 noiseNEI0 = do
   tokenPreRS
   tokenPreRE
 
 noiseNER0 :: (Cipher c, Curve d, Hash h)
-          => Descriptor c d h ()
+          => MessagePattern c d h ()
 noiseNER0 = do
   tokenPreLS
   tokenPreLE
 
 noiseNEI1 :: (Cipher c, Curve d, Hash h)
-          => DescriptorIO c d h ByteString
+          => MessagePatternIO c d h ByteString
 noiseNEI1 = do
   e <- tokenWE
   tokenDHEE
@@ -339,7 +339,7 @@ noiseNEI1 = do
 
 noiseNER1 :: (Cipher c, Curve d, Hash h)
           => ByteString
-          -> Descriptor c d h ByteString
+          -> MessagePattern c d h ByteString
 noiseNER1 buf = do
   rest <- tokenRE buf
   tokenDHEE
@@ -347,7 +347,7 @@ noiseNER1 buf = do
   return rest
 
 noiseNER2 :: (Cipher c, Curve d, Hash h)
-          => DescriptorIO c d h ByteString
+          => MessagePatternIO c d h ByteString
 noiseNER2 = do
   e <- tokenWE
   tokenDHEE
@@ -355,7 +355,7 @@ noiseNER2 = do
 
 noiseNEI2 :: (Cipher c, Curve d, Hash h)
           => ByteString
-          -> Descriptor c d h ByteString
+          -> MessagePattern c d h ByteString
 noiseNEI2 buf = do
   rest <- tokenRE buf
   tokenDHEE
@@ -365,21 +365,21 @@ noiseNEI2 buf = do
 -- Noise_KE
 
 noiseKEI0 :: (Cipher c, Curve d, Hash h)
-          => Descriptor c d h ()
+          => MessagePattern c d h ()
 noiseKEI0 = do
   tokenPreRS
   tokenPreRE
   tokenPreLS
 
 noiseKER0 :: (Cipher c, Curve d, Hash h)
-          => Descriptor c d h ()
+          => MessagePattern c d h ()
 noiseKER0 = do
   tokenPreLS
   tokenPreLE
   tokenPreRS
 
 noiseKEI1 :: (Cipher c, Curve d, Hash h)
-          => DescriptorIO c d h ByteString
+          => MessagePatternIO c d h ByteString
 noiseKEI1 = do
   e <- tokenWE
   tokenDHEE
@@ -389,7 +389,7 @@ noiseKEI1 = do
 
 noiseKER1 :: (Cipher c, Curve d, Hash h)
           => ByteString
-          -> Descriptor c d h ByteString
+          -> MessagePattern c d h ByteString
 noiseKER1 buf = do
   rest <- tokenRE buf
   tokenDHEE
@@ -398,7 +398,7 @@ noiseKER1 buf = do
   return rest
 
 noiseKER2 :: (Cipher c, Curve d, Hash h)
-          => DescriptorIO c d h ByteString
+          => MessagePatternIO c d h ByteString
 noiseKER2 = do
   e <- tokenWE
   tokenDHEE
@@ -407,7 +407,7 @@ noiseKER2 = do
 
 noiseKEI2 :: (Cipher c, Curve d, Hash h)
           => ByteString
-          -> Descriptor c d h ByteString
+          -> MessagePattern c d h ByteString
 noiseKEI2 buf = do
   rest <- tokenRE buf
   tokenDHEE
@@ -418,16 +418,16 @@ noiseKEI2 buf = do
 -- Noise_NX
 
 noiseNXI1 :: (Cipher c, Curve d, Hash h)
-          => DescriptorIO c d h ByteString
+          => MessagePatternIO c d h ByteString
 noiseNXI1 = tokenWE
 
 noiseNXR1 :: (Cipher c, Curve d, Hash h)
           => ByteString
-          -> Descriptor c d h ByteString
+          -> MessagePattern c d h ByteString
 noiseNXR1 = tokenRE
 
 noiseNXR2 :: (Cipher c, Curve d, Hash h)
-          => DescriptorIO c d h ByteString
+          => MessagePatternIO c d h ByteString
 noiseNXR2 = do
   e <- tokenWE
   tokenDHEE
@@ -437,7 +437,7 @@ noiseNXR2 = do
 
 noiseNXI2 :: (Cipher c, Curve d, Hash h)
           => ByteString
-          -> Descriptor c d h ByteString
+          -> MessagePattern c d h ByteString
 noiseNXI2 buf = do
   rest <- tokenRE buf
   tokenDHEE
@@ -449,24 +449,24 @@ noiseNXI2 buf = do
 -- Noise_KX
 
 noiseKXI0 :: (Cipher c, Curve d, Hash h)
-          => Descriptor c d h ()
+          => MessagePattern c d h ()
 noiseKXI0 = tokenPreLS
 
 noiseKXR0 :: (Cipher c, Curve d, Hash h)
-          => Descriptor c d h ()
+          => MessagePattern c d h ()
 noiseKXR0 = tokenPreRS
 
 noiseKXI1 :: (Cipher c, Curve d, Hash h)
-          => DescriptorIO c d h ByteString
+          => MessagePatternIO c d h ByteString
 noiseKXI1 = tokenWE
 
 noiseKXR1 :: (Cipher c, Curve d, Hash h)
           => ByteString
-          -> Descriptor c d h ByteString
+          -> MessagePattern c d h ByteString
 noiseKXR1 = tokenRE
 
 noiseKXR2 :: (Cipher c, Curve d, Hash h)
-          => DescriptorIO c d h ByteString
+          => MessagePatternIO c d h ByteString
 noiseKXR2 = do
   e <- tokenWE
   tokenDHEE
@@ -477,7 +477,7 @@ noiseKXR2 = do
 
 noiseKXI2 :: (Cipher c, Curve d, Hash h)
           => ByteString
-          -> Descriptor c d h ByteString
+          -> MessagePattern c d h ByteString
 noiseKXI2 buf = do
   rest <- tokenRE buf
   tokenDHEE
@@ -490,16 +490,16 @@ noiseKXI2 buf = do
 -- Noise_XN
 
 noiseXNI1 :: (Cipher c, Curve d, Hash h)
-          => DescriptorIO c d h ByteString
+          => MessagePatternIO c d h ByteString
 noiseXNI1 = tokenWE
 
 noiseXNR1 :: (Cipher c, Curve d, Hash h)
           => ByteString
-          -> Descriptor c d h ByteString
+          -> MessagePattern c d h ByteString
 noiseXNR1 = tokenRE
 
 noiseXNR2 :: (Cipher c, Curve d, Hash h)
-          => DescriptorIO c d h ByteString
+          => MessagePatternIO c d h ByteString
 noiseXNR2 = do
   e <- tokenWE
   tokenDHEE
@@ -507,14 +507,14 @@ noiseXNR2 = do
 
 noiseXNI2 :: (Cipher c, Curve d, Hash h)
           => ByteString
-          -> Descriptor c d h ByteString
+          -> MessagePattern c d h ByteString
 noiseXNI2 buf = do
   rest <- tokenRE buf
   tokenDHEE
   return rest
 
 noiseXNI3 :: (Cipher c, Curve d, Hash h)
-          => DescriptorIO c d h ByteString
+          => MessagePatternIO c d h ByteString
 noiseXNI3 = do
   s <- tokenWS
   tokenDHSE
@@ -522,7 +522,7 @@ noiseXNI3 = do
 
 noiseXNR3 :: (Cipher c, Curve d, Hash h)
           => ByteString
-          -> Descriptor c d h ByteString
+          -> MessagePattern c d h ByteString
 noiseXNR3 buf = do
   rest <- tokenRS buf
   tokenDHES
@@ -532,7 +532,7 @@ noiseXNR3 buf = do
 -- Noise_IN
 
 noiseINI1 :: (Cipher c, Curve d, Hash h)
-          => DescriptorIO c d h ByteString
+          => MessagePatternIO c d h ByteString
 noiseINI1 = do
   s <- tokenWS
   e <- tokenWE
@@ -540,13 +540,13 @@ noiseINI1 = do
 
 noiseINR1 :: (Cipher c, Curve d, Hash h)
           => ByteString
-          -> Descriptor c d h ByteString
+          -> MessagePattern c d h ByteString
 noiseINR1 buf = do
   rest  <- tokenRS buf
   tokenRE rest
 
 noiseINR2 :: (Cipher c, Curve d, Hash h)
-          => DescriptorIO c d h ByteString
+          => MessagePatternIO c d h ByteString
 noiseINR2 = do
   e <- tokenWE
   tokenDHEE
@@ -555,7 +555,7 @@ noiseINR2 = do
 
 noiseINI2 :: (Cipher c, Curve d, Hash h)
           => ByteString
-          -> Descriptor c d h ByteString
+          -> MessagePattern c d h ByteString
 noiseINI2 buf = do
   rest <- tokenRE buf
   tokenDHEE
@@ -566,15 +566,15 @@ noiseINI2 buf = do
 -- Noise_XK
 
 noiseXKI0 :: (Cipher c, Curve d, Hash h)
-          => Descriptor c d h ()
+          => MessagePattern c d h ()
 noiseXKI0 = tokenPreRS
 
 noiseXKR0 :: (Cipher c, Curve d, Hash h)
-          => Descriptor c d h ()
+          => MessagePattern c d h ()
 noiseXKR0 = tokenPreLS
 
 noiseXKI1 :: (Cipher c, Curve d, Hash h)
-          => DescriptorIO c d h ByteString
+          => MessagePatternIO c d h ByteString
 noiseXKI1 = do
   e <- tokenWE
   tokenDHES
@@ -582,14 +582,14 @@ noiseXKI1 = do
 
 noiseXKR1 :: (Cipher c, Curve d, Hash h)
           => ByteString
-          -> Descriptor c d h ByteString
+          -> MessagePattern c d h ByteString
 noiseXKR1 buf = do
   rest <- tokenRE buf
   tokenDHSE
   return rest
 
 noiseXKR2 :: (Cipher c, Curve d, Hash h)
-          => DescriptorIO c d h ByteString
+          => MessagePatternIO c d h ByteString
 noiseXKR2 = do
   e <- tokenWE
   tokenDHEE
@@ -597,14 +597,14 @@ noiseXKR2 = do
 
 noiseXKI2 :: (Cipher c, Curve d, Hash h)
           => ByteString
-          -> Descriptor c d h ByteString
+          -> MessagePattern c d h ByteString
 noiseXKI2 buf = do
   rest <- tokenRE buf
   tokenDHEE
   return rest
 
 noiseXKI3 :: (Cipher c, Curve d, Hash h)
-          => DescriptorIO c d h ByteString
+          => MessagePatternIO c d h ByteString
 noiseXKI3 = do
   s <- tokenWS
   tokenDHSE
@@ -612,7 +612,7 @@ noiseXKI3 = do
 
 noiseXKR3 :: (Cipher c, Curve d, Hash h)
           => ByteString
-          -> Descriptor c d h ByteString
+          -> MessagePattern c d h ByteString
 noiseXKR3 buf = do
   rest <- tokenRS buf
   tokenDHES
@@ -622,15 +622,15 @@ noiseXKR3 buf = do
 -- Noise_IK
 
 noiseIKI0 :: (Cipher c, Curve d, Hash h)
-          => Descriptor c d h ()
+          => MessagePattern c d h ()
 noiseIKI0 = tokenPreRS
 
 noiseIKR0 :: (Cipher c, Curve d, Hash h)
-          => Descriptor c d h ()
+          => MessagePattern c d h ()
 noiseIKR0 = tokenPreLS
 
 noiseIKI1 :: (Cipher c, Curve d, Hash h)
-          => DescriptorIO c d h ByteString
+          => MessagePatternIO c d h ByteString
 noiseIKI1 = do
   e <- tokenWE
   tokenDHES
@@ -640,7 +640,7 @@ noiseIKI1 = do
 
 noiseIKR1 :: (Cipher c, Curve d, Hash h)
           => ByteString
-          -> Descriptor c d h ByteString
+          -> MessagePattern c d h ByteString
 noiseIKR1 buf = do
   rest <- tokenRE buf
   tokenDHSE
@@ -649,7 +649,7 @@ noiseIKR1 buf = do
   return rest'
 
 noiseIKR2 :: (Cipher c, Curve d, Hash h)
-          => DescriptorIO c d h ByteString
+          => MessagePatternIO c d h ByteString
 noiseIKR2 = do
   e <- tokenWE
   tokenDHEE
@@ -658,7 +658,7 @@ noiseIKR2 = do
 
 noiseIKI2 :: (Cipher c, Curve d, Hash h)
           => ByteString
-          -> Descriptor c d h ByteString
+          -> MessagePattern c d h ByteString
 noiseIKI2 buf = do
   rest <- tokenRE buf
   tokenDHEE
@@ -669,19 +669,19 @@ noiseIKI2 buf = do
 -- Noise_XE
 
 noiseXEI0 :: (Cipher c, Curve d, Hash h)
-          => Descriptor c d h ()
+          => MessagePattern c d h ()
 noiseXEI0 = do
   tokenPreRS
   tokenPreRE
 
 noiseXER0 :: (Cipher c, Curve d, Hash h)
-          => Descriptor c d h ()
+          => MessagePattern c d h ()
 noiseXER0 = do
   tokenPreLS
   tokenPreLE
 
 noiseXEI1 :: (Cipher c, Curve d, Hash h)
-          => DescriptorIO c d h ByteString
+          => MessagePatternIO c d h ByteString
 noiseXEI1 = do
   e <- tokenWE
   tokenDHEE
@@ -690,7 +690,7 @@ noiseXEI1 = do
 
 noiseXER1 :: (Cipher c, Curve d, Hash h)
           => ByteString
-          -> Descriptor c d h ByteString
+          -> MessagePattern c d h ByteString
 noiseXER1 buf = do
   rest <- tokenRE buf
   tokenDHEE
@@ -698,7 +698,7 @@ noiseXER1 buf = do
   return rest
 
 noiseXER2 :: (Cipher c, Curve d, Hash h)
-          => DescriptorIO c d h ByteString
+          => MessagePatternIO c d h ByteString
 noiseXER2 = do
   e <- tokenWE
   tokenDHEE
@@ -706,14 +706,14 @@ noiseXER2 = do
 
 noiseXEI2 :: (Cipher c, Curve d, Hash h)
           => ByteString
-          -> Descriptor c d h ByteString
+          -> MessagePattern c d h ByteString
 noiseXEI2 buf = do
   rest <- tokenRE buf
   tokenDHEE
   return rest
 
 noiseXEI3 :: (Cipher c, Curve d, Hash h)
-          => DescriptorIO c d h ByteString
+          => MessagePatternIO c d h ByteString
 noiseXEI3 = do
   s <- tokenWS
   tokenDHSE
@@ -721,7 +721,7 @@ noiseXEI3 = do
 
 noiseXER3 :: (Cipher c, Curve d, Hash h)
           => ByteString
-          -> Descriptor c d h ByteString
+          -> MessagePattern c d h ByteString
 noiseXER3 buf = do
   rest <- tokenRS buf
   tokenDHES
@@ -731,19 +731,19 @@ noiseXER3 buf = do
 -- Noise_IE
 
 noiseIEI0 :: (Cipher c, Curve d, Hash h)
-          => Descriptor c d h ()
+          => MessagePattern c d h ()
 noiseIEI0 = do
   tokenPreRS
   tokenPreRE
 
 noiseIER0 :: (Cipher c, Curve d, Hash h)
-          => Descriptor c d h ()
+          => MessagePattern c d h ()
 noiseIER0 = do
   tokenPreLS
   tokenPreLE
 
 noiseIEI1 :: (Cipher c, Curve d, Hash h)
-          => DescriptorIO c d h ByteString
+          => MessagePatternIO c d h ByteString
 noiseIEI1 = do
   e <- tokenWE
   tokenDHEE
@@ -754,7 +754,7 @@ noiseIEI1 = do
 
 noiseIER1 :: (Cipher c, Curve d, Hash h)
           => ByteString
-          -> Descriptor c d h ByteString
+          -> MessagePattern c d h ByteString
 noiseIER1 buf = do
   rest <- tokenRE buf
   tokenDHEE
@@ -764,7 +764,7 @@ noiseIER1 buf = do
   return rest'
 
 noiseIER2 :: (Cipher c, Curve d, Hash h)
-          => DescriptorIO c d h ByteString
+          => MessagePatternIO c d h ByteString
 noiseIER2 = do
   e <- tokenWE
   tokenDHEE
@@ -773,7 +773,7 @@ noiseIER2 = do
 
 noiseIEI2 :: (Cipher c, Curve d, Hash h)
           => ByteString
-          -> Descriptor c d h ByteString
+          -> MessagePattern c d h ByteString
 noiseIEI2 buf = do
   rest <- tokenRE buf
   tokenDHEE
@@ -784,16 +784,16 @@ noiseIEI2 buf = do
 -- Noise_XX
 
 noiseXXI1 :: (Cipher c, Curve d, Hash h)
-          => DescriptorIO c d h ByteString
+          => MessagePatternIO c d h ByteString
 noiseXXI1 = tokenWE
 
 noiseXXR1 :: (Cipher c, Curve d, Hash h)
           => ByteString
-          -> Descriptor c d h ByteString
+          -> MessagePattern c d h ByteString
 noiseXXR1 = tokenRE
 
 noiseXXR2 :: (Cipher c, Curve d, Hash h)
-          => DescriptorIO c d h ByteString
+          => MessagePatternIO c d h ByteString
 noiseXXR2 = do
   e <- tokenWE
   tokenDHEE
@@ -803,7 +803,7 @@ noiseXXR2 = do
 
 noiseXXI2 :: (Cipher c, Curve d, Hash h)
           => ByteString
-          -> Descriptor c d h ByteString
+          -> MessagePattern c d h ByteString
 noiseXXI2 buf = do
   rest <- tokenRE buf
   tokenDHEE
@@ -812,7 +812,7 @@ noiseXXI2 buf = do
   return rest'
 
 noiseXXI3 :: (Cipher c, Curve d, Hash h)
-          => DescriptorIO c d h ByteString
+          => MessagePatternIO c d h ByteString
 noiseXXI3 = do
   s <- tokenWS
   tokenDHSE
@@ -820,7 +820,7 @@ noiseXXI3 = do
 
 noiseXXR3 :: (Cipher c, Curve d, Hash h)
           => ByteString
-          -> Descriptor c d h ByteString
+          -> MessagePattern c d h ByteString
 noiseXXR3 buf = do
   rest <- tokenRS buf
   tokenDHES
@@ -830,7 +830,7 @@ noiseXXR3 buf = do
 -- Noise_IX
 
 noiseIXI1 :: (Cipher c, Curve d, Hash h)
-          => DescriptorIO c d h ByteString
+          => MessagePatternIO c d h ByteString
 noiseIXI1 = do
   s <- tokenWS
   e <- tokenWE
@@ -838,11 +838,11 @@ noiseIXI1 = do
 
 noiseIXR1 :: (Cipher c, Curve d, Hash h)
           => ByteString
-          -> Descriptor c d h ByteString
+          -> MessagePattern c d h ByteString
 noiseIXR1 = tokenRS >=> tokenRE
 
 noiseIXR2 :: (Cipher c, Curve d, Hash h)
-          => DescriptorIO c d h ByteString
+          => MessagePatternIO c d h ByteString
 noiseIXR2 = do
   e <- tokenWE
   tokenDHEE
@@ -853,7 +853,7 @@ noiseIXR2 = do
 
 noiseIXI2 :: (Cipher c, Curve d, Hash h)
           => ByteString
-          -> Descriptor c d h ByteString
+          -> MessagePattern c d h ByteString
 noiseIXI2 buf = do
   rest <- tokenRE buf
   tokenDHEE
@@ -866,15 +866,15 @@ noiseIXI2 buf = do
 -- Noise_N
 
 noiseNI0 :: (Cipher c, Curve d, Hash h)
-         => Descriptor c d h ()
+         => MessagePattern c d h ()
 noiseNI0 = tokenPreRS
 
 noiseNR0 :: (Cipher c, Curve d, Hash h)
-         => Descriptor c d h ()
+         => MessagePattern c d h ()
 noiseNR0 = tokenPreLS
 
 noiseNI1 :: (Cipher c, Curve d, Hash h)
-        => DescriptorIO c d h ByteString
+        => MessagePatternIO c d h ByteString
 noiseNI1 = do
   e <- tokenWE
   tokenDHES
@@ -882,7 +882,7 @@ noiseNI1 = do
 
 noiseNR1 :: (Cipher c, Curve d, Hash h)
         => ByteString
-        -> Descriptor c d h ByteString
+        -> MessagePattern c d h ByteString
 noiseNR1 buf = do
   rest <- tokenRE buf
   tokenDHSE
@@ -892,19 +892,19 @@ noiseNR1 buf = do
 -- Noise_K
 
 noiseKI0 :: (Cipher c, Curve d, Hash h)
-         => Descriptor c d h ()
+         => MessagePattern c d h ()
 noiseKI0 = do
   tokenPreRS
   tokenPreLS
 
 noiseKR0 :: (Cipher c, Curve d, Hash h)
-         => Descriptor c d h ()
+         => MessagePattern c d h ()
 noiseKR0 = do
   tokenPreLS
   tokenPreRS
 
 noiseKI1 :: (Cipher c, Curve d, Hash h)
-          => DescriptorIO c d h ByteString
+          => MessagePatternIO c d h ByteString
 noiseKI1 = do
   e <- tokenWE
   tokenDHES
@@ -913,7 +913,7 @@ noiseKI1 = do
 
 noiseKR1 :: (Cipher c, Curve d, Hash h)
           => ByteString
-          -> Descriptor c d h ByteString
+          -> MessagePattern c d h ByteString
 noiseKR1 buf = do
   rest <- tokenRE buf
   tokenDHSE
@@ -924,15 +924,15 @@ noiseKR1 buf = do
 -- Noise_X
 
 noiseXI0 :: (Cipher c, Curve d, Hash h)
-         => Descriptor c d h ()
+         => MessagePattern c d h ()
 noiseXI0 = tokenPreRS
 
 noiseXR0 :: (Cipher c, Curve d, Hash h)
-         => Descriptor c d h ()
+         => MessagePattern c d h ()
 noiseXR0 = tokenPreLS
 
 noiseXI1 :: (Cipher c, Curve d, Hash h)
-          => DescriptorIO c d h ByteString
+          => MessagePatternIO c d h ByteString
 noiseXI1 = do
   e <- tokenWE
   tokenDHES
@@ -942,7 +942,7 @@ noiseXI1 = do
 
 noiseXR1 :: (Cipher c, Curve d, Hash h)
           => ByteString
-          -> Descriptor c d h ByteString
+          -> MessagePattern c d h ByteString
 noiseXR1 buf = do
   rest <- tokenRE buf
   tokenDHSE

@@ -4,7 +4,7 @@ module HandshakeStates where
 import Data.ByteString (ByteString)
 import Data.Proxy
 
-import Crypto.Noise.Descriptors
+import Crypto.Noise.MessagePatterns
 import Crypto.Noise.Handshake
 import Crypto.Noise.Cipher
 import Crypto.Noise.Cipher.ChaChaPoly1305

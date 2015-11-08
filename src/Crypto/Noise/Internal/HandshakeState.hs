@@ -13,10 +13,10 @@ module Crypto.Noise.Internal.HandshakeState
     MonadHandshake(..),
     -- * Types
     HandshakeState,
-    Descriptor,
-    DescriptorIO,
+    MessagePattern,
+    MessagePatternIO,
     -- * Functions
-    runDescriptorT,
+    runMessagePatternT,
     getRemoteStaticKey,
     handshakeState,
     writeHandshakeMsg,
@@ -53,20 +53,20 @@ data HandshakeState c d h =
 
 $(makeLenses ''HandshakeState)
 
-newtype DescriptorT c d h m a = DescriptorT { unD :: StateT (HandshakeState c d h) m a }
+newtype MessagePatternT c d h m a = MessagePatternT { unD :: StateT (HandshakeState c d h) m a }
   deriving (Functor, Applicative, Monad, MonadIO, MonadState(HandshakeState c d h))
 
 -- | Represents a series of operations that can be performed on a Noise
 --   message.
-type Descriptor c d h a = DescriptorT c d h Identity a
+type MessagePattern c d h a = MessagePatternT c d h Identity a
 
 -- | Represents a series of operations that will result in a Noise message.
 --   This must be done in IO to facilitate the generation of ephemeral
 --   keys.
-type DescriptorIO c d h a = DescriptorT c d h IO a
+type MessagePatternIO c d h a = MessagePatternT c d h IO a
 
-runDescriptorT :: Monad m => DescriptorT c d h m a -> HandshakeState c d h -> m (a, HandshakeState c d h)
-runDescriptorT = runStateT . unD
+runMessagePatternT :: Monad m => MessagePatternT c d h m a -> HandshakeState c d h -> m (a, HandshakeState c d h)
+runMessagePatternT = runStateT . unD
 
 class Monad m => MonadHandshake m where
   tokenPreLS :: m ()
@@ -82,7 +82,7 @@ class Monad m => MonadHandshake m where
   tokenDHSE :: m ()
   tokenDHSS :: m ()
 
-instance (Monad m, Cipher c, Curve d, Hash h) => MonadHandshake (DescriptorT c d h m) where
+instance (Monad m, Cipher c, Curve d, Hash h) => MonadHandshake (MessagePatternT c d h m) where
   tokenPreLS = tokenPreLX hssLocalStaticKey
 
   tokenPreRS = tokenPreRX hssRemoteStaticKey
@@ -225,13 +225,13 @@ handshakeState :: (Cipher c, Curve d, Hash h)
                -- ^ Remote public static key
                -> Maybe (PublicKey d)
                -- ^ Remote public ephemeral key
-               -> Maybe (Descriptor c d h ())
-               -- ^ Pre-message processing descriptor
+               -> Maybe (MessagePattern c d h ())
+               -- ^ Pre-message processing pattern
                -> HandshakeState c d h
 handshakeState hn ls le rs re = maybe hs hs'
   where
     hs = HandshakeState (symmetricHandshake hn) ls le rs re
-    hs' desc = snd . runIdentity $ runDescriptorT desc hs
+    hs' desc = snd . runIdentity $ runMessagePatternT desc hs
 
 -- | Creates a handshake message. The plaintext can be left empty if no
 --   plaintext is to be transmitted. All subsequent handshake processing
@@ -239,13 +239,13 @@ handshakeState hn ls le rs re = maybe hs hs'
 writeHandshakeMsg :: (Cipher c, Curve d, Hash h)
                       => HandshakeState c d h
                       -- ^ The handshake state
-                      -> DescriptorIO c d h ByteString
-                      -- ^ A descriptor for this particular message
+                      -> MessagePatternIO c d h ByteString
+                      -- ^ A pattern for this particular message
                       -> Plaintext
                       -- ^ Optional message to transmit
                       -> IO (ByteString, HandshakeState c d h)
 writeHandshakeMsg hs desc payload = do
-  (d, hs') <- runDescriptorT desc hs
+  (d, hs') <- runMessagePatternT desc hs
   let (ep, shs') = encryptAndHash payload $ hs' ^. hssSymmetricState
       hs''       = hs' & hssSymmetricState .~ shs'
   return (d `B.append` convert ep, hs'')
@@ -257,12 +257,12 @@ readHandshakeMsg :: (Cipher c, Curve d, Hash h)
                      -- ^ The handshake state
                      -> ByteString
                      -- ^ The handshake message received
-                     -> (ByteString -> Descriptor c d h ByteString)
-                     -- ^ A descriptor for this particular message
+                     -> (ByteString -> MessagePattern c d h ByteString)
+                     -- ^ A pattern for this particular message
                      -> (Plaintext, HandshakeState c d h)
 readHandshakeMsg hs buf desc = (dp, hs'')
   where
-    (d, hs')   = runIdentity $ runDescriptorT (desc buf) hs
+    (d, hs')   = runIdentity $ runMessagePatternT (desc buf) hs
     (dp, shs') = decryptAndHash (cipherBytesToText (convert d))
                  $ hs' ^. hssSymmetricState
     hs''       = hs' & hssSymmetricState .~ shs'
@@ -272,8 +272,8 @@ readHandshakeMsg hs buf desc = (dp, hs'')
 writeHandshakeMsgFinal :: (Cipher c, Curve d, Hash h)
                        => HandshakeState c d h
                        -- ^ The handshake state
-                       -> DescriptorIO c d h ByteString
-                       -- ^ A descriptor for this particular message
+                       -> MessagePatternIO c d h ByteString
+                       -- ^ A pattern for this particular message
                        -> Plaintext
                        -- ^ Optional message to transmit
                        -> IO (ByteString, CipherState c, CipherState c)
@@ -289,8 +289,8 @@ readHandshakeMsgFinal :: (Cipher c, Curve d, Hash h)
                       -- ^ The handshake state
                       -> ByteString
                       -- ^ The handshake message received
-                      -> (ByteString -> Descriptor c d h ByteString)
-                      -- ^ A descriptor for this particular message
+                      -> (ByteString -> MessagePattern c d h ByteString)
+                      -- ^ A pattern for this particular message
                       -> (Plaintext, CipherState c, CipherState c)
 readHandshakeMsgFinal hs buf desc = (pt, cs1, cs2)
   where

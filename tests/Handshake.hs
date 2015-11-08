@@ -3,7 +3,7 @@ module Handshake where
 
 import Data.ByteString (ByteString)
 
-import Crypto.Noise.Descriptors
+import Crypto.Noise.MessagePatterns
 import Crypto.Noise.Handshake
 import Crypto.Noise.Cipher
 import Crypto.Noise.Curve
@@ -65,8 +65,8 @@ mkHandshakeProp ht =
 oneMessage :: (Cipher c, Curve d, Hash h)
            => HandshakeState c d h
            -> HandshakeState c d h
-           -> DescriptorIO c d h ByteString
-           -> (ByteString -> Descriptor c d h ByteString)
+           -> MessagePatternIO c d h ByteString
+           -> (ByteString -> MessagePattern c d h ByteString)
            -> Plaintext
            -> Property
 oneMessage ihs rhs noiseI1 noiseR1 pt = ioProperty $ do
@@ -86,10 +86,10 @@ oneMessage ihs rhs noiseI1 noiseR1 pt = ioProperty $ do
 twoMessage :: (Cipher c, Curve d, Hash h)
            => HandshakeState c d h
            -> HandshakeState c d h
-           -> DescriptorIO c d h ByteString
-           -> (ByteString -> Descriptor c d h ByteString)
-           -> DescriptorIO c d h ByteString
-           -> (ByteString -> Descriptor c d h ByteString)
+           -> MessagePatternIO c d h ByteString
+           -> (ByteString -> MessagePattern c d h ByteString)
+           -> MessagePatternIO c d h ByteString
+           -> (ByteString -> MessagePattern c d h ByteString)
            -> Plaintext
            -> Property
 twoMessage ihs rhs noiseI1 noiseR1 noiseR2 noiseI2 pt = ioProperty $ do
@@ -115,12 +115,12 @@ twoMessage ihs rhs noiseI1 noiseR1 noiseR2 noiseI2 pt = ioProperty $ do
 threeMessage :: (Cipher c, Curve d, Hash h)
              => HandshakeState c d h
              -> HandshakeState c d h
-             -> DescriptorIO c d h ByteString
-             -> (ByteString -> Descriptor c d h ByteString)
-             -> DescriptorIO c d h ByteString
-             -> (ByteString -> Descriptor c d h ByteString)
-             -> DescriptorIO c d h ByteString
-             -> (ByteString -> Descriptor c d h ByteString)
+             -> MessagePatternIO c d h ByteString
+             -> (ByteString -> MessagePattern c d h ByteString)
+             -> MessagePatternIO c d h ByteString
+             -> (ByteString -> MessagePattern c d h ByteString)
+             -> MessagePatternIO c d h ByteString
+             -> (ByteString -> MessagePattern c d h ByteString)
              -> Plaintext
              -> Property
 threeMessage ihs rhs noiseI1 noiseR1 noiseR2 noiseI2 noiseI3 noiseR3 pt =

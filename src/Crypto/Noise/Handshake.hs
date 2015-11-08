@@ -5,13 +5,13 @@
 -- Stability   : experimental
 -- Portability : POSIX
 --
--- For more information regarding Descriptors, please see the
--- "Crypto.Noise.Descriptors" module.
+-- For more information regarding MessagePatterns, please see the
+-- "Crypto.Noise.MessagePatterns" module.
 module Crypto.Noise.Handshake
   ( -- * Types
     HandshakeState,
-    Descriptor,
-    DescriptorIO,
+    MessagePattern,
+    MessagePatternIO,
     CipherState,
     -- * Functions
     getRemoteStaticKey,

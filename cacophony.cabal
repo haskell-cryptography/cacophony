@@ -55,7 +55,7 @@ library
     Crypto.Noise.Cipher.ChaChaPoly1305
     Crypto.Noise.Curve
     Crypto.Noise.Curve.Curve25519
-    Crypto.Noise.Descriptors
+    Crypto.Noise.MessagePatterns
     Crypto.Noise.Handshake
     Crypto.Noise.Hash
     Crypto.Noise.Hash.SHA256

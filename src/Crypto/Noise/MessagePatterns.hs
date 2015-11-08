@@ -263,14 +263,14 @@ noiseNKI2 buf = do
 noiseKKI0 :: (Cipher c, Curve d, Hash h)
           => MessagePattern c d h ()
 noiseKKI0 = do
-  tokenPreRS
   tokenPreLS
+  tokenPreRS
 
 noiseKKR0 :: (Cipher c, Curve d, Hash h)
           => MessagePattern c d h ()
 noiseKKR0 = do
-  tokenPreLS
   tokenPreRS
+  tokenPreLS
 
 noiseKKI1 :: (Cipher c, Curve d, Hash h)
           => MessagePatternIO c d h ByteString

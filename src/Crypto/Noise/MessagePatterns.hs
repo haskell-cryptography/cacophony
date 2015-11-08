@@ -886,14 +886,14 @@ noiseNR1 buf = do
 noiseKI0 :: (Cipher c, Curve d, Hash h)
          => MessagePattern c d h ()
 noiseKI0 = do
-  tokenPreRS
   tokenPreLS
+  tokenPreRS
 
 noiseKR0 :: (Cipher c, Curve d, Hash h)
          => MessagePattern c d h ()
 noiseKR0 = do
-  tokenPreLS
   tokenPreRS
+  tokenPreLS
 
 noiseKI1 :: (Cipher c, Curve d, Hash h)
           => MessagePatternIO c d h ByteString

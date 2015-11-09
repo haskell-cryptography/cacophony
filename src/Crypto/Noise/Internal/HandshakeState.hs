@@ -228,11 +228,13 @@ tokenRX buf keyToUpdate = do
 --   dependent on the type of handshake you are using. If you fail to
 --   provide a key that your handshake type depends on, you will receive an
 --   error such as "local static key not set".
-handshakeState :: (Cipher c, Curve d, Hash h)
-               => ScrubbedBytes
-               -- ^ Handshake name
+handshakeState :: forall c d h. (Cipher c, Curve d, Hash h)
+               => ByteString
+               -- ^ Handshake pattern name
                -> HandshakePattern c d h
                -- ^ The handshake pattern to use
+               -> Plaintext
+               -- ^ Prologue
                -> Maybe (KeyPair d)
                -- ^ Local static key
                -> Maybe (KeyPair d)
@@ -242,10 +244,17 @@ handshakeState :: (Cipher c, Curve d, Hash h)
                -> Maybe (PublicKey d)
                -- ^ Remote public ephemeral key
                -> HandshakeState c d h
-handshakeState hn hsp ls le rs re = maybe hs hs' $ hsp ^. hpPreMsg
+handshakeState hpn hsp (Plaintext pro) ls le rs re = maybe hs' hs'' $ hsp ^. hpPreMsg
   where
-    hs = HandshakeState (symmetricHandshake hn) hsp ls le rs re
-    hs' desc = snd . runIdentity $ runMessagePatternT desc hs
+    p       = bsToSB' "Noise_"
+    a       = curveName  (Proxy :: Proxy d)
+    b       = cipherName (Proxy :: Proxy c)
+    c       = hashName   (Proxy :: Proxy h)
+    u       = bsToSB' "_"
+    hpn'    = concatSB [p, bsToSB' hpn, u, a, u, b, u, c]
+    hs      = HandshakeState (symmetricHandshake hpn') hsp ls le rs re
+    hs'     = hs & hssSymmetricState %~ mixHash pro
+    hs'' mp = snd . runIdentity $ runMessagePatternT mp hs
 
 -- | Creates a handshake message. The plaintext can be left empty if no
 --   plaintext is to be transmitted. All subsequent handshake processing

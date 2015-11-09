@@ -42,7 +42,7 @@ flag llvm
 
 library
   build-depends:
-    base >=4.8 && <4.9,
+    base >=4.8 && <5,
     bytestring,
     cryptonite,
     lens,
@@ -80,7 +80,7 @@ test-suite test-cacophony
   default-language: Haskell2010
 
   build-depends:
-    base >= 4.8 && < 4.9,
+    base >=4.8 && <5,
     bytestring,
     cacophony,
     mtl,
@@ -107,7 +107,7 @@ test-suite hlint
     buildable: False
   else
     build-depends:
-      base  >= 4.8 && < 4.9,
+      base  >=4.8 && <5,
       hlint
 
 test-suite doctests
@@ -137,4 +137,4 @@ benchmark bench
   default-language: Haskell2010
 
   build-depends:
-    base >= 4.8 && < 4.9
+    base >=4.8 && <5

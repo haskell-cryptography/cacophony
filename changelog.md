@@ -1,3 +1,7 @@
+# 0.3.0
+
+* Brought API up to date with current version of spec (17)
+
 # 0.2.0
 
 * Added support for one-way handshakes

@@ -22,6 +22,7 @@ import Data.Maybe (fromMaybe)
 
 import Crypto.Noise.Cipher
 
+-- | Represents a symmetric key and associated nonce.
 data CipherState c =
   CipherState { _csk :: SymmetricKey c
               , _csn :: Nonce c

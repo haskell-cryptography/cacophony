@@ -17,10 +17,10 @@ module Crypto.Noise.Handshake
     -- * Functions
     getRemoteStaticKey,
     handshakeState,
-    writeHandshakeMsg,
-    readHandshakeMsg,
-    writeHandshakeMsgFinal,
-    readHandshakeMsgFinal,
+    writeMessage,
+    readMessage,
+    writeMessageFinal,
+    readMessageFinal,
     encryptPayload,
     decryptPayload
   ) where

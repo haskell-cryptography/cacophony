@@ -65,8 +65,8 @@ oneMessage :: (Cipher c, Curve d, Hash h)
            -> Plaintext
            -> Property
 oneMessage ihs rhs pt = ioProperty $ do
-  (aliceToBob1, csAlice1, _) <- writeHandshakeMsgFinal ihs sampleHSPT
-  let (hsptFromBob1, csBob1, _) = readHandshakeMsgFinal rhs aliceToBob1
+  (aliceToBob1, csAlice1, _) <- writeMessageFinal ihs sampleHSPT
+  let (hsptFromBob1, csBob1, _) = readMessageFinal rhs aliceToBob1
 
   return $ conjoin
     [ (decrypt csBob1 . encrypt csAlice1) pt === pt
@@ -84,11 +84,11 @@ twoMessage :: (Cipher c, Curve d, Hash h)
            -> Plaintext
            -> Property
 twoMessage ihs rhs pt = ioProperty $ do
-  (aliceToBob1, ihs') <- writeHandshakeMsg ihs sampleHSPT
-  let (hsptFromAlice1, rhs') = readHandshakeMsg rhs aliceToBob1
+  (aliceToBob1, ihs') <- writeMessage ihs sampleHSPT
+  let (hsptFromAlice1, rhs') = readMessage rhs aliceToBob1
 
-  (bobToAlice1, csBob1, csBob2) <- writeHandshakeMsgFinal rhs' sampleHSPT
-  let (hsptFromBob1, csAlice1, csAlice2) = readHandshakeMsgFinal ihs' bobToAlice1
+  (bobToAlice1, csBob1, csBob2) <- writeMessageFinal rhs' sampleHSPT
+  let (hsptFromBob1, csAlice1, csAlice2) = readMessageFinal ihs' bobToAlice1
 
   return $ conjoin
     [ (decrypt csBob1 . encrypt csAlice1) pt === pt
@@ -110,14 +110,14 @@ threeMessage :: (Cipher c, Curve d, Hash h)
              -> Property
 threeMessage ihs rhs pt =
   ioProperty $ do
-    (aliceToBob1, ihs') <- writeHandshakeMsg ihs sampleHSPT
-    let (hsptFromAlice1, rhs') = readHandshakeMsg rhs aliceToBob1
+    (aliceToBob1, ihs') <- writeMessage ihs sampleHSPT
+    let (hsptFromAlice1, rhs') = readMessage rhs aliceToBob1
 
-    (bobToAlice1, rhs'') <- writeHandshakeMsg rhs' sampleHSPT
-    let (hsptFromBob1, ihs'') = readHandshakeMsg ihs' bobToAlice1
+    (bobToAlice1, rhs'') <- writeMessage rhs' sampleHSPT
+    let (hsptFromBob1, ihs'') = readMessage ihs' bobToAlice1
 
-    (aliceToBob2, csAlice1, csAlice2) <- writeHandshakeMsgFinal ihs'' sampleHSPT
-    let (hsptFromBob2, csBob1, csBob2) = readHandshakeMsgFinal rhs'' aliceToBob2
+    (aliceToBob2, csAlice1, csAlice2) <- writeMessageFinal ihs'' sampleHSPT
+    let (hsptFromBob2, csBob1, csBob2) = readMessageFinal rhs'' aliceToBob2
 
     return $ conjoin
       [ (decrypt csBob1 . encrypt csAlice1) pt === pt

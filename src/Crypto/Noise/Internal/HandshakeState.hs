@@ -87,14 +87,14 @@ class Monad m => MonadHandshake m where
   tokenPreRS :: m ()
   tokenPreLE :: m ()
   tokenPreRE :: m ()
-  tokenRE   :: ByteString -> m ByteString
-  tokenRS   :: ByteString -> m ByteString
-  tokenWE   :: MonadIO m => m ByteString
-  tokenWS   :: m ByteString
-  tokenDHEE :: m ()
-  tokenDHES :: m ()
-  tokenDHSE :: m ()
-  tokenDHSS :: m ()
+  tokenRE    :: ByteString -> m ByteString
+  tokenRS    :: ByteString -> m ByteString
+  tokenWE    :: MonadIO m => m ByteString
+  tokenWS    :: m ByteString
+  tokenDHEE  :: m ()
+  tokenDHES  :: m ()
+  tokenDHSE  :: m ()
+  tokenDHSS  :: m ()
 
 instance (Monad m, Cipher c, Curve d, Hash h) => MonadHandshake (MessagePatternT c d h m) where
   tokenPreLS = tokenPreLX hssLocalStaticKey
@@ -112,55 +112,55 @@ instance (Monad m, Cipher c, Curve d, Hash h) => MonadHandshake (MessagePatternT
   tokenWE = do
     ~kp@(_, pk) <- liftIO curveGenKey
     hs <- get
-    let pk'        = curvePubToBytes pk
-        shs        = hs ^. hssSymmetricState
-        (ct, shs') = encryptAndHash (Plaintext pk') shs
-    put $ hs & hssLocalEphemeralKey .~ Just kp & hssSymmetricState .~ shs'
+    let pk'       = curvePubToBytes pk
+        ss        = hs ^. hssSymmetricState
+        (ct, ss') = encryptAndHash (Plaintext pk') ss
+    put $ hs & hssLocalEphemeralKey .~ Just kp & hssSymmetricState .~ ss'
     return . convert $ ct
 
   tokenWS = do
     hs <- get
-    let pk         = curvePubToBytes . snd . getLocalStaticKey $ hs
-        shs        = hs ^. hssSymmetricState
-        (ct, shs') = encryptAndHash ((Plaintext . convert) pk) shs
-    put $ hs & hssSymmetricState .~ shs'
+    let pk        = curvePubToBytes . snd . getLocalStaticKey $ hs
+        ss        = hs ^. hssSymmetricState
+        (ct, ss') = encryptAndHash ((Plaintext . convert) pk) ss
+    put $ hs & hssSymmetricState .~ ss'
     return . convert $ ct
 
   tokenDHEE = do
     hs <- get
-    let shs      = hs ^. hssSymmetricState
+    let ss       = hs ^. hssSymmetricState
         ~(sk, _) = getLocalEphemeralKey hs
         rpk      = getRemoteEphemeralKey hs
         dh       = curveDH sk rpk
-        shs'     = mixKey dh shs
-    put $ hs & hssSymmetricState .~ shs'
+        ss'      = mixKey dh ss
+    put $ hs & hssSymmetricState .~ ss'
 
   tokenDHES = do
     hs <- get
-    let shs      = hs ^. hssSymmetricState
+    let ss       = hs ^. hssSymmetricState
         ~(sk, _) = getLocalEphemeralKey hs
         rpk      = getRemoteStaticKey hs
         dh       = curveDH sk rpk
-        shs'     = mixKey dh shs
-    put $ hs & hssSymmetricState .~ shs'
+        ss'      = mixKey dh ss
+    put $ hs & hssSymmetricState .~ ss'
 
   tokenDHSE = do
     hs <- get
-    let shs      = hs ^. hssSymmetricState
+    let ss       = hs ^. hssSymmetricState
         ~(sk, _) = getLocalStaticKey hs
         rpk      = getRemoteEphemeralKey hs
         dh       = curveDH sk rpk
-        shs'     = mixKey dh shs
-    put $ hs & hssSymmetricState .~ shs'
+        ss'     = mixKey dh ss
+    put $ hs & hssSymmetricState .~ ss'
 
   tokenDHSS = do
     hs <- get
-    let shs      = hs ^. hssSymmetricState
+    let ss       = hs ^. hssSymmetricState
         ~(sk, _) = getLocalStaticKey hs
         rpk      = getRemoteStaticKey hs
         dh       = curveDH sk rpk
-        shs'     = mixKey dh shs
-    put $ hs & hssSymmetricState .~ shs'
+        ss'      = mixKey dh ss
+    put $ hs & hssSymmetricState .~ ss'
 
 getLocalStaticKey :: Curve d => HandshakeState c d h -> KeyPair d
 getLocalStaticKey hs = fromMaybe (error "local static key not set")
@@ -186,20 +186,20 @@ tokenPreLX :: (MonadState (HandshakeState c d h) m, Cipher c, Curve d, Hash h)
            -> m ()
 tokenPreLX keyToView = do
   hs <- get
-  let shs     = hs ^. hssSymmetricState
+  let ss      = hs ^. hssSymmetricState
       (_, pk) = fromMaybe (error "tokenPreLX: local key not set") (hs ^. keyToView)
-      shs'    = mixHash (curvePubToBytes pk) shs
-  put $ hs & hssSymmetricState .~ shs'
+      ss'     = mixHash (curvePubToBytes pk) ss
+  put $ hs & hssSymmetricState .~ ss'
 
 tokenPreRX :: (MonadState (HandshakeState c d h) m, Cipher c, Curve d, Hash h)
            => Lens' (HandshakeState c d h) (Maybe (PublicKey d))
            -> m ()
 tokenPreRX keyToView = do
   hs <- get
-  let shs  = hs ^. hssSymmetricState
-      pk   = fromMaybe (error "tokenPreRX: remote key not set") (hs ^. keyToView)
-      shs' = mixHash (curvePubToBytes pk) shs
-  put $ hs & hssSymmetricState .~ shs'
+  let ss  = hs ^. hssSymmetricState
+      pk  = fromMaybe (error "tokenPreRX: remote key not set") (hs ^. keyToView)
+      ss' = mixHash (curvePubToBytes pk) ss
+  put $ hs & hssSymmetricState .~ ss'
 
 tokenRX :: forall c d h m. (MonadState (HandshakeState c d h) m, Cipher c, Curve d, Hash h)
        => ByteString
@@ -208,13 +208,13 @@ tokenRX :: forall c d h m. (MonadState (HandshakeState c d h) m, Cipher c, Curve
 tokenRX buf keyToUpdate = do
   hs <- get
 
-  let hasKey    = hs ^. hssSymmetricState . shsHasKey
+  let hasKey    = hs ^. hssSymmetricState . ssHasKey
       (b, rest) = B.splitAt (d hasKey) buf
       ct        = cipherBytesToText . convert $ b
-      shs       = hs ^. hssSymmetricState
-      (Plaintext pt, shs') = decryptAndHash ct shs
+      ss        = hs ^. hssSymmetricState
+      (Plaintext pt, ss') = decryptAndHash ct ss
 
-  put $ hs & keyToUpdate .~ Just (curveBytesToPub pt) & hssSymmetricState .~ shs'
+  put $ hs & keyToUpdate .~ Just (curveBytesToPub pt) & hssSymmetricState .~ ss'
 
   return rest
 
@@ -261,9 +261,9 @@ writeHandshakeMsg hs payload = do
 
   (d, hs') <- runMessagePatternT wmp hs
 
-  let (ep, shs') = encryptAndHash payload $ hs' ^. hssSymmetricState
-      hs''       = hs' & hssSymmetricState .~ shs'
-                       & hssHandshakePattern . hpWriteMsg .~ wmps
+  let (ep, ss') = encryptAndHash payload $ hs' ^. hssSymmetricState
+      hs''      = hs' & hssSymmetricState .~ ss'
+                      & hssHandshakePattern . hpWriteMsg .~ wmps
   return (d `B.append` convert ep, hs'')
 
 -- | Reads a handshake message. All subsequent handshake processing must
@@ -278,9 +278,9 @@ readHandshakeMsg hs buf = (dp, hs'')
   where
     (rmp:rmps) = hs ^. hssHandshakePattern . hpReadMsg
     (d, hs')   = runIdentity $ runMessagePatternT (rmp buf) hs
-    (dp, shs') = decryptAndHash (cipherBytesToText (convert d))
+    (dp, ss')  = decryptAndHash (cipherBytesToText (convert d))
                  $ hs' ^. hssSymmetricState
-    hs''       = hs' & hssSymmetricState .~ shs'
+    hs''       = hs' & hssSymmetricState .~ ss'
                      & hssHandshakePattern . hpReadMsg .~ rmps
 
 -- | The final call of a handshake negotiation. Used to generate a pair of

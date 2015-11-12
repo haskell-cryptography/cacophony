@@ -43,6 +43,7 @@ flag llvm
 library
   build-depends:
     base >=4.8 && <5,
+    base16-bytestring,
     bytestring,
     cryptonite,
     lens,
@@ -59,6 +60,8 @@ library
     Crypto.Noise.Handshake
     Crypto.Noise.HandshakePatterns
     Crypto.Noise.Hash
+    Crypto.Noise.Hash.BLAKE2b
+    Crypto.Noise.Hash.BLAKE2s
     Crypto.Noise.Hash.SHA256
     Crypto.Noise.Internal.CipherState
     Crypto.Noise.Internal.SymmetricState

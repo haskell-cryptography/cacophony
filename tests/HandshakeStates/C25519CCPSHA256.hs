@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module HandshakeStates where
+module HandshakeStates.C25519CCPSHA256 where
 
 import Crypto.Noise.Cipher.ChaChaPoly1305
 import Crypto.Noise.Curve

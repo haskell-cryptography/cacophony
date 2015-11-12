@@ -11,7 +11,7 @@ module Crypto.Noise.Hash.SHA256
     SHA256
   ) where
 
-import qualified Crypto.Hash as H
+import qualified Crypto.Hash     as H
 import qualified Crypto.MAC.HMAC as M
 
 import Crypto.Noise.Hash

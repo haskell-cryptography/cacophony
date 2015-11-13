@@ -11,6 +11,7 @@ module Crypto.Noise.Curve.Curve25519
     Curve25519
   ) where
 
+import Crypto.Error (throwCryptoError)
 import Crypto.Random.Entropy
 import qualified Crypto.PubKey.Curve25519 as C
 
@@ -36,7 +37,7 @@ instance Curve Curve25519 where
 genKey :: IO (KeyPair Curve25519)
 genKey = do
   r <- getEntropy 32 :: IO ScrubbedBytes
-  let sk = either error id $ C.secretKey r
+  let sk = throwCryptoError . C.secretKey $ r
       pk = C.toPublic sk
   return (SK25519 sk, PK25519 pk)
 
@@ -47,7 +48,7 @@ pubToBytes :: PublicKey Curve25519 -> ScrubbedBytes
 pubToBytes (PK25519 pk) = convert pk
 
 bytesToPub :: ScrubbedBytes -> PublicKey Curve25519
-bytesToPub b = PK25519 . either error id $ C.publicKey b
+bytesToPub b = PK25519 . throwCryptoError . C.publicKey $ b
 
 secToBytes :: SecretKey Curve25519 -> ScrubbedBytes
 secToBytes (SK25519 sk) = convert sk
@@ -55,5 +56,5 @@ secToBytes (SK25519 sk) = convert sk
 bytesToPair :: ScrubbedBytes -> KeyPair Curve25519
 bytesToPair bs = (SK25519 sk, PK25519 pk)
   where
-    sk = either error id $ C.secretKey bs
+    sk = throwCryptoError . C.secretKey $ bs
     pk = C.toPublic sk

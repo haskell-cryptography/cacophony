@@ -47,9 +47,9 @@ symmetricHandshake hsn = SymmetricState cs False ck hsn'
     hashLen    = hashLength (Proxy :: Proxy h)
     shouldHash = BA.length hsn > hashLen
     hsn'       = if shouldHash then
-                   Left $ hsn `append` BA.replicate (hashLen - BA.length hsn) 0
-                 else
                    Right $ hash hsn
+                 else
+                   Left $ hsn `append` BA.replicate (hashLen - BA.length hsn) 0
     ck         = hashBytesToCK . sshBytes $ hsn'
     cs         = CipherState undefined undefined
 

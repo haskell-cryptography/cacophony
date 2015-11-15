@@ -91,9 +91,8 @@ test-suite properties
 
   other-modules:
     CipherState,
-    Handshake,
-    HandshakeStates.C25519CCPSHA256,
-    HandshakeStates.C25519CCPSHA512,
+    Handshakes,
+    HandshakeStates
     Imports,
     Instances,
     SymmetricState

@@ -394,7 +394,7 @@ noiseKER2 :: (Cipher c, Curve d, Hash h)
 noiseKER2 = do
   e <- tokenWE
   tokenDHEE
-  tokenDHSE
+  tokenDHES
   return e
 
 noiseKEI2 :: (Cipher c, Curve d, Hash h)
@@ -403,7 +403,7 @@ noiseKEI2 :: (Cipher c, Curve d, Hash h)
 noiseKEI2 buf = do
   rest <- tokenRE buf
   tokenDHEE
-  tokenDHES
+  tokenDHSE
   return rest
 
 --------------------------------------------------------------------------------

@@ -59,10 +59,7 @@ decrypt (SKCCP1305 k) (NCCP1305 n) (AssocData ad) (CTCCP1305 (ct, auth)) =
     calcAuthTag     = CCP.finalize afterDec
 
 zeroNonce :: Nonce ChaChaPoly1305
-zeroNonce = NCCP1305 . throwCryptoError $ CCP.nonce8 constant iv
-  where
-    constant = BS.replicate 4 0
-    iv       = BS.replicate 8 0
+zeroNonce = NCCP1305 . throwCryptoError . CCP.nonce8 $ BS.replicate 8 0
 
 incNonce :: Nonce ChaChaPoly1305 -> Nonce ChaChaPoly1305
 incNonce (NCCP1305 n) = NCCP1305 $ CCP.incrementNonce n

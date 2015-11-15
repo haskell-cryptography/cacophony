@@ -63,7 +63,7 @@ noiseKNI :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
 noiseKNI = HandshakePattern (Just noiseKNI0) [noiseKNI1] [noiseKNI2]
 
 noiseKNR :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseKNR = HandshakePattern (Just noiseKNR0 )[noiseKNR2] [noiseKNR1]
+noiseKNR = HandshakePattern (Just noiseKNR0) [noiseKNR2] [noiseKNR1]
 
 noiseNKI :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
 noiseNKI = HandshakePattern (Just noiseNKI0) [noiseNKI1] [noiseNKI2]

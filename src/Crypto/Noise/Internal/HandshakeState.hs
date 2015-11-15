@@ -33,7 +33,7 @@ import Control.Monad.State
 
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B (append, splitAt)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, isJust)
 import Data.Proxy
 
 import Crypto.Noise.Cipher
@@ -107,7 +107,12 @@ instance (Monad m, Cipher c, Curve d, Hash h) => MonadHandshake (MessagePatternT
 
   tokenRE buf = tokenRX buf hssRemoteEphemeralKey
 
-  tokenRS buf = tokenRX buf hssRemoteStaticKey
+  tokenRS buf = do
+    hs <- get
+    if isJust (hs ^. hssRemoteStaticKey) then
+      error "unable to overwrite remote static key"
+    else
+      tokenRX buf hssRemoteStaticKey
 
   tokenWE = do
     ~kp@(_, pk) <- liftIO curveGenKey
@@ -150,7 +155,7 @@ instance (Monad m, Cipher c, Curve d, Hash h) => MonadHandshake (MessagePatternT
         ~(sk, _) = getLocalStaticKey hs
         rpk      = getRemoteEphemeralKey hs
         dh       = curveDH sk rpk
-        ss'     = mixKey dh ss
+        ss'      = mixKey dh ss
     put $ hs & hssSymmetricState .~ ss'
 
   tokenDHSS = do
@@ -254,7 +259,7 @@ handshakeState hpn hsp (Plaintext pro) ls le rs re = maybe hs' hs'' $ hsp ^. hpP
     hpn'    = concatSB [p, bsToSB' hpn, u, a, u, b, u, c]
     hs      = HandshakeState (symmetricHandshake hpn') hsp ls le rs re
     hs'     = hs & hssSymmetricState %~ mixHash pro
-    hs'' mp = snd . runIdentity $ runMessagePatternT mp hs
+    hs'' mp = snd . runIdentity $ runMessagePatternT mp hs'
 
 -- | Creates a handshake message. The plaintext can be left empty if no
 --   plaintext is to be transmitted. All subsequent handshake processing

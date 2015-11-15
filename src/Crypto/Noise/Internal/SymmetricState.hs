@@ -75,12 +75,12 @@ encryptAndHash (Plaintext pt) ss
 
 decryptAndHash :: (Cipher c, Hash h) => Ciphertext c -> SymmetricState c h -> (Plaintext, SymmetricState c h)
 decryptAndHash ct ss
-  | ss ^. ssHasKey = (pt, kss')
-  | otherwise      = (Plaintext (cipherTextToBytes ct), nkss')
+  | ss ^. ssHasKey = (pt, kss)
+  | otherwise      = (Plaintext (cipherTextToBytes ct), nkss)
   where
     (pt, cs) = decryptAndIncrement (AssocData (sshBytes (ss ^. ssh))) ct (ss ^. ssCipher)
-    kss'     = mixHash (cipherTextToBytes ct) (ss & ssCipher .~ cs)
-    nkss'    = mixHash (cipherTextToBytes ct) ss
+    kss      = mixHash (cipherTextToBytes ct) ss & ssCipher .~ cs
+    nkss     = mixHash (cipherTextToBytes ct) ss
 
 split :: (Cipher c, Hash h) => SymmetricState c h -> (CipherState c, CipherState c)
 split ss = (cs1, cs2)

@@ -103,7 +103,7 @@ noiseKXIHS =
   ""
   (Just initStatic)
   Nothing
-  (Just (snd respStatic))
+  Nothing
   Nothing
 
 noiseXNIHS :: HandshakeState ChaChaPoly1305 Curve25519 SHA256

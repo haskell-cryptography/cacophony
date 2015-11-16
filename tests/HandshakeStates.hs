@@ -21,6 +21,7 @@ noiseNNIHS HandshakeKeys{..} =
   "NN"
   noiseNNI
   ""
+  ""
   Nothing
   Nothing
   Nothing
@@ -33,6 +34,7 @@ noiseKNIHS HandshakeKeys{..} =
   handshakeState
   "KN"
   noiseKNI
+  ""
   ""
   (Just initStatic)
   Nothing
@@ -47,6 +49,7 @@ noiseNKIHS HandshakeKeys{..} =
   "NK"
   noiseNKI
   ""
+  ""
   Nothing
   Nothing
   (Just (snd respStatic))
@@ -59,6 +62,7 @@ noiseKKIHS HandshakeKeys{..} =
   handshakeState
   "KK"
   noiseKKI
+  ""
   ""
   (Just initStatic)
   Nothing
@@ -73,6 +77,7 @@ noiseNEIHS HandshakeKeys{..} =
   "NE"
   noiseNEI
   ""
+  ""
   Nothing
   Nothing
   (Just (snd respStatic))
@@ -85,6 +90,7 @@ noiseKEIHS HandshakeKeys{..} =
   handshakeState
   "KE"
   noiseKEI
+  ""
   ""
   (Just initStatic)
   Nothing
@@ -99,6 +105,7 @@ noiseNXIHS HandshakeKeys{..} =
   "NX"
   noiseNXI
   ""
+  ""
   Nothing
   Nothing
   Nothing
@@ -111,6 +118,7 @@ noiseKXIHS HandshakeKeys{..} =
   handshakeState
   "KX"
   noiseKXI
+  ""
   ""
   (Just initStatic)
   Nothing
@@ -125,6 +133,7 @@ noiseXNIHS HandshakeKeys{..} =
   "XN"
   noiseXNI
   ""
+  ""
   (Just initStatic)
   Nothing
   Nothing
@@ -137,6 +146,7 @@ noiseINIHS HandshakeKeys{..} =
   handshakeState
   "IN"
   noiseINI
+  ""
   ""
   (Just initStatic)
   Nothing
@@ -151,6 +161,7 @@ noiseXKIHS HandshakeKeys{..} =
   "XK"
   noiseXKI
   ""
+  ""
   (Just initStatic)
   Nothing
   (Just (snd respStatic))
@@ -163,6 +174,7 @@ noiseIKIHS HandshakeKeys{..} =
   handshakeState
   "IK"
   noiseIKI
+  ""
   ""
   (Just initStatic)
   Nothing
@@ -177,6 +189,7 @@ noiseXEIHS HandshakeKeys{..} =
   "XE"
   noiseXEI
   ""
+  ""
   (Just initStatic)
   Nothing
   (Just (snd respStatic))
@@ -189,6 +202,7 @@ noiseIEIHS HandshakeKeys{..} =
   handshakeState
   "IE"
   noiseIEI
+  ""
   ""
   (Just initStatic)
   Nothing
@@ -203,6 +217,7 @@ noiseXXIHS HandshakeKeys{..} =
   "XX"
   noiseXXI
   ""
+  ""
   (Just initStatic)
   Nothing
   Nothing
@@ -215,6 +230,7 @@ noiseIXIHS HandshakeKeys{..} =
   handshakeState
   "IX"
   noiseIXI
+  ""
   ""
   (Just initStatic)
   Nothing
@@ -229,6 +245,7 @@ noiseNIHS HandshakeKeys{..} =
   "N"
   noiseNI
   ""
+  ""
   Nothing
   Nothing
   (Just (snd respStatic))
@@ -241,6 +258,7 @@ noiseKIHS HandshakeKeys{..} =
   handshakeState
   "K"
   noiseKI
+  ""
   ""
   (Just initStatic)
   Nothing
@@ -255,6 +273,7 @@ noiseXIHS HandshakeKeys{..} =
   "X"
   noiseXI
   ""
+  ""
   (Just initStatic)
   Nothing
   (Just (snd respStatic))
@@ -267,6 +286,7 @@ noiseNNRHS HandshakeKeys{..} =
   handshakeState
   "NN"
   noiseNNR
+  ""
   ""
   Nothing
   Nothing
@@ -281,6 +301,7 @@ noiseKNRHS HandshakeKeys{..} =
   "KN"
   noiseKNR
   ""
+  ""
   Nothing
   Nothing
   (Just (snd initStatic))
@@ -293,6 +314,7 @@ noiseNKRHS HandshakeKeys{..} =
   handshakeState
   "NK"
   noiseNKR
+  ""
   ""
   (Just respStatic)
   Nothing
@@ -307,6 +329,7 @@ noiseKKRHS HandshakeKeys{..} =
   "KK"
   noiseKKR
   ""
+  ""
   (Just respStatic)
   Nothing
   (Just (snd initStatic))
@@ -319,6 +342,7 @@ noiseNERHS HandshakeKeys{..} =
   handshakeState
   "NE"
   noiseNER
+  ""
   ""
   (Just respStatic)
   (Just respEphemeral)
@@ -333,6 +357,7 @@ noiseKERHS HandshakeKeys{..} =
   "KE"
   noiseKER
   ""
+  ""
   (Just respStatic)
   (Just respEphemeral)
   (Just (snd initStatic))
@@ -345,6 +370,7 @@ noiseNXRHS HandshakeKeys{..} =
   handshakeState
   "NX"
   noiseNXR
+  ""
   ""
   (Just respStatic)
   Nothing
@@ -359,6 +385,7 @@ noiseKXRHS HandshakeKeys{..} =
   "KX"
   noiseKXR
   ""
+  ""
   (Just respStatic)
   Nothing
   (Just (snd initStatic))
@@ -371,6 +398,7 @@ noiseXNRHS HandshakeKeys{..} =
   handshakeState
   "XN"
   noiseXNR
+  ""
   ""
   Nothing
   Nothing
@@ -385,6 +413,7 @@ noiseINRHS HandshakeKeys{..} =
   "IN"
   noiseINR
   ""
+  ""
   Nothing
   Nothing
   Nothing
@@ -397,6 +426,7 @@ noiseXKRHS HandshakeKeys{..} =
   handshakeState
   "XK"
   noiseXKR
+  ""
   ""
   (Just respStatic)
   Nothing
@@ -411,6 +441,7 @@ noiseIKRHS HandshakeKeys{..} =
   "IK"
   noiseIKR
   ""
+  ""
   (Just respStatic)
   Nothing
   Nothing
@@ -423,6 +454,7 @@ noiseXERHS HandshakeKeys{..} =
   handshakeState
   "XE"
   noiseXER
+  ""
   ""
   (Just respStatic)
   (Just respEphemeral)
@@ -437,6 +469,7 @@ noiseIERHS HandshakeKeys{..} =
   "IE"
   noiseIER
   ""
+  ""
   (Just respStatic)
   (Just respEphemeral)
   Nothing
@@ -449,6 +482,7 @@ noiseXXRHS HandshakeKeys{..} =
   handshakeState
   "XX"
   noiseXXR
+  ""
   ""
   (Just respStatic)
   Nothing
@@ -463,6 +497,7 @@ noiseIXRHS HandshakeKeys{..} =
   "IX"
   noiseIXR
   ""
+  ""
   (Just respStatic)
   Nothing
   Nothing
@@ -475,6 +510,7 @@ noiseNRHS HandshakeKeys{..} =
   handshakeState
   "N"
   noiseNR
+  ""
   ""
   (Just respStatic)
   Nothing
@@ -489,6 +525,7 @@ noiseKRHS HandshakeKeys{..} =
   "K"
   noiseKR
   ""
+  ""
   (Just respStatic)
   Nothing
   (Just (snd initStatic))
@@ -501,6 +538,7 @@ noiseXRHS HandshakeKeys{..} =
   handshakeState
   "X"
   noiseXR
+  ""
   ""
   (Just respStatic)
   Nothing

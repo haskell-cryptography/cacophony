@@ -31,6 +31,7 @@ module Crypto.Noise.Internal.HandshakeState
 import Control.Lens hiding (re)
 import Control.Monad.State
 
+import qualified Data.ByteArray as BA (length)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B (append, splitAt)
 import Data.Maybe (fromMaybe, isJust)
@@ -105,23 +106,52 @@ instance (Monad m, Cipher c, Curve d, Hash h) => MonadHandshake (MessagePatternT
 
   tokenPreRE = tokenPreRX hssRemoteEphemeralKey
 
-  tokenRE buf = tokenRX buf hssRemoteEphemeralKey
+  tokenRE buf = do
+    hs <- get
+
+    let (b, rest) = B.splitAt (curveLength (Proxy :: Proxy d)) buf
+        reBytes   = convert b
+        ss        = hs ^. hssSymmetricState
+        ss'       = mixHash reBytes ss
+        ss''      = if ss ^. ssHasPSK then mixKey reBytes ss' else ss'
+
+    put $ hs & hssRemoteEphemeralKey .~ Just (curveBytesToPub reBytes)
+             & hssSymmetricState     .~ ss''
+
+    return rest
 
   tokenRS buf = do
     hs <- get
     if isJust (hs ^. hssRemoteStaticKey) then
       error "unable to overwrite remote static key"
-    else
-      tokenRX buf hssRemoteStaticKey
+    else do
+      let hasKey    = hs ^. hssSymmetricState . ssHasKey
+          (b, rest) = B.splitAt (d hasKey) buf
+          ct        = cipherBytesToText . convert $ b
+          ss        = hs ^. hssSymmetricState
+          (Plaintext pt, ss') = decryptAndHash ct ss
+
+      put $ hs & hssRemoteStaticKey .~ Just (curveBytesToPub pt)
+               & hssSymmetricState  .~ ss'
+
+      return rest
+
+    where
+      len           = curveLength (Proxy :: Proxy d)
+      d hk
+        | hk        = len + 16
+        | otherwise = len
 
   tokenWE = do
     ~kp@(_, pk) <- liftIO curveGenKey
     hs <- get
-    let pk'       = curvePubToBytes pk
-        ss        = hs ^. hssSymmetricState
-        (ct, ss') = encryptAndHash (Plaintext pk') ss
-    put $ hs & hssLocalEphemeralKey .~ Just kp & hssSymmetricState .~ ss'
-    return . convert $ ct
+    let pk'  = curvePubToBytes pk
+        ss   = hs ^. hssSymmetricState
+        ss'  = mixHash pk' ss
+        ss'' = if ss' ^. ssHasPSK then mixKey pk' ss' else ss'
+    put $ hs & hssLocalEphemeralKey .~ Just kp
+             & hssSymmetricState    .~ ss''
+    return . convert $ pk'
 
   tokenWS = do
     hs <- get
@@ -206,29 +236,6 @@ tokenPreRX keyToView = do
       ss' = mixHash (curvePubToBytes pk) ss
   put $ hs & hssSymmetricState .~ ss'
 
-tokenRX :: forall c d h m. (MonadState (HandshakeState c d h) m, Cipher c, Curve d, Hash h)
-       => ByteString
-       -> Lens' (HandshakeState c d h) (Maybe (PublicKey d))
-       -> m ByteString
-tokenRX buf keyToUpdate = do
-  hs <- get
-
-  let hasKey    = hs ^. hssSymmetricState . ssHasKey
-      (b, rest) = B.splitAt (d hasKey) buf
-      ct        = cipherBytesToText . convert $ b
-      ss        = hs ^. hssSymmetricState
-      (Plaintext pt, ss') = decryptAndHash ct ss
-
-  put $ hs & keyToUpdate .~ Just (curveBytesToPub pt) & hssSymmetricState .~ ss'
-
-  return rest
-
-  where
-    len           = curveLength (Proxy :: Proxy d)
-    d hk
-      | hk        = len + 16
-      | otherwise = len
-
 -- | Constructs a HandshakeState. The keys you need to provide are
 --   dependent on the type of handshake you are using. If you fail to
 --   provide a key that your handshake type depends on, you will receive an
@@ -240,6 +247,8 @@ handshakeState :: forall c d h. (Cipher c, Curve d, Hash h)
                -- ^ The handshake pattern to use
                -> Plaintext
                -- ^ Prologue
+               -> Plaintext
+               -- ^ Pre-shared key
                -> Maybe (KeyPair d)
                -- ^ Local static key
                -> Maybe (KeyPair d)
@@ -249,17 +258,26 @@ handshakeState :: forall c d h. (Cipher c, Curve d, Hash h)
                -> Maybe (PublicKey d)
                -- ^ Remote public ephemeral key
                -> HandshakeState c d h
-handshakeState hpn hsp (Plaintext pro) ls le rs re = maybe hs' hs'' $ hsp ^. hpPreMsg
+handshakeState hpn hsp (Plaintext pro) (Plaintext psk) ls le rs re =
+  if BA.length psk == 0 then let
+    hs       = HandshakeState (symmetricState (hpn' p)) hsp ls le rs re
+    hs' mp   = snd . runIdentity $ runMessagePatternT mp (hsPro hs) in
+    maybe hs hs' $ hsp ^. hpPreMsg
+  else let
+    hs       = HandshakeState (symmetricState (hpn' ppsk)) hsp ls le rs re
+    hs'      = hsPSK . hsPro $ hs
+    hs'' mp  = snd . runIdentity $ runMessagePatternT mp hs' in
+    maybe hs' hs'' $ hsp ^. hpPreMsg
   where
-    p       = bsToSB' "Noise_"
-    a       = curveName  (Proxy :: Proxy d)
-    b       = cipherName (Proxy :: Proxy c)
-    c       = hashName   (Proxy :: Proxy h)
-    u       = bsToSB' "_"
-    hpn'    = concatSB [p, bsToSB' hpn, u, a, u, b, u, c]
-    hs      = HandshakeState (symmetricState hpn') hsp ls le rs re
-    hs'     = hs & hssSymmetricState %~ mixHash pro
-    hs'' mp = snd . runIdentity $ runMessagePatternT mp hs'
+    p        = bsToSB' "Noise_"
+    ppsk     = bsToSB' "NoisePSK_"
+    a        = curveName  (Proxy :: Proxy d)
+    b        = cipherName (Proxy :: Proxy c)
+    c        = hashName   (Proxy :: Proxy h)
+    u        = bsToSB' "_"
+    hpn' pfx = concatSB [pfx, bsToSB' hpn, u, a, u, b, u, c]
+    hsPro hs = hs & hssSymmetricState %~ mixHash pro
+    hsPSK hs = hs & hssSymmetricState %~ mixPSK psk
 
 -- | Creates a handshake message. The plaintext can be left empty if no
 --   plaintext is to be transmitted. All subsequent handshake processing

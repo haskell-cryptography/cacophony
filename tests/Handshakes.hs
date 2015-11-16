@@ -1,6 +1,8 @@
 {-# LANGUAGE OverloadedStrings, RankNTypes, ScopedTypeVariables #-}
 module Handshakes where
 
+import Data.Proxy
+
 import Crypto.Noise.Cipher
 import Crypto.Noise.Cipher.ChaChaPoly1305
 import Crypto.Noise.Curve
@@ -49,70 +51,73 @@ re25519 = curveBytesToPair . bsToSB' $ "<\231\151\151\180\217\146\DLEI}\160N\163
 sampleHSPT :: Plaintext
 sampleHSPT = Plaintext . bsToSB' $ "cacophony"
 
-mkHandshakeProp :: forall c d h. (Cipher c, Curve d, Hash h)
-                => HandshakeKeys d
-                -> HandshakeType c d h
-                -> Plaintext
-                -> Property
-mkHandshakeProp hks ht =
-  let nni = noiseNNIHS hks :: HandshakeState c d h
-      nnr = noiseNNRHS hks :: HandshakeState c d h
-      kni = noiseKNIHS hks :: HandshakeState c d h
-      knr = noiseKNRHS hks :: HandshakeState c d h
-      nki = noiseNKIHS hks :: HandshakeState c d h
-      nkr = noiseNKRHS hks :: HandshakeState c d h
-      kki = noiseKKIHS hks :: HandshakeState c d h
-      kkr = noiseKKRHS hks :: HandshakeState c d h
-      nei = noiseNEIHS hks :: HandshakeState c d h
-      ner = noiseNERHS hks :: HandshakeState c d h
-      kei = noiseKEIHS hks :: HandshakeState c d h
-      ker = noiseKERHS hks :: HandshakeState c d h
-      nxi = noiseNXIHS hks :: HandshakeState c d h
-      nxr = noiseNXRHS hks :: HandshakeState c d h
-      kxi = noiseKXIHS hks :: HandshakeState c d h
-      kxr = noiseKXRHS hks :: HandshakeState c d h
-      xni = noiseXNIHS hks :: HandshakeState c d h
-      xnr = noiseXNRHS hks :: HandshakeState c d h
-      ini = noiseINIHS hks :: HandshakeState c d h
-      inr = noiseINRHS hks :: HandshakeState c d h
-      xki = noiseXKIHS hks :: HandshakeState c d h
-      xkr = noiseXKRHS hks :: HandshakeState c d h
-      iki = noiseIKIHS hks :: HandshakeState c d h
-      ikr = noiseIKRHS hks :: HandshakeState c d h
-      xei = noiseXEIHS hks :: HandshakeState c d h
-      xer = noiseXERHS hks :: HandshakeState c d h
-      iei = noiseIEIHS hks :: HandshakeState c d h
-      ier = noiseIERHS hks :: HandshakeState c d h
-      xxi = noiseXXIHS hks :: HandshakeState c d h
-      xxr = noiseXXRHS hks :: HandshakeState c d h
-      ixi = noiseIXIHS hks :: HandshakeState c d h
-      ixr = noiseIXRHS hks :: HandshakeState c d h
-      ni  = noiseNIHS  hks :: HandshakeState c d h
-      nr  = noiseNRHS  hks :: HandshakeState c d h
-      ki  = noiseKIHS  hks :: HandshakeState c d h
-      kr  = noiseKRHS  hks :: HandshakeState c d h
-      xi  = noiseXIHS  hks :: HandshakeState c d h
-      xr  = noiseXRHS  hks :: HandshakeState c d h in
-  case ht of
-    NoiseNN -> twoMessage nni nnr
-    NoiseKN -> twoMessage kni knr
-    NoiseNK -> twoMessage nki nkr
-    NoiseKK -> twoMessage kki kkr
-    NoiseNE -> twoMessage nei ner
-    NoiseKE -> twoMessage kei ker
-    NoiseNX -> twoMessage nxi nxr
-    NoiseKX -> twoMessage kxi kxr
-    NoiseXN -> threeMessage xni xnr
-    NoiseIN -> twoMessage ini inr
-    NoiseXK -> threeMessage xki xkr
-    NoiseIK -> twoMessage iki ikr
-    NoiseXE -> threeMessage xei xer
-    NoiseIE -> twoMessage iei ier
-    NoiseXX -> threeMessage xxi xxr
-    NoiseIX -> twoMessage ixi ixr
-    NoiseN  -> oneMessage ni nr
-    NoiseK  -> oneMessage ki kr
-    NoiseX  -> oneMessage xi xr
+mkHandshakeProps :: forall c d h proxy. (Cipher c, Curve d, Hash h)
+                 => HandshakeKeys d
+                 -> proxy (c, h)
+                 -> [TestTree]
+mkHandshakeProps hks _ =
+  let nni, nnr, kni, knr, nki, nkr, kki, kkr, nei, ner, kei, ker, nxi, nxr,
+        kxi, kxr, xni, xnr, ini, inr, xki, xkr, iki, ikr, xei, xer, iei, ier,
+        xxi, xxr, ixi, ixr, ni, nr, ki, kr, xi, xr :: HandshakeState c d h
+      nni = noiseNNIHS hks
+      nnr = noiseNNRHS hks
+      kni = noiseKNIHS hks
+      knr = noiseKNRHS hks
+      nki = noiseNKIHS hks
+      nkr = noiseNKRHS hks
+      kki = noiseKKIHS hks
+      kkr = noiseKKRHS hks
+      nei = noiseNEIHS hks
+      ner = noiseNERHS hks
+      kei = noiseKEIHS hks
+      ker = noiseKERHS hks
+      nxi = noiseNXIHS hks
+      nxr = noiseNXRHS hks
+      kxi = noiseKXIHS hks
+      kxr = noiseKXRHS hks
+      xni = noiseXNIHS hks
+      xnr = noiseXNRHS hks
+      ini = noiseINIHS hks
+      inr = noiseINRHS hks
+      xki = noiseXKIHS hks
+      xkr = noiseXKRHS hks
+      iki = noiseIKIHS hks
+      ikr = noiseIKRHS hks
+      xei = noiseXEIHS hks
+      xer = noiseXERHS hks
+      iei = noiseIEIHS hks
+      ier = noiseIERHS hks
+      xxi = noiseXXIHS hks
+      xxr = noiseXXRHS hks
+      ixi = noiseIXIHS hks
+      ixr = noiseIXRHS hks
+      ni  = noiseNIHS  hks
+      nr  = noiseNRHS  hks
+      ki  = noiseKIHS  hks
+      kr  = noiseKRHS  hks
+      xi  = noiseXIHS  hks
+      xr  = noiseXRHS  hks in
+
+   [ testProperty "Noise_NN" (property (twoMessage   nni nnr))
+   , testProperty "Noise_KN" (property (twoMessage   kni knr))
+   , testProperty "Noise_NK" (property (twoMessage   nki nkr))
+   , testProperty "Noise_KK" (property (twoMessage   kki kkr))
+   , testProperty "Noise_NE" (property (twoMessage   nei ner))
+   , testProperty "Noise_KE" (property (twoMessage   kei ker))
+   , testProperty "Noise_NX" (property (twoMessage   nxi nxr))
+   , testProperty "Noise_KX" (property (twoMessage   kxi kxr))
+   , testProperty "Noise_XN" (property (threeMessage xni xnr))
+   , testProperty "Noise_IN" (property (twoMessage   ini inr))
+   , testProperty "Noise_XK" (property (threeMessage xki xkr))
+   , testProperty "Noise_IK" (property (twoMessage   iki ikr))
+   , testProperty "Noise_XE" (property (threeMessage xei xer))
+   , testProperty "Noise_IE" (property (twoMessage   iei ier))
+   , testProperty "Noise_XX" (property (threeMessage xxi xxr))
+   , testProperty "Noise_IX" (property (twoMessage   ixi ixr))
+   , testProperty "Noise_N"  (property (oneMessage   ni  nr ))
+   , testProperty "Noise_K"  (property (oneMessage   ki  kr ))
+   , testProperty "Noise_X"  (property (oneMessage   xi  xr ))
+   ]
 
 oneMessage :: (Cipher c, Curve d, Hash h)
            => HandshakeState c d h
@@ -193,45 +198,8 @@ tests =
   let hks = HandshakeKeys is25519 rs25519 re25519 in
   testGroup "Handshakes"
   [ testGroup "Curve25519-ChaChaPoly1305-SHA256"
-    [ testProperty "Noise_NN" . property . mkHandshakeProp hks $ (NoiseNN :: HandshakeType ChaChaPoly1305 Curve25519 SHA256)
-    , testProperty "Noise_KN" . property . mkHandshakeProp hks $ (NoiseKN :: HandshakeType ChaChaPoly1305 Curve25519 SHA256)
-    , testProperty "Noise_NK" . property . mkHandshakeProp hks $ (NoiseNK :: HandshakeType ChaChaPoly1305 Curve25519 SHA256)
-    , testProperty "Noise_KK" . property . mkHandshakeProp hks $ (NoiseKK :: HandshakeType ChaChaPoly1305 Curve25519 SHA256)
-    , testProperty "Noise_NE" . property . mkHandshakeProp hks $ (NoiseNE :: HandshakeType ChaChaPoly1305 Curve25519 SHA256)
-    , testProperty "Noise_KE" . property . mkHandshakeProp hks $ (NoiseKE :: HandshakeType ChaChaPoly1305 Curve25519 SHA256)
-    , testProperty "Noise_NX" . property . mkHandshakeProp hks $ (NoiseNX :: HandshakeType ChaChaPoly1305 Curve25519 SHA256)
-    , testProperty "Noise_KX" . property . mkHandshakeProp hks $ (NoiseKX :: HandshakeType ChaChaPoly1305 Curve25519 SHA256)
-    , testProperty "Noise_XN" . property . mkHandshakeProp hks $ (NoiseXN :: HandshakeType ChaChaPoly1305 Curve25519 SHA256)
-    , testProperty "Noise_IN" . property . mkHandshakeProp hks $ (NoiseIN :: HandshakeType ChaChaPoly1305 Curve25519 SHA256)
-    , testProperty "Noise_XK" . property . mkHandshakeProp hks $ (NoiseXK :: HandshakeType ChaChaPoly1305 Curve25519 SHA256)
-    , testProperty "Noise_IK" . property . mkHandshakeProp hks $ (NoiseIK :: HandshakeType ChaChaPoly1305 Curve25519 SHA256)
-    , testProperty "Noise_XE" . property . mkHandshakeProp hks $ (NoiseXE :: HandshakeType ChaChaPoly1305 Curve25519 SHA256)
-    , testProperty "Noise_IE" . property . mkHandshakeProp hks $ (NoiseIE :: HandshakeType ChaChaPoly1305 Curve25519 SHA256)
-    , testProperty "Noise_XX" . property . mkHandshakeProp hks $ (NoiseXX :: HandshakeType ChaChaPoly1305 Curve25519 SHA256)
-    , testProperty "Noise_IX" . property . mkHandshakeProp hks $ (NoiseIX :: HandshakeType ChaChaPoly1305 Curve25519 SHA256)
-    , testProperty "Noise_N"  . property . mkHandshakeProp hks $ (NoiseN  :: HandshakeType ChaChaPoly1305 Curve25519 SHA256)
-    , testProperty "Noise_K"  . property . mkHandshakeProp hks $ (NoiseK  :: HandshakeType ChaChaPoly1305 Curve25519 SHA256)
-    , testProperty "Noise_X"  . property . mkHandshakeProp hks $ (NoiseX  :: HandshakeType ChaChaPoly1305 Curve25519 SHA256)
-    ]
+      (mkHandshakeProps hks (Proxy :: Proxy (ChaChaPoly1305, SHA256)))
+
   , testGroup "Curve25519-ChaChaPoly1305-SHA512"
-    [ testProperty "Noise_NN" . property . mkHandshakeProp hks $ (NoiseNN :: HandshakeType ChaChaPoly1305 Curve25519 SHA512)
-    , testProperty "Noise_KN" . property . mkHandshakeProp hks $ (NoiseKN :: HandshakeType ChaChaPoly1305 Curve25519 SHA512)
-    , testProperty "Noise_NK" . property . mkHandshakeProp hks $ (NoiseNK :: HandshakeType ChaChaPoly1305 Curve25519 SHA512)
-    , testProperty "Noise_KK" . property . mkHandshakeProp hks $ (NoiseKK :: HandshakeType ChaChaPoly1305 Curve25519 SHA512)
-    , testProperty "Noise_NE" . property . mkHandshakeProp hks $ (NoiseNE :: HandshakeType ChaChaPoly1305 Curve25519 SHA512)
-    , testProperty "Noise_KE" . property . mkHandshakeProp hks $ (NoiseKE :: HandshakeType ChaChaPoly1305 Curve25519 SHA512)
-    , testProperty "Noise_NX" . property . mkHandshakeProp hks $ (NoiseNX :: HandshakeType ChaChaPoly1305 Curve25519 SHA512)
-    , testProperty "Noise_KX" . property . mkHandshakeProp hks $ (NoiseKX :: HandshakeType ChaChaPoly1305 Curve25519 SHA512)
-    , testProperty "Noise_XN" . property . mkHandshakeProp hks $ (NoiseXN :: HandshakeType ChaChaPoly1305 Curve25519 SHA512)
-    , testProperty "Noise_IN" . property . mkHandshakeProp hks $ (NoiseIN :: HandshakeType ChaChaPoly1305 Curve25519 SHA512)
-    , testProperty "Noise_XK" . property . mkHandshakeProp hks $ (NoiseXK :: HandshakeType ChaChaPoly1305 Curve25519 SHA512)
-    , testProperty "Noise_IK" . property . mkHandshakeProp hks $ (NoiseIK :: HandshakeType ChaChaPoly1305 Curve25519 SHA512)
-    , testProperty "Noise_XE" . property . mkHandshakeProp hks $ (NoiseXE :: HandshakeType ChaChaPoly1305 Curve25519 SHA512)
-    , testProperty "Noise_IE" . property . mkHandshakeProp hks $ (NoiseIE :: HandshakeType ChaChaPoly1305 Curve25519 SHA512)
-    , testProperty "Noise_XX" . property . mkHandshakeProp hks $ (NoiseXX :: HandshakeType ChaChaPoly1305 Curve25519 SHA512)
-    , testProperty "Noise_IX" . property . mkHandshakeProp hks $ (NoiseIX :: HandshakeType ChaChaPoly1305 Curve25519 SHA512)
-    , testProperty "Noise_N"  . property . mkHandshakeProp hks $ (NoiseN  :: HandshakeType ChaChaPoly1305 Curve25519 SHA512)
-    , testProperty "Noise_K"  . property . mkHandshakeProp hks $ (NoiseK  :: HandshakeType ChaChaPoly1305 Curve25519 SHA512)
-    , testProperty "Noise_X"  . property . mkHandshakeProp hks $ (NoiseX  :: HandshakeType ChaChaPoly1305 Curve25519 SHA512)
-    ]
-   ]
+      (mkHandshakeProps hks (Proxy :: Proxy (ChaChaPoly1305, SHA512)))
+  ]

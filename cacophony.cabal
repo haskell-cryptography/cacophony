@@ -59,6 +59,8 @@ library
     Crypto.Noise.Handshake
     Crypto.Noise.HandshakePatterns
     Crypto.Noise.Hash
+    Crypto.Noise.Hash.BLAKE2b
+    Crypto.Noise.Hash.BLAKE2s
     Crypto.Noise.Hash.SHA256
     Crypto.Noise.Hash.SHA512
     Crypto.Noise.Internal.CipherState

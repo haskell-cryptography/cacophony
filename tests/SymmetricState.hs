@@ -13,7 +13,7 @@ import Crypto.Noise.Internal.SymmetricState
 import Crypto.Noise.Types
 
 shs :: SymmetricState ChaChaPoly1305 SHA256
-shs = symmetricHandshake $ bsToSB' "handshake name"
+shs = symmetricState $ bsToSB' "handshake name"
 
 roundTripProp :: Plaintext -> Property
 roundTripProp pt = (decrypt . encrypt) pt === pt

@@ -14,7 +14,7 @@ module Crypto.Noise.Internal.SymmetricState
     ssHasKey,
     ssh,
     -- * Functions
-    symmetricHandshake,
+    symmetricState,
     mixKey,
     mixHash,
     encryptAndHash,
@@ -41,8 +41,8 @@ data SymmetricState c h =
 
 $(makeLenses ''SymmetricState)
 
-symmetricHandshake :: forall c h. (Cipher c, Hash h) => ScrubbedBytes -> SymmetricState c h
-symmetricHandshake hsn = SymmetricState cs False ck hsn'
+symmetricState :: forall c h. (Cipher c, Hash h) => ScrubbedBytes -> SymmetricState c h
+symmetricState hsn = SymmetricState cs False ck hsn'
   where
     hashLen    = hashLength (Proxy :: Proxy h)
     shouldHash = BA.length hsn > hashLen

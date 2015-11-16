@@ -257,7 +257,7 @@ handshakeState hpn hsp (Plaintext pro) ls le rs re = maybe hs' hs'' $ hsp ^. hpP
     c       = hashName   (Proxy :: Proxy h)
     u       = bsToSB' "_"
     hpn'    = concatSB [p, bsToSB' hpn, u, a, u, b, u, c]
-    hs      = HandshakeState (symmetricHandshake hpn') hsp ls le rs re
+    hs      = HandshakeState (symmetricState hpn') hsp ls le rs re
     hs'     = hs & hssSymmetricState %~ mixHash pro
     hs'' mp = snd . runIdentity $ runMessagePatternT mp hs'
 

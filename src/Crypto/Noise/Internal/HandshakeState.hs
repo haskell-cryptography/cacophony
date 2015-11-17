@@ -31,7 +31,6 @@ module Crypto.Noise.Internal.HandshakeState
 import Control.Lens hiding (re)
 import Control.Monad.State
 
-import qualified Data.ByteArray as BA (length)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B (append, splitAt)
 import Data.Maybe (fromMaybe, isJust)
@@ -65,10 +64,11 @@ type MessagePatternIO c d h a = MessagePatternT c d h IO a
 -- | Represents a series of message patterns, the first for writing and the
 --   second for reading.
 data HandshakePattern c d h =
-    HandshakePattern { _hpPreMsg   :: Maybe (MessagePattern c d h ())
-                     , _hpWriteMsg :: [MessagePatternIO c d h ByteString]
-                     , _hpReadMsg  :: [ByteString -> MessagePattern c d h ByteString]
-                     }
+  HandshakePattern { _hpName     :: ByteString
+                   , _hpPreMsg   :: Maybe (MessagePattern c d h ())
+                   , _hpWriteMsg :: [MessagePatternIO c d h ByteString]
+                   , _hpReadMsg  :: [ByteString -> MessagePattern c d h ByteString]
+                   }
 
 -- | Contains the state of a handshake.
 data HandshakeState c d h =
@@ -241,13 +241,11 @@ tokenPreRX keyToView = do
 --   provide a key that your handshake type depends on, you will receive an
 --   error such as "local static key not set".
 handshakeState :: forall c d h. (Cipher c, Curve d, Hash h)
-               => ByteString
-               -- ^ Handshake pattern name
-               -> HandshakePattern c d h
+               => HandshakePattern c d h
                -- ^ The handshake pattern to use
                -> Plaintext
                -- ^ Prologue
-               -> Plaintext
+               -> Maybe Plaintext
                -- ^ Pre-shared key
                -> Maybe (KeyPair d)
                -- ^ Local static key
@@ -258,16 +256,28 @@ handshakeState :: forall c d h. (Cipher c, Curve d, Hash h)
                -> Maybe (PublicKey d)
                -- ^ Remote public ephemeral key
                -> HandshakeState c d h
-handshakeState hpn hsp (Plaintext pro) (Plaintext psk) ls le rs re =
-  if BA.length psk == 0 then let
-    hs       = HandshakeState (symmetricState (hpn' p)) hsp ls le rs re
-    hs' mp   = snd . runIdentity $ runMessagePatternT mp (hsPro hs) in
-    maybe hs hs' $ hsp ^. hpPreMsg
-  else let
-    hs       = HandshakeState (symmetricState (hpn' ppsk)) hsp ls le rs re
-    hs'      = hsPSK . hsPro $ hs
-    hs'' mp  = snd . runIdentity $ runMessagePatternT mp hs' in
-    maybe hs' hs'' $ hsp ^. hpPreMsg
+handshakeState hp (Plaintext pro) (Just (Plaintext psk)) ls le rs re =
+  maybe hs' hs'' $ hp ^. hpPreMsg
+  where
+    hsPro x = x & hssSymmetricState %~ mixHash pro
+    hsPSK x = x & hssSymmetricState %~ mixPSK psk
+    hs      = HandshakeState (symmetricState (mkHPN hp True)) hp ls le rs re
+    hs'     = hsPSK . hsPro $ hs
+    hs'' mp = snd . runIdentity $ runMessagePatternT mp hs'
+
+handshakeState hp (Plaintext pro) Nothing ls le rs re =
+  maybe hs' hs'' $ hp ^. hpPreMsg
+  where
+    hsPro x = x & hssSymmetricState %~ mixHash pro
+    hs      = HandshakeState (symmetricState (mkHPN hp False)) hp ls le rs re
+    hs'     = hsPro hs
+    hs'' mp = snd . runIdentity $ runMessagePatternT mp hs'
+
+mkHPN :: forall c d h. (Cipher c, Curve d, Hash h)
+      => HandshakePattern c d h
+      -> Bool
+      -> ScrubbedBytes
+mkHPN hp psk = if psk then hpn' ppsk else hpn' p
   where
     p        = bsToSB' "Noise_"
     ppsk     = bsToSB' "NoisePSK_"
@@ -275,9 +285,7 @@ handshakeState hpn hsp (Plaintext pro) (Plaintext psk) ls le rs re =
     b        = cipherName (Proxy :: Proxy c)
     c        = hashName   (Proxy :: Proxy h)
     u        = bsToSB' "_"
-    hpn' pfx = concatSB [pfx, bsToSB' hpn, u, a, u, b, u, c]
-    hsPro hs = hs & hssSymmetricState %~ mixHash pro
-    hsPSK hs = hs & hssSymmetricState %~ mixPSK psk
+    hpn' pfx = concatSB [pfx, bsToSB' (hp ^. hpName), u, a, u, b, u, c]
 
 -- | Creates a handshake message. The plaintext can be left empty if no
 --   plaintext is to be transmitted. All subsequent handshake processing

@@ -18,10 +18,9 @@ noiseNNIHS :: (Cipher c, Curve d, Hash h)
            -> HandshakeState c d h
 noiseNNIHS HandshakeKeys{..} =
   handshakeState
-  "NN"
   noiseNNI
   ""
-  ""
+  (Just "cacophony")
   Nothing
   Nothing
   Nothing
@@ -32,10 +31,9 @@ noiseKNIHS :: (Cipher c, Curve d, Hash h)
            -> HandshakeState c d h
 noiseKNIHS HandshakeKeys{..} =
   handshakeState
-  "KN"
   noiseKNI
   ""
-  ""
+  (Just "cacophony")
   (Just initStatic)
   Nothing
   Nothing
@@ -46,10 +44,9 @@ noiseNKIHS :: (Cipher c, Curve d, Hash h)
            -> HandshakeState c d h
 noiseNKIHS HandshakeKeys{..} =
   handshakeState
-  "NK"
   noiseNKI
   ""
-  ""
+  (Just "cacophony")
   Nothing
   Nothing
   (Just (snd respStatic))
@@ -60,10 +57,9 @@ noiseKKIHS :: (Cipher c, Curve d, Hash h)
            -> HandshakeState c d h
 noiseKKIHS HandshakeKeys{..} =
   handshakeState
-  "KK"
   noiseKKI
   ""
-  ""
+  (Just "cacophony")
   (Just initStatic)
   Nothing
   (Just (snd respStatic))
@@ -74,10 +70,9 @@ noiseNEIHS :: (Cipher c, Curve d, Hash h)
            -> HandshakeState c d h
 noiseNEIHS HandshakeKeys{..} =
   handshakeState
-  "NE"
   noiseNEI
   ""
-  ""
+  (Just "cacophony")
   Nothing
   Nothing
   (Just (snd respStatic))
@@ -88,10 +83,9 @@ noiseKEIHS :: (Cipher c, Curve d, Hash h)
            -> HandshakeState c d h
 noiseKEIHS HandshakeKeys{..} =
   handshakeState
-  "KE"
   noiseKEI
   ""
-  ""
+  (Just "cacophony")
   (Just initStatic)
   Nothing
   (Just (snd respStatic))
@@ -102,10 +96,9 @@ noiseNXIHS :: (Cipher c, Curve d, Hash h)
            -> HandshakeState c d h
 noiseNXIHS HandshakeKeys{..} =
   handshakeState
-  "NX"
   noiseNXI
   ""
-  ""
+  (Just "cacophony")
   Nothing
   Nothing
   Nothing
@@ -116,10 +109,9 @@ noiseKXIHS :: (Cipher c, Curve d, Hash h)
            -> HandshakeState c d h
 noiseKXIHS HandshakeKeys{..} =
   handshakeState
-  "KX"
   noiseKXI
   ""
-  ""
+  (Just "cacophony")
   (Just initStatic)
   Nothing
   Nothing
@@ -130,10 +122,9 @@ noiseXNIHS :: (Cipher c, Curve d, Hash h)
            -> HandshakeState c d h
 noiseXNIHS HandshakeKeys{..} =
   handshakeState
-  "XN"
   noiseXNI
   ""
-  ""
+  (Just "cacophony")
   (Just initStatic)
   Nothing
   Nothing
@@ -144,10 +135,9 @@ noiseINIHS :: (Cipher c, Curve d, Hash h)
            -> HandshakeState c d h
 noiseINIHS HandshakeKeys{..} =
   handshakeState
-  "IN"
   noiseINI
   ""
-  ""
+  (Just "cacophony")
   (Just initStatic)
   Nothing
   Nothing
@@ -158,10 +148,9 @@ noiseXKIHS :: (Cipher c, Curve d, Hash h)
            -> HandshakeState c d h
 noiseXKIHS HandshakeKeys{..} =
   handshakeState
-  "XK"
   noiseXKI
   ""
-  ""
+  (Just "cacophony")
   (Just initStatic)
   Nothing
   (Just (snd respStatic))
@@ -172,10 +161,9 @@ noiseIKIHS :: (Cipher c, Curve d, Hash h)
            -> HandshakeState c d h
 noiseIKIHS HandshakeKeys{..} =
   handshakeState
-  "IK"
   noiseIKI
   ""
-  ""
+  (Just "cacophony")
   (Just initStatic)
   Nothing
   (Just (snd respStatic))
@@ -186,10 +174,9 @@ noiseXEIHS :: (Cipher c, Curve d, Hash h)
            -> HandshakeState c d h
 noiseXEIHS HandshakeKeys{..} =
   handshakeState
-  "XE"
   noiseXEI
   ""
-  ""
+  (Just "cacophony")
   (Just initStatic)
   Nothing
   (Just (snd respStatic))
@@ -200,10 +187,9 @@ noiseIEIHS :: (Cipher c, Curve d, Hash h)
            -> HandshakeState c d h
 noiseIEIHS HandshakeKeys{..} =
   handshakeState
-  "IE"
   noiseIEI
   ""
-  ""
+  (Just "cacophony")
   (Just initStatic)
   Nothing
   (Just (snd respStatic))
@@ -214,10 +200,9 @@ noiseXXIHS :: (Cipher c, Curve d, Hash h)
            -> HandshakeState c d h
 noiseXXIHS HandshakeKeys{..} =
   handshakeState
-  "XX"
   noiseXXI
   ""
-  ""
+  (Just "cacophony")
   (Just initStatic)
   Nothing
   Nothing
@@ -228,10 +213,9 @@ noiseIXIHS :: (Cipher c, Curve d, Hash h)
            -> HandshakeState c d h
 noiseIXIHS HandshakeKeys{..} =
   handshakeState
-  "IX"
   noiseIXI
   ""
-  ""
+  (Just "cacophony")
   (Just initStatic)
   Nothing
   Nothing
@@ -242,10 +226,9 @@ noiseNIHS :: (Cipher c, Curve d, Hash h)
           -> HandshakeState c d h
 noiseNIHS HandshakeKeys{..} =
   handshakeState
-  "N"
   noiseNI
   ""
-  ""
+  (Just "cacophony")
   Nothing
   Nothing
   (Just (snd respStatic))
@@ -256,10 +239,9 @@ noiseKIHS :: (Cipher c, Curve d, Hash h)
           -> HandshakeState c d h
 noiseKIHS HandshakeKeys{..} =
   handshakeState
-  "K"
   noiseKI
   ""
-  ""
+  (Just "cacophony")
   (Just initStatic)
   Nothing
   (Just (snd respStatic))
@@ -270,10 +252,9 @@ noiseXIHS :: (Cipher c, Curve d, Hash h)
            -> HandshakeState c d h
 noiseXIHS HandshakeKeys{..} =
   handshakeState
-  "X"
   noiseXI
   ""
-  ""
+  (Just "cacophony")
   (Just initStatic)
   Nothing
   (Just (snd respStatic))
@@ -284,10 +265,9 @@ noiseNNRHS :: (Cipher c, Curve d, Hash h)
            -> HandshakeState c d h
 noiseNNRHS HandshakeKeys{..} =
   handshakeState
-  "NN"
   noiseNNR
   ""
-  ""
+  (Just "cacophony")
   Nothing
   Nothing
   Nothing
@@ -298,10 +278,9 @@ noiseKNRHS :: (Cipher c, Curve d, Hash h)
            -> HandshakeState c d h
 noiseKNRHS HandshakeKeys{..} =
   handshakeState
-  "KN"
   noiseKNR
   ""
-  ""
+  (Just "cacophony")
   Nothing
   Nothing
   (Just (snd initStatic))
@@ -312,10 +291,9 @@ noiseNKRHS :: (Cipher c, Curve d, Hash h)
            -> HandshakeState c d h
 noiseNKRHS HandshakeKeys{..} =
   handshakeState
-  "NK"
   noiseNKR
   ""
-  ""
+  (Just "cacophony")
   (Just respStatic)
   Nothing
   Nothing
@@ -326,10 +304,9 @@ noiseKKRHS :: (Cipher c, Curve d, Hash h)
            -> HandshakeState c d h
 noiseKKRHS HandshakeKeys{..} =
   handshakeState
-  "KK"
   noiseKKR
   ""
-  ""
+  (Just "cacophony")
   (Just respStatic)
   Nothing
   (Just (snd initStatic))
@@ -340,10 +317,9 @@ noiseNERHS :: (Cipher c, Curve d, Hash h)
            -> HandshakeState c d h
 noiseNERHS HandshakeKeys{..} =
   handshakeState
-  "NE"
   noiseNER
   ""
-  ""
+  (Just "cacophony")
   (Just respStatic)
   (Just respEphemeral)
   Nothing
@@ -354,10 +330,9 @@ noiseKERHS :: (Cipher c, Curve d, Hash h)
            -> HandshakeState c d h
 noiseKERHS HandshakeKeys{..} =
   handshakeState
-  "KE"
   noiseKER
   ""
-  ""
+  (Just "cacophony")
   (Just respStatic)
   (Just respEphemeral)
   (Just (snd initStatic))
@@ -368,10 +343,9 @@ noiseNXRHS :: (Cipher c, Curve d, Hash h)
            -> HandshakeState c d h
 noiseNXRHS HandshakeKeys{..} =
   handshakeState
-  "NX"
   noiseNXR
   ""
-  ""
+  (Just "cacophony")
   (Just respStatic)
   Nothing
   Nothing
@@ -382,10 +356,9 @@ noiseKXRHS :: (Cipher c, Curve d, Hash h)
            -> HandshakeState c d h
 noiseKXRHS HandshakeKeys{..} =
   handshakeState
-  "KX"
   noiseKXR
   ""
-  ""
+  (Just "cacophony")
   (Just respStatic)
   Nothing
   (Just (snd initStatic))
@@ -396,10 +369,9 @@ noiseXNRHS :: (Cipher c, Curve d, Hash h)
            -> HandshakeState c d h
 noiseXNRHS HandshakeKeys{..} =
   handshakeState
-  "XN"
   noiseXNR
   ""
-  ""
+  (Just "cacophony")
   Nothing
   Nothing
   Nothing
@@ -410,10 +382,9 @@ noiseINRHS :: (Cipher c, Curve d, Hash h)
            -> HandshakeState c d h
 noiseINRHS HandshakeKeys{..} =
   handshakeState
-  "IN"
   noiseINR
   ""
-  ""
+  (Just "cacophony")
   Nothing
   Nothing
   Nothing
@@ -424,10 +395,9 @@ noiseXKRHS :: (Cipher c, Curve d, Hash h)
            -> HandshakeState c d h
 noiseXKRHS HandshakeKeys{..} =
   handshakeState
-  "XK"
   noiseXKR
   ""
-  ""
+  (Just "cacophony")
   (Just respStatic)
   Nothing
   Nothing
@@ -438,10 +408,9 @@ noiseIKRHS :: (Cipher c, Curve d, Hash h)
            -> HandshakeState c d h
 noiseIKRHS HandshakeKeys{..} =
   handshakeState
-  "IK"
   noiseIKR
   ""
-  ""
+  (Just "cacophony")
   (Just respStatic)
   Nothing
   Nothing
@@ -452,10 +421,9 @@ noiseXERHS :: (Cipher c, Curve d, Hash h)
            -> HandshakeState c d h
 noiseXERHS HandshakeKeys{..} =
   handshakeState
-  "XE"
   noiseXER
   ""
-  ""
+  (Just "cacophony")
   (Just respStatic)
   (Just respEphemeral)
   Nothing
@@ -466,10 +434,9 @@ noiseIERHS :: (Cipher c, Curve d, Hash h)
            -> HandshakeState c d h
 noiseIERHS HandshakeKeys{..} =
   handshakeState
-  "IE"
   noiseIER
   ""
-  ""
+  (Just "cacophony")
   (Just respStatic)
   (Just respEphemeral)
   Nothing
@@ -480,10 +447,9 @@ noiseXXRHS :: (Cipher c, Curve d, Hash h)
            -> HandshakeState c d h
 noiseXXRHS HandshakeKeys{..} =
   handshakeState
-  "XX"
   noiseXXR
   ""
-  ""
+  (Just "cacophony")
   (Just respStatic)
   Nothing
   Nothing
@@ -494,10 +460,9 @@ noiseIXRHS :: (Cipher c, Curve d, Hash h)
            -> HandshakeState c d h
 noiseIXRHS HandshakeKeys{..} =
   handshakeState
-  "IX"
   noiseIXR
   ""
-  ""
+  (Just "cacophony")
   (Just respStatic)
   Nothing
   Nothing
@@ -508,10 +473,9 @@ noiseNRHS :: (Cipher c, Curve d, Hash h)
           -> HandshakeState c d h
 noiseNRHS HandshakeKeys{..} =
   handshakeState
-  "N"
   noiseNR
   ""
-  ""
+  (Just "cacophony")
   (Just respStatic)
   Nothing
   Nothing
@@ -522,10 +486,9 @@ noiseKRHS :: (Cipher c, Curve d, Hash h)
           -> HandshakeState c d h
 noiseKRHS HandshakeKeys{..} =
   handshakeState
-  "K"
   noiseKR
   ""
-  ""
+  (Just "cacophony")
   (Just respStatic)
   Nothing
   (Just (snd initStatic))
@@ -536,10 +499,9 @@ noiseXRHS :: (Cipher c, Curve d, Hash h)
           -> HandshakeState c d h
 noiseXRHS HandshakeKeys{..} =
   handshakeState
-  "X"
   noiseXR
   ""
-  ""
+  (Just "cacophony")
   (Just respStatic)
   Nothing
   Nothing

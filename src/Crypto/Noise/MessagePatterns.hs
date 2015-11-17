@@ -526,16 +526,14 @@ noiseXNR3 buf = do
 noiseINI1 :: (Cipher c, Curve d, Hash h)
           => MessagePatternIO c d h ByteString
 noiseINI1 = do
-  s <- tokenWS
   e <- tokenWE
-  return $ s `append` e
+  s <- tokenWS
+  return $ e `append` s
 
 noiseINR1 :: (Cipher c, Curve d, Hash h)
           => ByteString
           -> MessagePattern c d h ByteString
-noiseINR1 buf = do
-  rest  <- tokenRS buf
-  tokenRE rest
+noiseINR1 = tokenRE >=> tokenRS
 
 noiseINR2 :: (Cipher c, Curve d, Hash h)
           => MessagePatternIO c d h ByteString
@@ -824,14 +822,14 @@ noiseXXR3 buf = do
 noiseIXI1 :: (Cipher c, Curve d, Hash h)
           => MessagePatternIO c d h ByteString
 noiseIXI1 = do
-  s <- tokenWS
   e <- tokenWE
-  return $ s `append` e
+  s <- tokenWS
+  return $ e `append` s
 
 noiseIXR1 :: (Cipher c, Curve d, Hash h)
           => ByteString
           -> MessagePattern c d h ByteString
-noiseIXR1 = tokenRS >=> tokenRE
+noiseIXR1 = tokenRE >=> tokenRS
 
 noiseIXR2 :: (Cipher c, Curve d, Hash h)
           => MessagePatternIO c d h ByteString

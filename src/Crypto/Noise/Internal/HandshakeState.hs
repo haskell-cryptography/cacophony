@@ -64,10 +64,11 @@ type MessagePatternIO c d h a = MessagePatternT c d h IO a
 -- | Represents a series of message patterns, the first for writing and the
 --   second for reading.
 data HandshakePattern c d h =
-    HandshakePattern { _hpPreMsg   :: Maybe (MessagePattern c d h ())
-                     , _hpWriteMsg :: [MessagePatternIO c d h ByteString]
-                     , _hpReadMsg  :: [ByteString -> MessagePattern c d h ByteString]
-                     }
+  HandshakePattern { _hpName     :: ByteString
+                   , _hpPreMsg   :: Maybe (MessagePattern c d h ())
+                   , _hpWriteMsg :: [MessagePatternIO c d h ByteString]
+                   , _hpReadMsg  :: [ByteString -> MessagePattern c d h ByteString]
+                   }
 
 -- | Contains the state of a handshake.
 data HandshakeState c d h =
@@ -105,23 +106,52 @@ instance (Monad m, Cipher c, Curve d, Hash h) => MonadHandshake (MessagePatternT
 
   tokenPreRE = tokenPreRX hssRemoteEphemeralKey
 
-  tokenRE buf = tokenRX buf hssRemoteEphemeralKey
+  tokenRE buf = do
+    hs <- get
+
+    let (b, rest) = B.splitAt (curveLength (Proxy :: Proxy d)) buf
+        reBytes   = convert b
+        ss        = hs ^. hssSymmetricState
+        ss'       = mixHash reBytes ss
+        ss''      = if ss ^. ssHasPSK then mixKey reBytes ss' else ss'
+
+    put $ hs & hssRemoteEphemeralKey .~ Just (curveBytesToPub reBytes)
+             & hssSymmetricState     .~ ss''
+
+    return rest
 
   tokenRS buf = do
     hs <- get
     if isJust (hs ^. hssRemoteStaticKey) then
       error "unable to overwrite remote static key"
-    else
-      tokenRX buf hssRemoteStaticKey
+    else do
+      let hasKey    = hs ^. hssSymmetricState . ssHasKey
+          (b, rest) = B.splitAt (d hasKey) buf
+          ct        = cipherBytesToText . convert $ b
+          ss        = hs ^. hssSymmetricState
+          (Plaintext pt, ss') = decryptAndHash ct ss
+
+      put $ hs & hssRemoteStaticKey .~ Just (curveBytesToPub pt)
+               & hssSymmetricState  .~ ss'
+
+      return rest
+
+    where
+      len           = curveLength (Proxy :: Proxy d)
+      d hk
+        | hk        = len + 16
+        | otherwise = len
 
   tokenWE = do
     ~kp@(_, pk) <- liftIO curveGenKey
     hs <- get
-    let pk'       = curvePubToBytes pk
-        ss        = hs ^. hssSymmetricState
-        (ct, ss') = encryptAndHash (Plaintext pk') ss
-    put $ hs & hssLocalEphemeralKey .~ Just kp & hssSymmetricState .~ ss'
-    return . convert $ ct
+    let pk'  = curvePubToBytes pk
+        ss   = hs ^. hssSymmetricState
+        ss'  = mixHash pk' ss
+        ss'' = if ss' ^. ssHasPSK then mixKey pk' ss' else ss'
+    put $ hs & hssLocalEphemeralKey .~ Just kp
+             & hssSymmetricState    .~ ss''
+    return . convert $ pk'
 
   tokenWS = do
     hs <- get
@@ -206,40 +236,17 @@ tokenPreRX keyToView = do
       ss' = mixHash (curvePubToBytes pk) ss
   put $ hs & hssSymmetricState .~ ss'
 
-tokenRX :: forall c d h m. (MonadState (HandshakeState c d h) m, Cipher c, Curve d, Hash h)
-       => ByteString
-       -> Lens' (HandshakeState c d h) (Maybe (PublicKey d))
-       -> m ByteString
-tokenRX buf keyToUpdate = do
-  hs <- get
-
-  let hasKey    = hs ^. hssSymmetricState . ssHasKey
-      (b, rest) = B.splitAt (d hasKey) buf
-      ct        = cipherBytesToText . convert $ b
-      ss        = hs ^. hssSymmetricState
-      (Plaintext pt, ss') = decryptAndHash ct ss
-
-  put $ hs & keyToUpdate .~ Just (curveBytesToPub pt) & hssSymmetricState .~ ss'
-
-  return rest
-
-  where
-    len           = curveLength (Proxy :: Proxy d)
-    d hk
-      | hk        = len + 16
-      | otherwise = len
-
 -- | Constructs a HandshakeState. The keys you need to provide are
 --   dependent on the type of handshake you are using. If you fail to
 --   provide a key that your handshake type depends on, you will receive an
 --   error such as "local static key not set".
 handshakeState :: forall c d h. (Cipher c, Curve d, Hash h)
-               => ByteString
-               -- ^ Handshake pattern name
-               -> HandshakePattern c d h
+               => HandshakePattern c d h
                -- ^ The handshake pattern to use
                -> Plaintext
                -- ^ Prologue
+               -> Maybe Plaintext
+               -- ^ Pre-shared key
                -> Maybe (KeyPair d)
                -- ^ Local static key
                -> Maybe (KeyPair d)
@@ -249,17 +256,36 @@ handshakeState :: forall c d h. (Cipher c, Curve d, Hash h)
                -> Maybe (PublicKey d)
                -- ^ Remote public ephemeral key
                -> HandshakeState c d h
-handshakeState hpn hsp (Plaintext pro) ls le rs re = maybe hs' hs'' $ hsp ^. hpPreMsg
+handshakeState hp (Plaintext pro) (Just (Plaintext psk)) ls le rs re =
+  maybe hs' hs'' $ hp ^. hpPreMsg
   where
-    p       = bsToSB' "Noise_"
-    a       = curveName  (Proxy :: Proxy d)
-    b       = cipherName (Proxy :: Proxy c)
-    c       = hashName   (Proxy :: Proxy h)
-    u       = bsToSB' "_"
-    hpn'    = concatSB [p, bsToSB' hpn, u, a, u, b, u, c]
-    hs      = HandshakeState (symmetricState hpn') hsp ls le rs re
-    hs'     = hs & hssSymmetricState %~ mixHash pro
+    hsPro x = x & hssSymmetricState %~ mixHash pro
+    hsPSK x = x & hssSymmetricState %~ mixPSK psk
+    hs      = HandshakeState (symmetricState (mkHPN hp True)) hp ls le rs re
+    hs'     = hsPSK . hsPro $ hs
     hs'' mp = snd . runIdentity $ runMessagePatternT mp hs'
+
+handshakeState hp (Plaintext pro) Nothing ls le rs re =
+  maybe hs' hs'' $ hp ^. hpPreMsg
+  where
+    hsPro x = x & hssSymmetricState %~ mixHash pro
+    hs      = HandshakeState (symmetricState (mkHPN hp False)) hp ls le rs re
+    hs'     = hsPro hs
+    hs'' mp = snd . runIdentity $ runMessagePatternT mp hs'
+
+mkHPN :: forall c d h. (Cipher c, Curve d, Hash h)
+      => HandshakePattern c d h
+      -> Bool
+      -> ScrubbedBytes
+mkHPN hp psk = if psk then hpn' ppsk else hpn' p
+  where
+    p        = bsToSB' "Noise_"
+    ppsk     = bsToSB' "NoisePSK_"
+    a        = curveName  (Proxy :: Proxy d)
+    b        = cipherName (Proxy :: Proxy c)
+    c        = hashName   (Proxy :: Proxy h)
+    u        = bsToSB' "_"
+    hpn' pfx = concatSB [pfx, bsToSB' (hp ^. hpName), u, a, u, b, u, c]
 
 -- | Creates a handshake message. The plaintext can be left empty if no
 --   plaintext is to be transmitted. All subsequent handshake processing

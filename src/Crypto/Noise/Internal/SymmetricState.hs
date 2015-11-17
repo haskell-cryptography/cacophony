@@ -12,10 +12,12 @@ module Crypto.Noise.Internal.SymmetricState
     -- * Lenses
     ssCipher,
     ssHasKey,
+    ssHasPSK,
     ssh,
     -- * Functions
     symmetricState,
     mixKey,
+    mixPSK,
     mixHash,
     encryptAndHash,
     decryptAndHash,
@@ -35,6 +37,7 @@ import Crypto.Noise.Types
 data SymmetricState c h =
   SymmetricState { _ssCipher :: CipherState c
                  , _ssHasKey :: Bool
+                 , _ssHasPSK :: Bool
                  , _ssck     :: ChainingKey h
                  , _ssh      :: Either ScrubbedBytes (Digest h)
                  }
@@ -42,7 +45,7 @@ data SymmetricState c h =
 $(makeLenses ''SymmetricState)
 
 symmetricState :: forall c h. (Cipher c, Hash h) => ScrubbedBytes -> SymmetricState c h
-symmetricState hsn = SymmetricState cs False ck hsn'
+symmetricState hsn = SymmetricState cs False False ck hsn'
   where
     hashLen    = hashLength (Proxy :: Proxy h)
     shouldHash = BA.length hsn > hashLen
@@ -60,6 +63,13 @@ mixKey d ss = ss & ssCipher .~ cs
   where
     (ck, k) = hashHKDF (ss ^. ssck) d
     cs      = CipherState (cipherBytesToSym k) cipherZeroNonce
+
+mixPSK :: (Cipher c, Hash h) => ScrubbedBytes -> SymmetricState c h -> SymmetricState c h
+mixPSK psk ss = ss'' & ssHasPSK .~ True
+  where
+    (ck, tmp) = hashHKDF (ss ^. ssck) psk
+    ss'       = ss & ssck .~ ck
+    ss''      = mixHash tmp ss'
 
 mixHash :: (Cipher c, Hash h) => ScrubbedBytes -> SymmetricState c h -> SymmetricState c h
 mixHash d ss = ss & ssh %~ Right . hash . (`append` d) . sshBytes

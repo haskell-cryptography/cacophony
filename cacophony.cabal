@@ -43,7 +43,6 @@ flag llvm
 library
   build-depends:
     base >=4.8 && <5,
-    base16-bytestring,
     bytestring,
     cryptonite,
     lens,
@@ -53,6 +52,7 @@ library
   default-language: Haskell2010
   exposed-modules:
     Crypto.Noise.Cipher
+    Crypto.Noise.Cipher.AESGCM
     Crypto.Noise.Cipher.ChaChaPoly1305
     Crypto.Noise.Curve
     Crypto.Noise.Curve.Curve25519

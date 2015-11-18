@@ -8,7 +8,8 @@ import Crypto.Noise.HandshakePatterns
 import Crypto.Noise.Hash
 
 data HandshakeKeys d =
-  HandshakeKeys { initStatic    :: KeyPair d
+  HandshakeKeys { psk           :: Maybe Plaintext
+                , initStatic    :: KeyPair d
                 , respStatic    :: KeyPair d
                 , respEphemeral :: KeyPair d
                 }
@@ -20,7 +21,7 @@ noiseNNIHS HandshakeKeys{..} =
   handshakeState
   noiseNNI
   ""
-  (Just "cacophony")
+  psk
   Nothing
   Nothing
   Nothing
@@ -33,7 +34,7 @@ noiseKNIHS HandshakeKeys{..} =
   handshakeState
   noiseKNI
   ""
-  (Just "cacophony")
+  psk
   (Just initStatic)
   Nothing
   Nothing
@@ -46,7 +47,7 @@ noiseNKIHS HandshakeKeys{..} =
   handshakeState
   noiseNKI
   ""
-  (Just "cacophony")
+  psk
   Nothing
   Nothing
   (Just (snd respStatic))
@@ -59,7 +60,7 @@ noiseKKIHS HandshakeKeys{..} =
   handshakeState
   noiseKKI
   ""
-  (Just "cacophony")
+  psk
   (Just initStatic)
   Nothing
   (Just (snd respStatic))
@@ -72,7 +73,7 @@ noiseNEIHS HandshakeKeys{..} =
   handshakeState
   noiseNEI
   ""
-  (Just "cacophony")
+  psk
   Nothing
   Nothing
   (Just (snd respStatic))
@@ -85,7 +86,7 @@ noiseKEIHS HandshakeKeys{..} =
   handshakeState
   noiseKEI
   ""
-  (Just "cacophony")
+  psk
   (Just initStatic)
   Nothing
   (Just (snd respStatic))
@@ -98,7 +99,7 @@ noiseNXIHS HandshakeKeys{..} =
   handshakeState
   noiseNXI
   ""
-  (Just "cacophony")
+  psk
   Nothing
   Nothing
   Nothing
@@ -111,7 +112,7 @@ noiseKXIHS HandshakeKeys{..} =
   handshakeState
   noiseKXI
   ""
-  (Just "cacophony")
+  psk
   (Just initStatic)
   Nothing
   Nothing
@@ -124,7 +125,7 @@ noiseXNIHS HandshakeKeys{..} =
   handshakeState
   noiseXNI
   ""
-  (Just "cacophony")
+  psk
   (Just initStatic)
   Nothing
   Nothing
@@ -137,7 +138,7 @@ noiseINIHS HandshakeKeys{..} =
   handshakeState
   noiseINI
   ""
-  (Just "cacophony")
+  psk
   (Just initStatic)
   Nothing
   Nothing
@@ -150,7 +151,7 @@ noiseXKIHS HandshakeKeys{..} =
   handshakeState
   noiseXKI
   ""
-  (Just "cacophony")
+  psk
   (Just initStatic)
   Nothing
   (Just (snd respStatic))
@@ -163,7 +164,7 @@ noiseIKIHS HandshakeKeys{..} =
   handshakeState
   noiseIKI
   ""
-  (Just "cacophony")
+  psk
   (Just initStatic)
   Nothing
   (Just (snd respStatic))
@@ -176,7 +177,7 @@ noiseXEIHS HandshakeKeys{..} =
   handshakeState
   noiseXEI
   ""
-  (Just "cacophony")
+  psk
   (Just initStatic)
   Nothing
   (Just (snd respStatic))
@@ -189,7 +190,7 @@ noiseIEIHS HandshakeKeys{..} =
   handshakeState
   noiseIEI
   ""
-  (Just "cacophony")
+  psk
   (Just initStatic)
   Nothing
   (Just (snd respStatic))
@@ -202,7 +203,7 @@ noiseXXIHS HandshakeKeys{..} =
   handshakeState
   noiseXXI
   ""
-  (Just "cacophony")
+  psk
   (Just initStatic)
   Nothing
   Nothing
@@ -215,7 +216,7 @@ noiseIXIHS HandshakeKeys{..} =
   handshakeState
   noiseIXI
   ""
-  (Just "cacophony")
+  psk
   (Just initStatic)
   Nothing
   Nothing
@@ -228,7 +229,7 @@ noiseNIHS HandshakeKeys{..} =
   handshakeState
   noiseNI
   ""
-  (Just "cacophony")
+  psk
   Nothing
   Nothing
   (Just (snd respStatic))
@@ -241,7 +242,7 @@ noiseKIHS HandshakeKeys{..} =
   handshakeState
   noiseKI
   ""
-  (Just "cacophony")
+  psk
   (Just initStatic)
   Nothing
   (Just (snd respStatic))
@@ -254,7 +255,7 @@ noiseXIHS HandshakeKeys{..} =
   handshakeState
   noiseXI
   ""
-  (Just "cacophony")
+  psk
   (Just initStatic)
   Nothing
   (Just (snd respStatic))
@@ -267,7 +268,7 @@ noiseNNRHS HandshakeKeys{..} =
   handshakeState
   noiseNNR
   ""
-  (Just "cacophony")
+  psk
   Nothing
   Nothing
   Nothing
@@ -280,7 +281,7 @@ noiseKNRHS HandshakeKeys{..} =
   handshakeState
   noiseKNR
   ""
-  (Just "cacophony")
+  psk
   Nothing
   Nothing
   (Just (snd initStatic))
@@ -293,7 +294,7 @@ noiseNKRHS HandshakeKeys{..} =
   handshakeState
   noiseNKR
   ""
-  (Just "cacophony")
+  psk
   (Just respStatic)
   Nothing
   Nothing
@@ -306,7 +307,7 @@ noiseKKRHS HandshakeKeys{..} =
   handshakeState
   noiseKKR
   ""
-  (Just "cacophony")
+  psk
   (Just respStatic)
   Nothing
   (Just (snd initStatic))
@@ -319,7 +320,7 @@ noiseNERHS HandshakeKeys{..} =
   handshakeState
   noiseNER
   ""
-  (Just "cacophony")
+  psk
   (Just respStatic)
   (Just respEphemeral)
   Nothing
@@ -332,7 +333,7 @@ noiseKERHS HandshakeKeys{..} =
   handshakeState
   noiseKER
   ""
-  (Just "cacophony")
+  psk
   (Just respStatic)
   (Just respEphemeral)
   (Just (snd initStatic))
@@ -345,7 +346,7 @@ noiseNXRHS HandshakeKeys{..} =
   handshakeState
   noiseNXR
   ""
-  (Just "cacophony")
+  psk
   (Just respStatic)
   Nothing
   Nothing
@@ -358,7 +359,7 @@ noiseKXRHS HandshakeKeys{..} =
   handshakeState
   noiseKXR
   ""
-  (Just "cacophony")
+  psk
   (Just respStatic)
   Nothing
   (Just (snd initStatic))
@@ -371,7 +372,7 @@ noiseXNRHS HandshakeKeys{..} =
   handshakeState
   noiseXNR
   ""
-  (Just "cacophony")
+  psk
   Nothing
   Nothing
   Nothing
@@ -384,7 +385,7 @@ noiseINRHS HandshakeKeys{..} =
   handshakeState
   noiseINR
   ""
-  (Just "cacophony")
+  psk
   Nothing
   Nothing
   Nothing
@@ -397,7 +398,7 @@ noiseXKRHS HandshakeKeys{..} =
   handshakeState
   noiseXKR
   ""
-  (Just "cacophony")
+  psk
   (Just respStatic)
   Nothing
   Nothing
@@ -410,7 +411,7 @@ noiseIKRHS HandshakeKeys{..} =
   handshakeState
   noiseIKR
   ""
-  (Just "cacophony")
+  psk
   (Just respStatic)
   Nothing
   Nothing
@@ -423,7 +424,7 @@ noiseXERHS HandshakeKeys{..} =
   handshakeState
   noiseXER
   ""
-  (Just "cacophony")
+  psk
   (Just respStatic)
   (Just respEphemeral)
   Nothing
@@ -436,7 +437,7 @@ noiseIERHS HandshakeKeys{..} =
   handshakeState
   noiseIER
   ""
-  (Just "cacophony")
+  psk
   (Just respStatic)
   (Just respEphemeral)
   Nothing
@@ -449,7 +450,7 @@ noiseXXRHS HandshakeKeys{..} =
   handshakeState
   noiseXXR
   ""
-  (Just "cacophony")
+  psk
   (Just respStatic)
   Nothing
   Nothing
@@ -462,7 +463,7 @@ noiseIXRHS HandshakeKeys{..} =
   handshakeState
   noiseIXR
   ""
-  (Just "cacophony")
+  psk
   (Just respStatic)
   Nothing
   Nothing
@@ -475,7 +476,7 @@ noiseNRHS HandshakeKeys{..} =
   handshakeState
   noiseNR
   ""
-  (Just "cacophony")
+  psk
   (Just respStatic)
   Nothing
   Nothing
@@ -488,7 +489,7 @@ noiseKRHS HandshakeKeys{..} =
   handshakeState
   noiseKR
   ""
-  (Just "cacophony")
+  psk
   (Just respStatic)
   Nothing
   (Just (snd initStatic))
@@ -501,7 +502,7 @@ noiseXRHS HandshakeKeys{..} =
   handshakeState
   noiseXR
   ""
-  (Just "cacophony")
+  psk
   (Just respStatic)
   Nothing
   Nothing

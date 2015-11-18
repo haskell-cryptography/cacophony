@@ -195,11 +195,20 @@ threeMessage ihs rhs pt =
 
 tests :: TestTree
 tests =
-  let hks = HandshakeKeys is25519 rs25519 re25519 in
+  let p    = Just "cacophony"
+      hks  = HandshakeKeys p is25519 rs25519 re25519
+      hks' = HandshakeKeys Nothing is25519 rs25519 re25519 in
   testGroup "Handshakes"
-  [ testGroup "Curve25519-ChaChaPoly1305-SHA256"
-      (mkHandshakeProps hks (Proxy :: Proxy (ChaChaPoly1305, SHA256)))
-
-  , testGroup "Curve25519-ChaChaPoly1305-SHA512"
-      (mkHandshakeProps hks (Proxy :: Proxy (ChaChaPoly1305, SHA512)))
+  [ testGroup "without PSK"
+      [ testGroup "Curve25519-ChaChaPoly1305-SHA256"
+        (mkHandshakeProps hks (Proxy :: Proxy (ChaChaPoly1305, SHA256)))
+      , testGroup "Curve25519-ChaChaPoly1305-SHA512"
+        (mkHandshakeProps hks (Proxy :: Proxy (ChaChaPoly1305, SHA512)))
+      ]
+  , testGroup "with PSK"
+      [ testGroup "Curve25519-ChaChaPoly1305-SHA256"
+        (mkHandshakeProps hks' (Proxy :: Proxy (ChaChaPoly1305, SHA256)))
+      , testGroup "Curve25519-ChaChaPoly1305-SHA512"
+        (mkHandshakeProps hks' (Proxy :: Proxy (ChaChaPoly1305, SHA512)))
+      ]
   ]

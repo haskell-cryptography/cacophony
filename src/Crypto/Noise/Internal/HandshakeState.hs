@@ -18,7 +18,10 @@ module Crypto.Noise.Internal.HandshakeState
     HandshakeState,
     -- * Functions
     runMessagePatternT,
+    getLocalStaticKey,
+    getLocalEphemeralKey,
     getRemoteStaticKey,
+    getRemoteEphemeralKey,
     handshakeState,
     writeMessage,
     readMessage,

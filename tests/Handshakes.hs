@@ -200,15 +200,15 @@ tests =
       hks' = HandshakeKeys Nothing is25519 rs25519 re25519 in
   testGroup "Handshakes"
   [ testGroup "without PSK"
-      [ testGroup "Curve25519-ChaChaPoly1305-SHA256"
-        (mkHandshakeProps hks (Proxy :: Proxy (ChaChaPoly1305, SHA256)))
-      , testGroup "Curve25519-ChaChaPoly1305-SHA512"
-        (mkHandshakeProps hks (Proxy :: Proxy (ChaChaPoly1305, SHA512)))
-      ]
+    [ testGroup "Curve25519-ChaChaPoly1305-SHA256"
+      (mkHandshakeProps hks (Proxy :: Proxy (ChaChaPoly1305, SHA256)))
+    , testGroup "Curve25519-ChaChaPoly1305-SHA512"
+      (mkHandshakeProps hks (Proxy :: Proxy (ChaChaPoly1305, SHA512)))
+    ]
   , testGroup "with PSK"
-      [ testGroup "Curve25519-ChaChaPoly1305-SHA256"
-        (mkHandshakeProps hks' (Proxy :: Proxy (ChaChaPoly1305, SHA256)))
-      , testGroup "Curve25519-ChaChaPoly1305-SHA512"
-        (mkHandshakeProps hks' (Proxy :: Proxy (ChaChaPoly1305, SHA512)))
-      ]
+    [ testGroup "Curve25519-ChaChaPoly1305-SHA256"
+      (mkHandshakeProps hks' (Proxy :: Proxy (ChaChaPoly1305, SHA256)))
+    , testGroup "Curve25519-ChaChaPoly1305-SHA512"
+      (mkHandshakeProps hks' (Proxy :: Proxy (ChaChaPoly1305, SHA512)))
+    ]
   ]

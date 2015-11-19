@@ -22,7 +22,7 @@ data BLAKE2s
 
 instance Hash BLAKE2s where
   newtype ChainingKey BLAKE2s = HCKB2s ScrubbedBytes
-  newtype Digest      BLAKE2s = HDB2s  (H.Digest H.BLAKE2s)
+  newtype Digest      BLAKE2s = HDB2s  (H.Digest H.Blake2s_256)
 
   hashName   _  = bsToSB' "BLAKE2s"
   hashLength _  = 32
@@ -44,10 +44,10 @@ hkdfS (HCKB2s ck) d = (HCKB2s ck', sk)
     x01   = bsToSB' "\x01"
     x02   = bsToSB' "\x02"
 
-    hmac1 = M.hmac ck d :: M.HMAC H.BLAKE2s
+    hmac1 = M.hmac ck d :: M.HMAC H.Blake2s_256
     temp  = convert . M.hmacGetDigest $ hmac1 :: ScrubbedBytes
-    hmac2 = M.hmac temp x01 :: M.HMAC H.BLAKE2s
-    hmac3 = M.hmac temp (convert hmac2 `append` x02) :: M.HMAC H.BLAKE2s
+    hmac2 = M.hmac temp x01 :: M.HMAC H.Blake2s_256
+    hmac3 = M.hmac temp (convert hmac2 `append` x02) :: M.HMAC H.Blake2s_256
     ck'   = convert . M.hmacGetDigest $ hmac2
     sk    = convert . M.hmacGetDigest $ hmac3
 

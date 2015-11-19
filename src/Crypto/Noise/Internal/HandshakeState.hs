@@ -242,10 +242,10 @@ tokenPreRX keyToView = do
       ss' = mixHash (curvePubToBytes pk) ss
   put $ hs & hssSymmetricState .~ ss'
 
--- | Constructs a HandshakeState. The keys you need to provide are
+-- | Constructs a 'HandshakeState'. The keys you need to provide are
 --   dependent on the type of handshake you are using. If you fail to
 --   provide a key that your handshake type depends on, or you provide
---   a static key which is supposed to be set during the exchang, you will
+--   a static key which is supposed to be set during the exchange, you will
 --   receive a 'HandshakeStateFailure' exception.
 handshakeState :: forall c d h. (Cipher c, Curve d, Hash h)
                => HandshakePattern c d h

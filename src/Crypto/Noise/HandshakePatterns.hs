@@ -5,6 +5,16 @@
 -- Maintainer  : John Galt <jgalt@centromere.net>
 -- Stability   : experimental
 -- Portability : POSIX
+--
+-- This module contains all of the handshake patterns specified in the
+-- protocol. The first two characters of the name represent the handshake
+-- the pattern describes (NN, KN, NK, etc). The last character represents
+-- whether the pattern is intended to be used by the __I__nitiator or the
+-- __R__esponder. These functions are intended to be passed to the
+-- 'Crypto.Noise.Handshake.handshakeState' function. The (de-)serialization
+-- of (pre-)messages is beyond the scope of this library, but public keys
+-- can be imported/exported using the 'curveBytesToPub' and 'curvePubToBytes'
+-- functions.
 
 module Crypto.Noise.HandshakePatterns
   ( -- * Functions

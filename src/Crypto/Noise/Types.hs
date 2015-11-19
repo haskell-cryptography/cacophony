@@ -26,6 +26,14 @@ import qualified Data.ByteString as BS (ByteString)
 import qualified Data.ByteString.Lazy as BL (ByteString, toStrict, fromStrict)
 import Prelude hiding (concat)
 
+-- | Represents exceptions which can occur. 'DecryptionFailure' is thrown
+--   if a symmetric decryption operation fails, which is usually the result
+--   of an invalid authentication tag. 'HandshakeStateFailure' is thrown if
+--   the 'Crypto.Noise.Handshake.HandshakeState' is improperly initialized
+--   for the given handshake type.
+--
+--   If your goal is to detect an invalid PSK, prologue, etc, you'll want
+--   to catch 'DecryptionFailure'.
 data NoiseException = DecryptionFailure String
                     | HandshakeStateFailure String
   deriving (Show)

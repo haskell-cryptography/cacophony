@@ -5,18 +5,12 @@
 -- Stability   : experimental
 -- Portability : POSIX
 --
--- This module contains all of the message patterns for all the handshakes
--- specified in the protocol. The first two characters of the name
--- represent the handshake the pattern belongs to (NN, KN, NK, etc). The
--- next character represents whether the pattern is intended to be used
--- by the __I__nitiator or the __R__esponder. Finally, the number indicates
--- the step of the handshake in which the pattern is intended to be used.
--- Regular handshake steps begin at 1, but patterns for pre-messages are
--- numbered 0. The patterns for pre-messages are intended to be passed
--- to the 'handshakeState' function. The (de-)serialization of pre-messages
--- is beyond the scope of this library, but public keys can be
--- imported/exported using the 'curveBytesToPub' and 'curvePubToBytes'
--- functions.
+-- This module contains all of the message patterns specified in the
+-- protocol. Their nomenclature is the same as
+-- "Crypto.Noise.HandshakePatterns" plus an additional digit
+-- representing the step of the handshake in which the pattern is
+-- intended to be used. Zero indicates a pre-message pattern.
+
 module Crypto.Noise.MessagePatterns
   ( -- * Functions
     -- ** Noise_NN

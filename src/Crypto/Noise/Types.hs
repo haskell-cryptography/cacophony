@@ -26,7 +26,8 @@ import qualified Data.ByteString as BS (ByteString)
 import qualified Data.ByteString.Lazy as BL (ByteString, toStrict, fromStrict)
 import Prelude hiding (concat)
 
-data NoiseException = DecryptionError String
+data NoiseException = DecryptionFailure String
+                    | HandshakeStateFailure String
   deriving (Show)
 
 instance Exception NoiseException

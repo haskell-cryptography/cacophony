@@ -22,7 +22,7 @@ import Control.Lens
 import Data.Maybe (fromMaybe)
 
 import Crypto.Noise.Cipher
-import Crypto.Noise.Types (NoiseException(DecryptionError))
+import Crypto.Noise.Types (NoiseException(DecryptionFailure))
 
 -- | Represents a symmetric key and associated nonce.
 data CipherState c =
@@ -41,6 +41,6 @@ encryptAndIncrement ad plaintext cs = (ct, newState)
 decryptAndIncrement :: Cipher c => AssocData -> Ciphertext c -> CipherState c -> (Plaintext, CipherState c)
 decryptAndIncrement ad ct cs = (pt, newState)
   where
-    pt       = fromMaybe (throw (DecryptionError "decryptAndIncrement"))
+    pt       = fromMaybe (throw (DecryptionFailure "decryptAndIncrement"))
                          (cipherDecrypt (cs ^. csk) (cs ^. csn) ad ct)
     newState = cs & csn %~ cipherIncNonce

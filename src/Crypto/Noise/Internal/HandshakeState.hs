@@ -28,6 +28,7 @@ module Crypto.Noise.Internal.HandshakeState
     decryptPayload
   ) where
 
+import Control.Exception   (throw)
 import Control.Lens hiding (re)
 import Control.Monad.State
 
@@ -123,7 +124,7 @@ instance (Monad m, Cipher c, Curve d, Hash h) => MonadHandshake (MessagePatternT
   tokenRS buf = do
     hs <- get
     if isJust (hs ^. hssRemoteStaticKey) then
-      error "unable to overwrite remote static key"
+      throw . HandshakeStateFailure $ "unable to overwrite remote static key"
     else do
       let hasKey    = hs ^. hssSymmetricState . ssHasKey
           (b, rest) = B.splitAt (d hasKey) buf
@@ -198,22 +199,22 @@ instance (Monad m, Cipher c, Curve d, Hash h) => MonadHandshake (MessagePatternT
     put $ hs & hssSymmetricState .~ ss'
 
 getLocalStaticKey :: Curve d => HandshakeState c d h -> KeyPair d
-getLocalStaticKey hs = fromMaybe (error "local static key not set")
+getLocalStaticKey hs = fromMaybe (throw (HandshakeStateFailure "local static key not set"))
                                  (hs ^. hssLocalStaticKey)
 
 getLocalEphemeralKey :: Curve d => HandshakeState c d h -> KeyPair d
-getLocalEphemeralKey hs = fromMaybe (error "local ephemeral key not set")
+getLocalEphemeralKey hs = fromMaybe (throw (HandshakeStateFailure "local ephemeral key not set"))
                                     (hs ^. hssLocalEphemeralKey)
 
 -- | Returns the remote party's public static key. This is useful when
 --   the static key has been transmitted to you and you want to save it for
 --   future use.
 getRemoteStaticKey :: Curve d => HandshakeState c d h -> PublicKey d
-getRemoteStaticKey hs = fromMaybe (error "remote static key not set")
+getRemoteStaticKey hs = fromMaybe (throw (HandshakeStateFailure "remote static key not set"))
                                   (hs ^. hssRemoteStaticKey)
 
 getRemoteEphemeralKey :: Curve d => HandshakeState c d h -> PublicKey d
-getRemoteEphemeralKey hs = fromMaybe (error "remote ephemeral key not set")
+getRemoteEphemeralKey hs = fromMaybe (throw (HandshakeStateFailure "remote ephemeral key not set"))
                                      (hs ^. hssRemoteEphemeralKey)
 
 tokenPreLX :: (MonadState (HandshakeState c d h) m, Cipher c, Curve d, Hash h)
@@ -222,7 +223,8 @@ tokenPreLX :: (MonadState (HandshakeState c d h) m, Cipher c, Curve d, Hash h)
 tokenPreLX keyToView = do
   hs <- get
   let ss      = hs ^. hssSymmetricState
-      (_, pk) = fromMaybe (error "tokenPreLX: local key not set") (hs ^. keyToView)
+      (_, pk) = fromMaybe (throw (HandshakeStateFailure "tokenPreLX: local key not set"))
+                          (hs ^. keyToView)
       ss'     = mixHash (curvePubToBytes pk) ss
   put $ hs & hssSymmetricState .~ ss'
 
@@ -232,14 +234,16 @@ tokenPreRX :: (MonadState (HandshakeState c d h) m, Cipher c, Curve d, Hash h)
 tokenPreRX keyToView = do
   hs <- get
   let ss  = hs ^. hssSymmetricState
-      pk  = fromMaybe (error "tokenPreRX: remote key not set") (hs ^. keyToView)
+      pk  = fromMaybe (throw (HandshakeStateFailure "tokenPreRX: remote key not set"))
+                      (hs ^. keyToView)
       ss' = mixHash (curvePubToBytes pk) ss
   put $ hs & hssSymmetricState .~ ss'
 
 -- | Constructs a HandshakeState. The keys you need to provide are
 --   dependent on the type of handshake you are using. If you fail to
---   provide a key that your handshake type depends on, you will receive an
---   error such as "local static key not set".
+--   provide a key that your handshake type depends on, or you provide
+--   a static key which is supposed to be set during the exchang, you will
+--   receive a 'HandshakeStateFailure' exception.
 handshakeState :: forall c d h. (Cipher c, Curve d, Hash h)
                => HandshakePattern c d h
                -- ^ The handshake pattern to use

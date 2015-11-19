@@ -42,7 +42,7 @@ install:
     fi
   - travis_retry cabal update
   - "sed -i  's/^jobs:.*$/jobs: 2/' $HOME/.cabal/config"
-  - cabal install --only-dependencies --enable-tests --dry -v cacophony.cabal > installplan.txt
+  - cabal install --only-dependencies --enable-tests --enable-benchmarks --dry -v cacophony.cabal > installplan.txt
   - sed -i -e '1,/^Resolving /d' installplan.txt; cat installplan.txt
 
   # check whether current requested install-plan matches cached package-db snapshot
@@ -56,7 +56,7 @@ install:
       echo "cabal build-cache MISS";
       rm -rf $HOME/.cabsnap;
       mkdir -p $HOME/.ghc $HOME/.cabal/lib $HOME/.cabal/share $HOME/.cabal/bin;
-      cabal install --only-dependencies --enable-tests cacophony.cabal;
+      cabal install --only-dependencies --enable-tests --enable-benchmarks cacophony.cabal;
       if [ "$GHCVER" = "7.10.1" ]; then cabal install Cabal-1.22.4.0; fi;
     fi
 
@@ -72,7 +72,7 @@ install:
   - cabal install
 
 script:
-  - cabal configure --enable-tests -v2  # -v2 provides useful information for debugging
+  - cabal configure --enable-tests --enable-benchmarks -v2  # -v2 provides useful information for debugging
   - cabal build   # this builds all libraries and executables (including tests)
   - cabal test
   - cabal sdist   # tests that a source-distribution can be generated
@@ -81,4 +81,4 @@ script:
   # If there are no other `.tar.gz` files in `dist`, this can be even simpler:
   # `cabal install --force-reinstalls dist/*-*.tar.gz`
   - SRC_TGZ=$(cabal info . | awk '{print $2;exit}').tar.gz &&
-    (cd dist && cabal install --enable-tests --run-tests --force-reinstalls "$SRC_TGZ")
+    (cd dist && cabal install --enable-tests --enable-benchmarks --run-tests --force-reinstalls "$SRC_TGZ")

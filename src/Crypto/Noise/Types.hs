@@ -8,6 +8,7 @@
 module Crypto.Noise.Types
   ( -- * Types
     ScrubbedBytes,
+    NoiseException(..),
     -- * Functions
     convert,
     append,
@@ -19,10 +20,16 @@ module Crypto.Noise.Types
     sbEq
   ) where
 
+import Control.Exception (Exception)
 import Data.ByteArray (ScrubbedBytes, concat, convert, append, eq)
 import qualified Data.ByteString as BS (ByteString)
 import qualified Data.ByteString.Lazy as BL (ByteString, toStrict, fromStrict)
 import Prelude hiding (concat)
+
+data NoiseException = DecryptionError String
+  deriving (Show)
+
+instance Exception NoiseException
 
 -- | Concatenates a list of 'ScrubbedBytes'.
 concatSB :: [ScrubbedBytes] -> ScrubbedBytes

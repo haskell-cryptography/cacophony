@@ -17,10 +17,12 @@ module Crypto.Noise.Internal.CipherState
     decryptAndIncrement
   ) where
 
+import Control.Exception (throw)
 import Control.Lens
 import Data.Maybe (fromMaybe)
 
 import Crypto.Noise.Cipher
+import Crypto.Noise.Types (NoiseException(DecryptionError))
 
 -- | Represents a symmetric key and associated nonce.
 data CipherState c =
@@ -39,6 +41,6 @@ encryptAndIncrement ad plaintext cs = (ct, newState)
 decryptAndIncrement :: Cipher c => AssocData -> Ciphertext c -> CipherState c -> (Plaintext, CipherState c)
 decryptAndIncrement ad ct cs = (pt, newState)
   where
-    pt       = fromMaybe (error "decryptAndIncrement: error decrypting ciphertext")
+    pt       = fromMaybe (throw (DecryptionError "decryptAndIncrement"))
                          (cipherDecrypt (cs ^. csk) (cs ^. csn) ad ct)
     newState = cs & csn %~ cipherIncNonce

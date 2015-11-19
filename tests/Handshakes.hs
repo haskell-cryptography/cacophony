@@ -4,11 +4,14 @@ module Handshakes where
 import Data.Proxy
 
 import Crypto.Noise.Cipher
+import Crypto.Noise.Cipher.AESGCM
 import Crypto.Noise.Cipher.ChaChaPoly1305
 import Crypto.Noise.Curve
 import Crypto.Noise.Curve.Curve25519
 import Crypto.Noise.Handshake
 import Crypto.Noise.Hash
+import Crypto.Noise.Hash.BLAKE2s
+import Crypto.Noise.Hash.BLAKE2b
 import Crypto.Noise.Hash.SHA256
 import Crypto.Noise.Hash.SHA512
 import Crypto.Noise.Types
@@ -196,19 +199,55 @@ threeMessage ihs rhs pt =
 tests :: TestTree
 tests =
   let p    = Just "cacophony"
-      hks  = HandshakeKeys p is25519 rs25519 re25519
-      hks' = HandshakeKeys Nothing is25519 rs25519 re25519 in
+      hks  = HandshakeKeys Nothing is25519 rs25519 re25519
+      hks' = HandshakeKeys p is25519 rs25519 re25519 in
   testGroup "Handshakes"
-  [ testGroup "without PSK"
-    [ testGroup "Curve25519-ChaChaPoly1305-SHA256"
+  [ testGroup "Curve25519-ChaChaPoly1305-SHA256"
+    [ testGroup "without PSK"
       (mkHandshakeProps hks (Proxy :: Proxy (ChaChaPoly1305, SHA256)))
-    , testGroup "Curve25519-ChaChaPoly1305-SHA512"
-      (mkHandshakeProps hks (Proxy :: Proxy (ChaChaPoly1305, SHA512)))
-    ]
-  , testGroup "with PSK"
-    [ testGroup "Curve25519-ChaChaPoly1305-SHA256"
+    , testGroup "with PSK"
       (mkHandshakeProps hks' (Proxy :: Proxy (ChaChaPoly1305, SHA256)))
-    , testGroup "Curve25519-ChaChaPoly1305-SHA512"
+    ]
+  , testGroup "Curve25519-ChaChaPoly1305-SHA512"
+    [ testGroup "without PSK"
+      (mkHandshakeProps hks (Proxy :: Proxy (ChaChaPoly1305, SHA512)))
+    , testGroup "with PSK"
       (mkHandshakeProps hks' (Proxy :: Proxy (ChaChaPoly1305, SHA512)))
+    ]
+  , testGroup "Curve25519-ChaChaPoly1305-BLAKE2s"
+    [ testGroup "without PSK"
+      (mkHandshakeProps hks (Proxy :: Proxy (ChaChaPoly1305, BLAKE2s)))
+    , testGroup "with PSK"
+      (mkHandshakeProps hks' (Proxy :: Proxy (ChaChaPoly1305, BLAKE2s)))
+    ]
+  , testGroup "Curve25519-ChaChaPoly1305-BLAKE2b"
+    [ testGroup "without PSK"
+      (mkHandshakeProps hks (Proxy :: Proxy (ChaChaPoly1305, BLAKE2b)))
+    , testGroup "with PSK"
+      (mkHandshakeProps hks' (Proxy :: Proxy (ChaChaPoly1305, BLAKE2b)))
+    ]
+  , testGroup "Curve25519-AESGCM-SHA256"
+    [ testGroup "without PSK"
+      (mkHandshakeProps hks (Proxy :: Proxy (AESGCM, SHA256)))
+    , testGroup "with PSK"
+      (mkHandshakeProps hks' (Proxy :: Proxy (AESGCM, SHA256)))
+    ]
+  , testGroup "Curve25519-AESGCM-SHA512"
+    [ testGroup "without PSK"
+      (mkHandshakeProps hks (Proxy :: Proxy (AESGCM, SHA512)))
+    , testGroup "with PSK"
+      (mkHandshakeProps hks' (Proxy :: Proxy (AESGCM, SHA512)))
+    ]
+  , testGroup "Curve25519-AESGCM-BLAKE2s"
+    [ testGroup "without PSK"
+      (mkHandshakeProps hks (Proxy :: Proxy (AESGCM, BLAKE2s)))
+    , testGroup "with PSK"
+      (mkHandshakeProps hks' (Proxy :: Proxy (AESGCM, BLAKE2s)))
+    ]
+  , testGroup "Curve25519-AESGCM-BLAKE2b"
+    [ testGroup "without PSK"
+      (mkHandshakeProps hks (Proxy :: Proxy (AESGCM, BLAKE2b)))
+    , testGroup "with PSK"
+      (mkHandshakeProps hks' (Proxy :: Proxy (AESGCM, BLAKE2b)))
     ]
   ]

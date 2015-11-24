@@ -1,4 +1,5 @@
 {-# LANGUAGE TemplateHaskell, FlexibleContexts, ScopedTypeVariables #-}
+{-# OPTIONS_HADDOCK hide #-}
 ----------------------------------------------------------------
 -- |
 -- Module      : Crypto.Noise.Internal.SymmetricState

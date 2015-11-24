@@ -1,4 +1,5 @@
 {-# LANGUAGE TemplateHaskell #-}
+{-# OPTIONS_HADDOCK hide #-}
 ----------------------------------------------------------------
 -- |
 -- Module      : Crypto.Noise.Internal.CipherState

@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings, FlexibleInstances,
     GeneralizedNewtypeDeriving, TemplateHaskell,
     RankNTypes, FlexibleContexts, ScopedTypeVariables #-}
+{-# OPTIONS_HADDOCK hide #-}
 ----------------------------------------------------------------
 -- |
 -- Module      : Crypto.Noise.Internal.HandshakeState

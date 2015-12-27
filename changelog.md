@@ -1,3 +1,5 @@
+* Added GHC 7.10.3 to unit tests
+
 # 0.4.0
 
 * Improved documentation

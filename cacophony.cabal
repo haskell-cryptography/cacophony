@@ -1,5 +1,5 @@
 name:          cacophony
-version:       0.4.0
+version:       0.5.0
 synopsis:      A library implementing the Noise protocol.
 license:       PublicDomain
 license-file:  LICENSE
@@ -45,6 +45,7 @@ library
     base >=4.8 && <5,
     bytestring,
     cryptonite,
+    free,
     lens,
     memory,
     mtl
@@ -56,7 +57,6 @@ library
     Crypto.Noise.Cipher.ChaChaPoly1305
     Crypto.Noise.Curve
     Crypto.Noise.Curve.Curve25519
-    Crypto.Noise.MessagePatterns
     Crypto.Noise.Handshake
     Crypto.Noise.HandshakePatterns
     Crypto.Noise.Hash
@@ -66,9 +66,10 @@ library
     Crypto.Noise.Hash.SHA512
     Crypto.Noise.Internal.CipherState
     Crypto.Noise.Internal.SymmetricState
+    Crypto.Noise.Internal.HandshakePattern
     Crypto.Noise.Internal.HandshakeState
     Crypto.Noise.Types
-  ghc-options:      -rtsopts -with-rtsopts=-N -Wall -fwarn-tabs
+  ghc-options:      -Wall -fwarn-tabs
 
   if flag(llvm)
     ghc-options: -fllvm
@@ -79,11 +80,12 @@ library
 test-suite properties
   type:             exitcode-stdio-1.0
   main-is:          properties.hs
-  ghc-options:      -Wall -fwarn-tabs
+  ghc-options:      -Wall -fwarn-tabs -threaded
   hs-source-dirs:   tests
   default-language: Haskell2010
 
   build-depends:
+    async,
     base >=4.8 && <5,
     bytestring,
     cacophony,
@@ -117,7 +119,7 @@ test-suite hlint
 test-suite doctests
   type:             exitcode-stdio-1.0
   main-is:          doctests.hs
-  ghc-options:      -threaded -Wall -fwarn-tabs
+  ghc-options:      -Wall -fwarn-tabs -threaded
   hs-source-dirs:   tests
   default-language: Haskell2010
 
@@ -136,11 +138,12 @@ test-suite doctests
 benchmark bench
   type:             exitcode-stdio-1.0
   main-is:          bench.hs
-  ghc-options:      -Wall -fwarn-tabs
+  ghc-options:      -Wall -fwarn-tabs -threaded
   hs-source-dirs:   benchmarks
   default-language: Haskell2010
 
   build-depends:
+    async,
     base >=4.8 && <5,
     bytestring,
     cacophony,

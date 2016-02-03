@@ -14,7 +14,6 @@ module Crypto.Noise.Curve.Curve25519
 import Crypto.Error          (throwCryptoError)
 import Crypto.Random.Entropy (getEntropy)
 import qualified Crypto.PubKey.Curve25519 as C
-
 import Crypto.Noise.Curve
 import Crypto.Noise.Types
 
@@ -48,7 +47,7 @@ pubToBytes :: PublicKey Curve25519 -> ScrubbedBytes
 pubToBytes (PK25519 pk) = convert pk
 
 bytesToPub :: ScrubbedBytes -> PublicKey Curve25519
-bytesToPub b = PK25519 . throwCryptoError . C.publicKey $ b
+bytesToPub = PK25519 . throwCryptoError . C.publicKey
 
 secToBytes :: SecretKey Curve25519 -> ScrubbedBytes
 secToBytes (SK25519 sk) = convert sk

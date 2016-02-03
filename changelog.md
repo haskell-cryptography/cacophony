@@ -1,3 +1,8 @@
+# 0.5.0
+
+* Major refactoring and API changes
+  A DSL was created to represent handshake patterns.
+
 * Added GHC 7.10.3 to unit tests
 
 # 0.4.0
@@ -26,7 +31,7 @@
 
 * Added support for one-way handshakes
 
-* Fixed Noise_IX
+* Fixed Noise\_IX
 
 * Added helper functions for ScrubbedBytes / ByteString conversion
 

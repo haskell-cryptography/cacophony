@@ -23,9 +23,8 @@ import Control.Lens
 import Data.Maybe (fromMaybe)
 
 import Crypto.Noise.Cipher
-import Crypto.Noise.Types (NoiseException(DecryptionFailure))
+import Crypto.Noise.Types (NoiseException(DecryptionFailure), Plaintext(..))
 
--- | Represents a symmetric key and associated nonce.
 data CipherState c =
   CipherState { _csk :: SymmetricKey c
               , _csn :: Nonce c

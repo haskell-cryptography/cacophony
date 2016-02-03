@@ -8,6 +8,7 @@ import Control.Monad.State (runState, state)
 import Crypto.Noise.Cipher
 import Crypto.Noise.Cipher.ChaChaPoly1305
 import Crypto.Noise.Internal.CipherState
+import Crypto.Noise.Types (Plaintext(..))
 
 roundTripProp :: AssocData -> Plaintext -> CipherState ChaChaPoly1305 -> Property
 roundTripProp ad pt cs = (decrypt . encrypt) pt === pt
@@ -20,7 +21,7 @@ manyRoundTripsProp ad pts cs = (fst . manyDecrypts . manyEncrypts) pts === pts
   where
     encrypt = encryptAndIncrement ad
     decrypt = decryptAndIncrement ad
-    doMany f xs = runState . mapM (state . f) $ xs
+    doMany f = runState . mapM (state . f)
     manyEncrypts xs = doMany encrypt xs cs
     manyDecrypts (cts, _) = doMany decrypt cts cs
 

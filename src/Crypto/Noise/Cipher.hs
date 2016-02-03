@@ -10,12 +10,8 @@ module Crypto.Noise.Cipher
   ( -- * Classes
     Cipher(..),
     -- * Types
-    Plaintext(..),
     AssocData(..)
   ) where
-
-import Data.ByteString.Char8 (pack)
-import Data.String (IsString(..))
 
 import Crypto.Noise.Types
 
@@ -65,12 +61,6 @@ class Cipher c where
 
   -- | Imports a Ciphertext.
   cipherBytesToText :: ScrubbedBytes -> Ciphertext c
-
--- | Represents plaintext which can be encrypted.
-newtype Plaintext = Plaintext ScrubbedBytes
-
-instance IsString Plaintext where
-  fromString s = Plaintext . convert . pack $ s
 
 -- | Represents the associated data for AEAD.
 newtype AssocData = AssocData ScrubbedBytes

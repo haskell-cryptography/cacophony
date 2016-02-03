@@ -7,23 +7,19 @@
 --
 -- For more information regarding HandshakePatterns, please see the
 -- "Crypto.Noise.HandshakePatterns" module.
+
 module Crypto.Noise.Handshake
   ( -- * Types
+    SendingCipherState,
+    ReceivingCipherState,
+    HandshakeCallbacks(..),
     HandshakeState,
-    MessagePattern,
-    MessagePatternIO,
-    HandshakePattern,
-    CipherState,
+    HandshakeStateParams(..),
     -- * Functions
-    getRemoteStaticKey,
     handshakeState,
-    writeMessage,
-    readMessage,
-    writeMessageFinal,
-    readMessageFinal,
+    runHandshake,
     encryptPayload,
     decryptPayload
   ) where
 
 import Crypto.Noise.Internal.HandshakeState
-import Crypto.Noise.Internal.CipherState

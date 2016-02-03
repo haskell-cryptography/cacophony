@@ -6,174 +6,460 @@
 -- Stability   : experimental
 -- Portability : POSIX
 --
--- This module contains all of the handshake patterns specified in the
--- protocol. The first two characters of the name represent the handshake
--- the pattern describes (NN, KN, NK, etc). The last character represents
--- whether the pattern is intended to be used by the __I__nitiator or the
--- __R__esponder. These functions are intended to be passed to the
--- 'Crypto.Noise.Handshake.handshakeState' function. The (de-)serialization
--- of (pre-)messages is beyond the scope of this library, but public keys
--- can be imported/exported using the 'curveBytesToPub' and 'curvePubToBytes'
--- functions.
+-- This module contains all of the handshake patterns specified in sections
+-- 7.2 and 7.3 as well as unspecified patterns found in previous drafts of
+-- the protocol spec.
 
 module Crypto.Noise.HandshakePatterns
   ( -- * Functions
-    noiseNNI,
-    noiseNNR,
-    noiseKNI,
-    noiseKNR,
-    noiseNKI,
-    noiseNKR,
-    noiseKKI,
-    noiseKKR,
-    noiseNEI,
-    noiseNER,
-    noiseKEI,
-    noiseKER,
-    noiseNXI,
-    noiseNXR,
-    noiseKXI,
-    noiseKXR,
-    noiseXNI,
-    noiseXNR,
-    noiseINI,
-    noiseINR,
-    noiseXKI,
-    noiseXKR,
-    noiseIKI,
-    noiseIKR,
-    noiseXEI,
-    noiseXER,
-    noiseIEI,
-    noiseIER,
-    noiseXXI,
-    noiseXXR,
-    noiseIXI,
-    noiseIXR,
-    noiseNI,
-    noiseNR,
-    noiseKI,
-    noiseKR,
-    noiseXI,
-    noiseXR
+    noiseNN
+  , noiseKN
+  , noiseNK
+  , noiseKK
+  , noiseNE
+  , noiseKE
+  , noiseNX
+  , noiseKX
+  , noiseXN
+  , noiseIN
+  , noiseXK
+  , noiseIK
+  , noiseXE
+  , noiseIE
+  , noiseXX
+  , noiseIX
+  , noiseXR
+  , noiseN
+  , noiseK
+  , noiseX
   ) where
 
-import Crypto.Noise.Cipher
-import Crypto.Noise.Curve
-import Crypto.Noise.Hash
-import Crypto.Noise.Internal.HandshakeState
-import Crypto.Noise.MessagePatterns
+import Crypto.Noise.Internal.HandshakePattern
 
-noiseNNI :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseNNI = HandshakePattern "NN" Nothing [noiseNNI1] [noiseNNI2]
+-- | @Noise_NN():
+--  -> e
+--  <- e, dhee@
+noiseNN :: HandshakePattern c
+noiseNN = HandshakePattern "NN" Nothing $ do
+  initiator e
 
-noiseNNR :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseNNR = HandshakePattern "NN" Nothing [noiseNNR2] [noiseNNR1]
+  responder $ do
+    e
+    dhee
 
-noiseKNI :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseKNI = HandshakePattern "KN" (Just noiseKNI0) [noiseKNI1] [noiseKNI2]
+  split
 
-noiseKNR :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseKNR = HandshakePattern "KN" (Just noiseKNR0) [noiseKNR2] [noiseKNR1]
+-- | @Noise_KN(s):
+--  -> s
+--  ...
+--  -> e
+--  <- e, dhee, dhes@
+noiseKN :: HandshakePattern c
+noiseKN = HandshakePattern "KN" (Just pmp) hp
+  where
+    pmp = initiator s
 
-noiseNKI :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseNKI = HandshakePattern "NK" (Just noiseNKI0) [noiseNKI1] [noiseNKI2]
+    hp = do
+      initiator e
 
-noiseNKR :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseNKR = HandshakePattern "NK" (Just noiseNKR0) [noiseNKR2] [noiseNKR1]
+      responder $ do
+        e
+        dhee
+        dhes
 
-noiseKKI :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseKKI = HandshakePattern "KK" (Just noiseKKI0) [noiseKKI1] [noiseKKI2]
+      split
 
-noiseKKR :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseKKR = HandshakePattern "KK" (Just noiseKKR0) [noiseKKR2] [noiseKKR1]
+-- | @Noise_NK(rs):
+--  <- s
+--  ...
+--  -> e, dhes
+--  <- e, dhee@
+noiseNK :: HandshakePattern c
+noiseNK = HandshakePattern "NK" (Just pmp) hp
+  where
+    pmp = responder s
 
-noiseNEI :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseNEI = HandshakePattern "NE" (Just noiseNEI0) [noiseNEI1] [noiseNEI2]
+    hp = do
+      initiator $ do
+        e
+        dhes
 
-noiseNER :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseNER = HandshakePattern "NE" (Just noiseNER0) [noiseNER2] [noiseNER1]
+      responder $ do
+        e
+        dhee
 
-noiseKEI :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseKEI = HandshakePattern "KE" (Just noiseKEI0) [noiseKEI1] [noiseKEI2]
+      split
 
-noiseKER :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseKER = HandshakePattern "KE" (Just noiseKER0) [noiseKER2] [noiseKER1]
+-- | @Noise_KK(s, rs):
+--  -> s
+--  <- s
+--  ...
+--  -> e, dhes, dhss
+--  <- e, dhee, dhes@
+noiseKK :: HandshakePattern c
+noiseKK = HandshakePattern "KK" (Just pmp) hp
+  where
+    pmp = do
+      initiator s
 
-noiseNXI :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseNXI = HandshakePattern "NX" Nothing [noiseNXI1] [noiseNXI2]
+      responder s
 
-noiseNXR :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseNXR = HandshakePattern "NX" Nothing [noiseNXR2] [noiseNXR1]
+    hp = do
+      initiator $ do
+        e
+        dhes
+        dhss
 
-noiseKXI :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseKXI = HandshakePattern "KX" (Just noiseKXI0) [noiseKXI1] [noiseKXI2]
+      responder $ do
+        e
+        dhee
+        dhes
 
-noiseKXR :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseKXR = HandshakePattern "KX" (Just noiseKXR0) [noiseKXR2] [noiseKXR1]
+      split
 
-noiseXNI :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseXNI = HandshakePattern "XN" Nothing [noiseXNI1, noiseXNI3] [noiseXNI2]
+-- | @Noise_NE(rs, re):
+--  <- s, e
+--  ...
+--  -> e, dhee, dhes
+--  <- e, dhee@
+noiseNE :: HandshakePattern c
+noiseNE = HandshakePattern "NE" (Just pmp) hp
+  where
+    pmp = responder $ do
+      s
+      e
 
-noiseXNR :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseXNR = HandshakePattern "XN" Nothing [noiseXNR2] [noiseXNR1, noiseXNR3]
+    hp = do
+      initiator $ do
+        e
+        dhee
+        dhes
 
-noiseINI :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseINI = HandshakePattern "IN" Nothing[noiseINI1] [noiseINI2]
+      responder $ do
+        e
+        dhee
 
-noiseINR :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseINR = HandshakePattern "IN" Nothing [noiseINR2] [noiseINR1]
+      split
 
-noiseXKI :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseXKI = HandshakePattern "XK" (Just noiseXKI0) [noiseXKI1, noiseXKI3] [noiseXKI2]
+-- | @Noise_KE(s, rs, re):
+--  -> s
+--  <- s, e
+--  ...
+--  -> e, dhee, dhes, dhse
+--  <- e, dhee, dhes@
+noiseKE :: HandshakePattern c
+noiseKE = HandshakePattern "KE" (Just pmp) hp
+  where
+    pmp = do
+      initiator s
 
-noiseXKR :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseXKR = HandshakePattern "XK" (Just noiseXKR0) [noiseXKR2] [noiseXKR1, noiseXKR3]
+      responder $ do
+        s
+        e
 
-noiseIKI :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseIKI = HandshakePattern "IK" (Just noiseIKI0) [noiseIKI1] [noiseIKI2]
+    hp = do
+      initiator $ do
+        e
+        dhee
+        dhes
+        dhse
 
-noiseIKR :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseIKR = HandshakePattern "IK" (Just noiseIKR0) [noiseIKR2] [noiseIKR1]
+      responder $ do
+        e
+        dhee
+        dhes
 
-noiseXEI :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseXEI = HandshakePattern "XE" (Just noiseXEI0) [noiseXEI1, noiseXEI3] [noiseXEI2]
+      split
 
-noiseXER :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseXER = HandshakePattern "XE" (Just noiseXER0) [noiseXER2] [noiseXER1, noiseXER3]
+-- | @Noise_NX(rs):
+--  -> e
+--  <- e, dhee, s, dhse@
+noiseNX :: HandshakePattern c
+noiseNX = HandshakePattern "NX" Nothing $ do
+  initiator e
 
-noiseIEI :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseIEI = HandshakePattern "IE" (Just noiseIEI0) [noiseIEI1] [noiseIEI2]
+  responder $ do
+    e
+    dhee
+    s
+    dhse
 
-noiseIER :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseIER = HandshakePattern "IE" (Just noiseIER0) [noiseIER2] [noiseIER1]
+  split
 
-noiseXXI :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseXXI = HandshakePattern "XX" Nothing [noiseXXI1, noiseXXI3] [noiseXXI2]
+-- | @Noise_KX(s, rs):
+--  -> s
+--  ...
+--  -> e
+--  <- e, dhee, dhes, s, dhse@
+noiseKX :: HandshakePattern c
+noiseKX = HandshakePattern "KX" (Just pmp) hp
+  where
+    pmp = initiator s
 
-noiseXXR :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseXXR = HandshakePattern "XX" Nothing [noiseXXR2] [noiseXXR1, noiseXXR3]
+    hp = do
+      initiator e
 
-noiseIXI :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseIXI = HandshakePattern "IX" Nothing [noiseIXI1] [noiseIXI2]
+      responder $ do
+        e
+        dhee
+        dhes
+        s
+        dhse
 
-noiseIXR :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseIXR = HandshakePattern "IX" Nothing [noiseIXR2] [noiseIXR1]
+      split
 
-noiseNI :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseNI = HandshakePattern "N" (Just noiseNI0) [noiseNI1] []
+-- | @Noise_XN(s):
+--  -> e
+--  <- e, dhee
+--  -> s, dhse@
+noiseXN :: HandshakePattern c
+noiseXN = HandshakePattern "XN" Nothing $ do
+  initiator e
 
-noiseNR :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseNR = HandshakePattern "N" (Just noiseNR0) [] [noiseNR1]
+  responder $ do
+    e
+    dhee
 
-noiseKI :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseKI = HandshakePattern "K" (Just noiseKI0) [noiseKI1] []
+  initiator $ do
+    s
+    dhse
 
-noiseKR :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseKR = HandshakePattern "K" (Just noiseKR0) [] [noiseKR1]
+  split
 
-noiseXI :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseXI = HandshakePattern "X" (Just noiseXI0) [noiseXI1] []
+-- | @Noise_IN(s):
+--  -> e, s
+--  <- e, dhee, dhes@
+noiseIN :: HandshakePattern c
+noiseIN = HandshakePattern "IN" Nothing $ do
+  initiator $ do
+    e
+    s
 
-noiseXR :: (Cipher c, Curve d, Hash h) => HandshakePattern c d h
-noiseXR = HandshakePattern "X" (Just noiseXR0) [] [noiseXR1]
+  responder $ do
+    e
+    dhee
+    dhes
+
+  split
+
+-- | @Noise_XK(s, rs):
+--  <- s
+--  ...
+--  -> e, dhes
+--  <- e, dhee
+--  -> s, dhse@
+noiseXK :: HandshakePattern c
+noiseXK = HandshakePattern "XK" (Just pmp) hp
+  where
+    pmp = responder s
+
+    hp = do
+      initiator $ do
+        e
+        dhes
+
+      responder $ do
+        e
+        dhee
+
+      initiator $ do
+        s
+        dhse
+
+      split
+
+-- | @Noise_IK(s, rs):
+--  <- s
+--  ...
+--  -> e, dhes, s, dhss
+--  <- e, dhee, dhes@
+noiseIK :: HandshakePattern c
+noiseIK = HandshakePattern "IK" (Just pmp) hp
+  where
+    pmp = responder s
+
+    hp = do
+      initiator $ do
+        e
+        dhes
+        s
+        dhss
+
+      responder $ do
+        e
+        dhee
+        dhes
+
+      split
+
+-- | @Noise_XE(s, rs, re):
+--  <- s, e
+--  ...
+--  -> e, dhee, dhes
+--  <- e, dhee
+--  -> s, dhse@
+noiseXE :: HandshakePattern c
+noiseXE = HandshakePattern "XE" (Just pmp) hp
+  where
+    pmp = responder $ do
+      s
+      e
+
+    hp = do
+      initiator $ do
+        e
+        dhee
+        dhes
+
+      responder $ do
+        e
+        dhee
+
+      initiator $ do
+        s
+        dhse
+
+      split
+
+-- | @Noise_IE(s, rs, re):
+--  <- s, e
+--  ...
+--  -> e, dhee, dhes, s, dhse
+--  <- e, dhee, dhes@
+noiseIE :: HandshakePattern c
+noiseIE = HandshakePattern "IE" (Just pmp) hp
+  where
+    pmp = responder $ do
+      s
+      e
+
+    hp = do
+      initiator $ do
+        e
+        dhee
+        dhes
+        s
+        dhse
+
+      responder $ do
+        e
+        dhee
+        dhes
+
+      split
+
+-- | @Noise_XX(s, rs):
+--  -> e
+--  <- e, dhee, s, dhse
+--  -> s, dhse@
+noiseXX :: HandshakePattern c
+noiseXX = HandshakePattern "XX" Nothing $ do
+  initiator e
+
+  responder $ do
+    e
+    dhee
+    s
+    dhse
+
+  initiator $ do
+    s
+    dhse
+
+  split
+
+-- | @Noise_IX(s, rs):
+--  -> e, s
+--  <- e, dhee, dhes, s, dhse@
+noiseIX :: HandshakePattern c
+noiseIX = HandshakePattern "IX" Nothing $ do
+  initiator $ do
+    e
+    s
+
+  responder $ do
+    e
+    dhee
+    dhes
+    s
+    dhse
+
+  split
+
+-- | @Noise_XR(s, rs):
+--  -> e
+--  <- e, dhee
+--  -> s, dhse
+--  <- s, dhse@
+noiseXR :: HandshakePattern c
+noiseXR = HandshakePattern "XR" Nothing $ do
+  initiator e
+
+  responder $ do
+    e
+    dhee
+
+  initiator $ do
+    s
+    dhse
+
+  responder $ do
+    s
+    dhse
+
+  split
+
+-- | @Noise_N(rs):
+--  <- s
+--  ...
+--  -> e, dhes@
+noiseN :: HandshakePattern c
+noiseN = HandshakePattern "N" (Just pmp) hp
+  where
+    pmp = responder s
+
+    hp = do
+      initiator $ do
+        e
+        dhes
+
+      split
+
+-- | @Noise_K(s, rs):
+--  -> s
+--  <- s
+--  ...
+--  -> e, dhes, dhss@
+noiseK :: HandshakePattern c
+noiseK = HandshakePattern "K" (Just pmp) hp
+  where
+    pmp = do
+      initiator s
+
+      responder s
+
+    hp = do
+      initiator $ do
+        e
+        dhes
+        dhss
+
+      split
+
+-- | @Noise_X(s, rs):
+--  <- s
+--  ...
+--  -> e, dhes, s, dhss@
+noiseX :: HandshakePattern c
+noiseX = HandshakePattern "X" (Just pmp) hp
+  where
+    pmp = responder s
+
+    hp = do
+      initiator $ do
+        e
+        dhes
+        s
+        dhss
+
+      split

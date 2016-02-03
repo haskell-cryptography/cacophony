@@ -6,6 +6,7 @@ import Crypto.Noise.Curve
 import Crypto.Noise.Handshake
 import Crypto.Noise.HandshakePatterns
 import Crypto.Noise.Hash
+import Crypto.Noise.Types (Plaintext(..))
 
 data HandshakeKeys d =
   HandshakeKeys { psk           :: Maybe Plaintext
@@ -17,489 +18,436 @@ data HandshakeKeys d =
 noiseNNIHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseNNIHS HandshakeKeys{..} =
-  handshakeState
-  noiseNNI
+noiseNNIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+  noiseNN
   ""
   psk
   Nothing
   Nothing
   Nothing
   Nothing
-
-noiseKNIHS :: (Cipher c, Curve d, Hash h)
-           => HandshakeKeys d
-           -> HandshakeState c d h
-noiseKNIHS HandshakeKeys{..} =
-  handshakeState
-  noiseKNI
-  ""
-  psk
-  (Just initStatic)
-  Nothing
-  Nothing
-  Nothing
-
-noiseNKIHS :: (Cipher c, Curve d, Hash h)
-           => HandshakeKeys d
-           -> HandshakeState c d h
-noiseNKIHS HandshakeKeys{..} =
-  handshakeState
-  noiseNKI
-  ""
-  psk
-  Nothing
-  Nothing
-  (Just (snd respStatic))
-  Nothing
-
-noiseKKIHS :: (Cipher c, Curve d, Hash h)
-           => HandshakeKeys d
-           -> HandshakeState c d h
-noiseKKIHS HandshakeKeys{..} =
-  handshakeState
-  noiseKKI
-  ""
-  psk
-  (Just initStatic)
-  Nothing
-  (Just (snd respStatic))
-  Nothing
-
-noiseNEIHS :: (Cipher c, Curve d, Hash h)
-           => HandshakeKeys d
-           -> HandshakeState c d h
-noiseNEIHS HandshakeKeys{..} =
-  handshakeState
-  noiseNEI
-  ""
-  psk
-  Nothing
-  Nothing
-  (Just (snd respStatic))
-  (Just (snd respEphemeral))
-
-noiseKEIHS :: (Cipher c, Curve d, Hash h)
-           => HandshakeKeys d
-           -> HandshakeState c d h
-noiseKEIHS HandshakeKeys{..} =
-  handshakeState
-  noiseKEI
-  ""
-  psk
-  (Just initStatic)
-  Nothing
-  (Just (snd respStatic))
-  (Just (snd respEphemeral))
-
-noiseNXIHS :: (Cipher c, Curve d, Hash h)
-           => HandshakeKeys d
-           -> HandshakeState c d h
-noiseNXIHS HandshakeKeys{..} =
-  handshakeState
-  noiseNXI
-  ""
-  psk
-  Nothing
-  Nothing
-  Nothing
-  Nothing
-
-noiseKXIHS :: (Cipher c, Curve d, Hash h)
-           => HandshakeKeys d
-           -> HandshakeState c d h
-noiseKXIHS HandshakeKeys{..} =
-  handshakeState
-  noiseKXI
-  ""
-  psk
-  (Just initStatic)
-  Nothing
-  Nothing
-  Nothing
-
-noiseXNIHS :: (Cipher c, Curve d, Hash h)
-           => HandshakeKeys d
-           -> HandshakeState c d h
-noiseXNIHS HandshakeKeys{..} =
-  handshakeState
-  noiseXNI
-  ""
-  psk
-  (Just initStatic)
-  Nothing
-  Nothing
-  Nothing
-
-noiseINIHS :: (Cipher c, Curve d, Hash h)
-           => HandshakeKeys d
-           -> HandshakeState c d h
-noiseINIHS HandshakeKeys{..} =
-  handshakeState
-  noiseINI
-  ""
-  psk
-  (Just initStatic)
-  Nothing
-  Nothing
-  Nothing
-
-noiseXKIHS :: (Cipher c, Curve d, Hash h)
-           => HandshakeKeys d
-           -> HandshakeState c d h
-noiseXKIHS HandshakeKeys{..} =
-  handshakeState
-  noiseXKI
-  ""
-  psk
-  (Just initStatic)
-  Nothing
-  (Just (snd respStatic))
-  Nothing
-
-noiseIKIHS :: (Cipher c, Curve d, Hash h)
-           => HandshakeKeys d
-           -> HandshakeState c d h
-noiseIKIHS HandshakeKeys{..} =
-  handshakeState
-  noiseIKI
-  ""
-  psk
-  (Just initStatic)
-  Nothing
-  (Just (snd respStatic))
-  Nothing
-
-noiseXEIHS :: (Cipher c, Curve d, Hash h)
-           => HandshakeKeys d
-           -> HandshakeState c d h
-noiseXEIHS HandshakeKeys{..} =
-  handshakeState
-  noiseXEI
-  ""
-  psk
-  (Just initStatic)
-  Nothing
-  (Just (snd respStatic))
-  (Just (snd respEphemeral))
-
-noiseIEIHS :: (Cipher c, Curve d, Hash h)
-           => HandshakeKeys d
-           -> HandshakeState c d h
-noiseIEIHS HandshakeKeys{..} =
-  handshakeState
-  noiseIEI
-  ""
-  psk
-  (Just initStatic)
-  Nothing
-  (Just (snd respStatic))
-  (Just (snd respEphemeral))
-
-noiseXXIHS :: (Cipher c, Curve d, Hash h)
-           => HandshakeKeys d
-           -> HandshakeState c d h
-noiseXXIHS HandshakeKeys{..} =
-  handshakeState
-  noiseXXI
-  ""
-  psk
-  (Just initStatic)
-  Nothing
-  Nothing
-  Nothing
-
-noiseIXIHS :: (Cipher c, Curve d, Hash h)
-           => HandshakeKeys d
-           -> HandshakeState c d h
-noiseIXIHS HandshakeKeys{..} =
-  handshakeState
-  noiseIXI
-  ""
-  psk
-  (Just initStatic)
-  Nothing
-  Nothing
-  Nothing
-
-noiseNIHS :: (Cipher c, Curve d, Hash h)
-          => HandshakeKeys d
-          -> HandshakeState c d h
-noiseNIHS HandshakeKeys{..} =
-  handshakeState
-  noiseNI
-  ""
-  psk
-  Nothing
-  Nothing
-  (Just (snd respStatic))
-  Nothing
-
-noiseKIHS :: (Cipher c, Curve d, Hash h)
-          => HandshakeKeys d
-          -> HandshakeState c d h
-noiseKIHS HandshakeKeys{..} =
-  handshakeState
-  noiseKI
-  ""
-  psk
-  (Just initStatic)
-  Nothing
-  (Just (snd respStatic))
-  Nothing
-
-noiseXIHS :: (Cipher c, Curve d, Hash h)
-           => HandshakeKeys d
-           -> HandshakeState c d h
-noiseXIHS HandshakeKeys{..} =
-  handshakeState
-  noiseXI
-  ""
-  psk
-  (Just initStatic)
-  Nothing
-  (Just (snd respStatic))
-  Nothing
+  True
 
 noiseNNRHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseNNRHS HandshakeKeys{..} =
-  handshakeState
-  noiseNNR
+noiseNNRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+  noiseNN
   ""
   psk
   Nothing
   Nothing
   Nothing
   Nothing
+  False
+
+noiseKNIHS :: (Cipher c, Curve d, Hash h)
+           => HandshakeKeys d
+           -> HandshakeState c d h
+noiseKNIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+  noiseKN
+  ""
+  psk
+  (Just initStatic)
+  Nothing
+  Nothing
+  Nothing
+  True
 
 noiseKNRHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseKNRHS HandshakeKeys{..} =
-  handshakeState
-  noiseKNR
+noiseKNRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+  noiseKN
   ""
   psk
   Nothing
   Nothing
   (Just (snd initStatic))
   Nothing
+  False
+
+noiseNKIHS :: (Cipher c, Curve d, Hash h)
+           => HandshakeKeys d
+           -> HandshakeState c d h
+noiseNKIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+  noiseNK
+  ""
+  psk
+  Nothing
+  Nothing
+  (Just (snd respStatic))
+  Nothing
+  True
 
 noiseNKRHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseNKRHS HandshakeKeys{..} =
-  handshakeState
-  noiseNKR
+noiseNKRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+  noiseNK
   ""
   psk
   (Just respStatic)
   Nothing
   Nothing
   Nothing
+  False
+
+noiseKKIHS :: (Cipher c, Curve d, Hash h)
+           => HandshakeKeys d
+           -> HandshakeState c d h
+noiseKKIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+  noiseKK
+  ""
+  psk
+  (Just initStatic)
+  Nothing
+  (Just (snd respStatic))
+  Nothing
+  True
 
 noiseKKRHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseKKRHS HandshakeKeys{..} =
-  handshakeState
-  noiseKKR
+noiseKKRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+  noiseKK
   ""
   psk
   (Just respStatic)
   Nothing
   (Just (snd initStatic))
   Nothing
+  False
+
+noiseNEIHS :: (Cipher c, Curve d, Hash h)
+           => HandshakeKeys d
+           -> HandshakeState c d h
+noiseNEIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+  noiseNE
+  ""
+  psk
+  Nothing
+  Nothing
+  (Just (snd respStatic))
+  (Just (snd respEphemeral))
+  True
 
 noiseNERHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseNERHS HandshakeKeys{..} =
-  handshakeState
-  noiseNER
+noiseNERHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+  noiseNE
   ""
   psk
   (Just respStatic)
   (Just respEphemeral)
   Nothing
   Nothing
+  False
+
+noiseKEIHS :: (Cipher c, Curve d, Hash h)
+           => HandshakeKeys d
+           -> HandshakeState c d h
+noiseKEIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+  noiseKE
+  ""
+  psk
+  (Just initStatic)
+  Nothing
+  (Just (snd respStatic))
+  (Just (snd respEphemeral))
+  True
 
 noiseKERHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseKERHS HandshakeKeys{..} =
-  handshakeState
-  noiseKER
+noiseKERHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+  noiseKE
   ""
   psk
   (Just respStatic)
   (Just respEphemeral)
   (Just (snd initStatic))
   Nothing
+  False
+
+noiseNXIHS :: (Cipher c, Curve d, Hash h)
+           => HandshakeKeys d
+           -> HandshakeState c d h
+noiseNXIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+  noiseNX
+  ""
+  psk
+  Nothing
+  Nothing
+  Nothing
+  Nothing
+  True
 
 noiseNXRHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseNXRHS HandshakeKeys{..} =
-  handshakeState
-  noiseNXR
+noiseNXRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+  noiseNX
   ""
   psk
   (Just respStatic)
   Nothing
   Nothing
   Nothing
+  False
+
+noiseKXIHS :: (Cipher c, Curve d, Hash h)
+           => HandshakeKeys d
+           -> HandshakeState c d h
+noiseKXIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+  noiseKX
+  ""
+  psk
+  (Just initStatic)
+  Nothing
+  Nothing
+  Nothing
+  True
 
 noiseKXRHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseKXRHS HandshakeKeys{..} =
-  handshakeState
-  noiseKXR
+noiseKXRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+  noiseKX
   ""
   psk
   (Just respStatic)
   Nothing
   (Just (snd initStatic))
   Nothing
+  False
+
+noiseXNIHS :: (Cipher c, Curve d, Hash h)
+           => HandshakeKeys d
+           -> HandshakeState c d h
+noiseXNIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+  noiseXN
+  ""
+  psk
+  (Just initStatic)
+  Nothing
+  Nothing
+  Nothing
+  True
 
 noiseXNRHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseXNRHS HandshakeKeys{..} =
-  handshakeState
-  noiseXNR
+noiseXNRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+  noiseXN
   ""
   psk
   Nothing
   Nothing
   Nothing
   Nothing
+  False
+
+noiseINIHS :: (Cipher c, Curve d, Hash h)
+           => HandshakeKeys d
+           -> HandshakeState c d h
+noiseINIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+  noiseIN
+  ""
+  psk
+  (Just initStatic)
+  Nothing
+  Nothing
+  Nothing
+  True
 
 noiseINRHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseINRHS HandshakeKeys{..} =
-  handshakeState
-  noiseINR
+noiseINRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+  noiseIN
   ""
   psk
   Nothing
   Nothing
   Nothing
   Nothing
+  False
+
+noiseXKIHS :: (Cipher c, Curve d, Hash h)
+           => HandshakeKeys d
+           -> HandshakeState c d h
+noiseXKIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+  noiseXK
+  ""
+  psk
+  (Just initStatic)
+  Nothing
+  (Just (snd respStatic))
+  Nothing
+  True
 
 noiseXKRHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseXKRHS HandshakeKeys{..} =
-  handshakeState
-  noiseXKR
+noiseXKRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+  noiseXK
   ""
   psk
   (Just respStatic)
   Nothing
   Nothing
   Nothing
+  False
+
+noiseIKIHS :: (Cipher c, Curve d, Hash h)
+           => HandshakeKeys d
+           -> HandshakeState c d h
+noiseIKIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+  noiseIK
+  ""
+  psk
+  (Just initStatic)
+  Nothing
+  (Just (snd respStatic))
+  Nothing
+  True
 
 noiseIKRHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseIKRHS HandshakeKeys{..} =
-  handshakeState
-  noiseIKR
+noiseIKRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+  noiseIK
   ""
   psk
   (Just respStatic)
   Nothing
   Nothing
   Nothing
+  False
+
+noiseXEIHS :: (Cipher c, Curve d, Hash h)
+           => HandshakeKeys d
+           -> HandshakeState c d h
+noiseXEIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+  noiseXE
+  ""
+  psk
+  (Just initStatic)
+  Nothing
+  (Just (snd respStatic))
+  (Just (snd respEphemeral))
+  True
 
 noiseXERHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseXERHS HandshakeKeys{..} =
-  handshakeState
-  noiseXER
+noiseXERHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+  noiseXE
   ""
   psk
   (Just respStatic)
   (Just respEphemeral)
   Nothing
   Nothing
+  False
+
+noiseIEIHS :: (Cipher c, Curve d, Hash h)
+           => HandshakeKeys d
+           -> HandshakeState c d h
+noiseIEIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+  noiseIE
+  ""
+  psk
+  (Just initStatic)
+  Nothing
+  (Just (snd respStatic))
+  (Just (snd respEphemeral))
+  True
 
 noiseIERHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseIERHS HandshakeKeys{..} =
-  handshakeState
-  noiseIER
+noiseIERHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+  noiseIE
   ""
   psk
   (Just respStatic)
   (Just respEphemeral)
   Nothing
   Nothing
+  False
+
+noiseXXIHS :: (Cipher c, Curve d, Hash h)
+           => HandshakeKeys d
+           -> HandshakeState c d h
+noiseXXIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+  noiseXX
+  ""
+  psk
+  (Just initStatic)
+  Nothing
+  Nothing
+  Nothing
+  True
 
 noiseXXRHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseXXRHS HandshakeKeys{..} =
-  handshakeState
-  noiseXXR
+noiseXXRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+  noiseXX
   ""
   psk
   (Just respStatic)
   Nothing
   Nothing
   Nothing
+  False
+
+noiseIXIHS :: (Cipher c, Curve d, Hash h)
+           => HandshakeKeys d
+           -> HandshakeState c d h
+noiseIXIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+  noiseIX
+  ""
+  psk
+  (Just initStatic)
+  Nothing
+  Nothing
+  Nothing
+  True
 
 noiseIXRHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseIXRHS HandshakeKeys{..} =
-  handshakeState
-  noiseIXR
+noiseIXRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+  noiseIX
   ""
   psk
   (Just respStatic)
   Nothing
   Nothing
   Nothing
+  False
 
-noiseNRHS :: (Cipher c, Curve d, Hash h)
-          => HandshakeKeys d
-          -> HandshakeState c d h
-noiseNRHS HandshakeKeys{..} =
-  handshakeState
-  noiseNR
+noiseXRIHS :: (Cipher c, Curve d, Hash h)
+           => HandshakeKeys d
+           -> HandshakeState c d h
+noiseXRIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+  noiseXR
   ""
   psk
-  (Just respStatic)
+  (Just initStatic)
   Nothing
   Nothing
   Nothing
+  True
 
-noiseKRHS :: (Cipher c, Curve d, Hash h)
-          => HandshakeKeys d
-          -> HandshakeState c d h
-noiseKRHS HandshakeKeys{..} =
-  handshakeState
-  noiseKR
-  ""
-  psk
-  (Just respStatic)
-  Nothing
-  (Just (snd initStatic))
-  Nothing
-
-noiseXRHS :: (Cipher c, Curve d, Hash h)
-          => HandshakeKeys d
-          -> HandshakeState c d h
-noiseXRHS HandshakeKeys{..} =
-  handshakeState
+noiseXRRHS :: (Cipher c, Curve d, Hash h)
+           => HandshakeKeys d
+           -> HandshakeState c d h
+noiseXRRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
   noiseXR
   ""
   psk
@@ -507,3 +455,82 @@ noiseXRHS HandshakeKeys{..} =
   Nothing
   Nothing
   Nothing
+  False
+
+noiseNIHS :: (Cipher c, Curve d, Hash h)
+          => HandshakeKeys d
+          -> HandshakeState c d h
+noiseNIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+  noiseN
+  ""
+  psk
+  Nothing
+  Nothing
+  (Just (snd respStatic))
+  Nothing
+  True
+
+noiseNRHS :: (Cipher c, Curve d, Hash h)
+          => HandshakeKeys d
+          -> HandshakeState c d h
+noiseNRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+  noiseN
+  ""
+  psk
+  (Just respStatic)
+  Nothing
+  Nothing
+  Nothing
+  False
+
+noiseKIHS :: (Cipher c, Curve d, Hash h)
+          => HandshakeKeys d
+          -> HandshakeState c d h
+noiseKIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+  noiseK
+  ""
+  psk
+  (Just initStatic)
+  Nothing
+  (Just (snd respStatic))
+  Nothing
+  True
+
+noiseKRHS :: (Cipher c, Curve d, Hash h)
+          => HandshakeKeys d
+          -> HandshakeState c d h
+noiseKRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+  noiseK
+  ""
+  psk
+  (Just respStatic)
+  Nothing
+  (Just (snd initStatic))
+  Nothing
+  False
+
+noiseXIHS :: (Cipher c, Curve d, Hash h)
+          => HandshakeKeys d
+          -> HandshakeState c d h
+noiseXIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+  noiseX
+  ""
+  psk
+  (Just initStatic)
+  Nothing
+  (Just (snd respStatic))
+  Nothing
+  True
+
+noiseXRHS :: (Cipher c, Curve d, Hash h)
+          => HandshakeKeys d
+          -> HandshakeState c d h
+noiseXRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+  noiseX
+  ""
+  psk
+  (Just respStatic)
+  Nothing
+  Nothing
+  Nothing
+  False

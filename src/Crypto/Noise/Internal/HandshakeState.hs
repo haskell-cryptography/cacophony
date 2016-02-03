@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings, FlexibleInstances,
     GeneralizedNewtypeDeriving, TemplateHaskell,
-    RankNTypes, FlexibleContexts, ScopedTypeVariables #-}
+    RankNTypes, FlexibleContexts, ScopedTypeVariables,
+    RecordWildCards #-}
 {-# OPTIONS_HADDOCK hide #-}
 ----------------------------------------------------------------
 -- |
@@ -10,34 +11,27 @@
 -- Portability : POSIX
 
 module Crypto.Noise.Internal.HandshakeState
-  ( -- * Classes
-    MonadHandshake(..),
-    -- * Types
-    MessagePattern,
-    MessagePatternIO,
-    HandshakePattern(HandshakePattern),
+  ( -- * Types
+    HandshakeCallbacks(..),
     HandshakeState,
+    HandshakeStateParams(..),
+    SendingCipherState,
+    ReceivingCipherState,
     -- * Functions
-    runMessagePatternT,
-    getLocalStaticKey,
-    getLocalEphemeralKey,
-    getRemoteStaticKey,
-    getRemoteEphemeralKey,
     handshakeState,
-    writeMessage,
-    readMessage,
-    writeMessageFinal,
-    readMessageFinal,
+    runHandshake,
+    evalHandshakePattern,
+    evalToken,
     encryptPayload,
     decryptPayload
   ) where
 
-import Control.Exception   (throw)
+import Control.Exception (throw)
 import Control.Lens hiding (re)
+import Control.Monad.Free.Church
 import Control.Monad.State
-
 import Data.ByteString (ByteString)
-import qualified Data.ByteString as B (append, splitAt)
+import qualified Data.ByteString as B (empty, splitAt)
 import Data.Maybe (fromMaybe, isJust)
 import Data.Proxy
 
@@ -46,246 +40,101 @@ import Crypto.Noise.Curve
 import Crypto.Noise.Hash
 import Crypto.Noise.Internal.CipherState
 import Crypto.Noise.Internal.SymmetricState
+import Crypto.Noise.Internal.HandshakePattern hiding (s, split)
 import Crypto.Noise.Types
 
-newtype MessagePatternT c d h m a = MessagePatternT { unMP :: StateT (HandshakeState c d h) m a }
-  deriving (Functor, Applicative, Monad, MonadIO, MonadState(HandshakeState c d h))
+-- | Contains the parameters required to initialize a handshake state.
+--   The keys you need to provide are dependent on the type of handshake
+--   you are using. If you fail to provide a key that your handshake
+--   type depends on, or you provide a static key which is supposed to
+--   be set during the exchange, you will receive a
+--   'HandshakeStateFailure' exception.
+data HandshakeStateParams c d =
+  HandshakeStateParams { hspPattern            :: HandshakePattern c
+                       , hspPrologue           :: Plaintext
+                       , hspPreSharedKey       :: Maybe Plaintext
+                       , hspLocalStaticKey     :: Maybe (KeyPair d)
+                       , hspLocalEphemeralKey  :: Maybe (KeyPair d)
+                       , hspRemoteStaticKey    :: Maybe (PublicKey d)
+                       , hspRemoteEphemeralKey :: Maybe (PublicKey d)
+                       , hspInitiator          :: Bool
+                       }
 
-runMessagePatternT :: Monad m
-                   => MessagePatternT c d h m a
-                   -> HandshakeState c d h
-                   -> m (a, HandshakeState c d h)
-runMessagePatternT = runStateT . unMP
-
--- | Represents a series of operations that can be performed on a Noise
---   message.
-type MessagePattern c d h a = MessagePatternT c d h Identity a
-
--- | Represents a series of operations that will result in a Noise message.
---   This must be done in IO to facilitate the generation of ephemeral
---   keys.
-type MessagePatternIO c d h a = MessagePatternT c d h IO a
-
--- | Represents a series of message patterns, the first for writing and the
---   second for reading.
-data HandshakePattern c d h =
-  HandshakePattern { _hpName     :: ByteString
-                   , _hpPreMsg   :: Maybe (MessagePattern c d h ())
-                   , _hpWriteMsg :: [MessagePatternIO c d h ByteString]
-                   , _hpReadMsg  :: [ByteString -> MessagePattern c d h ByteString]
-                   }
-
--- | Contains the state of a handshake.
 data HandshakeState c d h =
-  HandshakeState { _hssSymmetricState     :: SymmetricState c h
-                 , _hssHandshakePattern   :: HandshakePattern c d h
-                 , _hssLocalStaticKey     :: Maybe (KeyPair d)
-                 , _hssLocalEphemeralKey  :: Maybe (KeyPair d)
-                 , _hssRemoteStaticKey    :: Maybe (PublicKey d)
-                 , _hssRemoteEphemeralKey :: Maybe (PublicKey d)
+  HandshakeState { _hsSymmetricState     :: SymmetricState c h
+                 , _hsLocalStaticKey     :: Maybe (KeyPair d)
+                 , _hsLocalEphemeralKey  :: Maybe (KeyPair d)
+                 , _hsRemoteStaticKey    :: Maybe (PublicKey d)
+                 , _hsRemoteEphemeralKey :: Maybe (PublicKey d)
+                 , _hsInitiator          :: Bool
+                 , _hsMsgBuffer          :: ByteString
+                 , _hsPattern            :: HandshakePattern c
                  }
 
-$(makeLenses ''HandshakePattern)
+-- | Contains the callbacks required by 'runHandshake'. _hscbSend
+--   and _hscbRecv are called when handshake data needs to be sent to
+--   and received from the remote peer, respectively. _hscbPayloadIn
+--   and _hscbPayloadOut are called when handshake payloads are received
+--   and sent, respectively.
+data HandshakeCallbacks =
+  HandshakeCallbacks { _hscbSend       :: ByteString -> IO ()
+                     , _hscbRecv       :: IO ByteString
+                     , _hscbPayloadIn  :: Plaintext -> IO ()
+                     , _hscbPayloadOut :: IO Plaintext
+                     }
+
+type HandshakeMonad c d h = StateT (HandshakeState c d h) IO
+type PreMsgMonad    c d h = StateT (HandshakeState c d h) Identity
+
+-- | Represents the Noise cipher state for outgoing data.
+newtype SendingCipherState   c = SCS { _unSCS :: CipherState c }
+
+-- | Represents the Noise cipher state for incoming data.
+newtype ReceivingCipherState c = RCS { _unRCS :: CipherState c }
+
 $(makeLenses ''HandshakeState)
 
-class Monad m => MonadHandshake m where
-  tokenPreLS :: m ()
-  tokenPreRS :: m ()
-  tokenPreLE :: m ()
-  tokenPreRE :: m ()
-  tokenRE    :: ByteString -> m ByteString
-  tokenRS    :: ByteString -> m ByteString
-  tokenWE    :: MonadIO m => m ByteString
-  tokenWS    :: m ByteString
-  tokenDHEE  :: m ()
-  tokenDHES  :: m ()
-  tokenDHSE  :: m ()
-  tokenDHSS  :: m ()
+$(makeLenses ''HandshakeCallbacks)
 
-instance (Monad m, Cipher c, Curve d, Hash h) => MonadHandshake (MessagePatternT c d h m) where
-  tokenPreLS = tokenPreLX hssLocalStaticKey
-
-  tokenPreRS = tokenPreRX hssRemoteStaticKey
-
-  tokenPreLE = tokenPreLX hssLocalEphemeralKey
-
-  tokenPreRE = tokenPreRX hssRemoteEphemeralKey
-
-  tokenRE buf = do
-    hs <- get
-
-    let (b, rest) = B.splitAt (curveLength (Proxy :: Proxy d)) buf
-        reBytes   = convert b
-        ss        = hs ^. hssSymmetricState
-        ss'       = mixHash reBytes ss
-        ss''      = if ss ^. ssHasPSK then mixKey reBytes ss' else ss'
-
-    put $ hs & hssRemoteEphemeralKey .~ Just (curveBytesToPub reBytes)
-             & hssSymmetricState     .~ ss''
-
-    return rest
-
-  tokenRS buf = do
-    hs <- get
-    if isJust (hs ^. hssRemoteStaticKey) then
-      throw . HandshakeStateFailure $ "unable to overwrite remote static key"
-    else do
-      let hasKey    = hs ^. hssSymmetricState . ssHasKey
-          (b, rest) = B.splitAt (d hasKey) buf
-          ct        = cipherBytesToText . convert $ b
-          ss        = hs ^. hssSymmetricState
-          (Plaintext pt, ss') = decryptAndHash ct ss
-
-      put $ hs & hssRemoteStaticKey .~ Just (curveBytesToPub pt)
-               & hssSymmetricState  .~ ss'
-
-      return rest
-
-    where
-      len           = curveLength (Proxy :: Proxy d)
-      d hk
-        | hk        = len + 16
-        | otherwise = len
-
-  tokenWE = do
-    ~kp@(_, pk) <- liftIO curveGenKey
-    hs <- get
-    let pk'  = curvePubToBytes pk
-        ss   = hs ^. hssSymmetricState
-        ss'  = mixHash pk' ss
-        ss'' = if ss' ^. ssHasPSK then mixKey pk' ss' else ss'
-    put $ hs & hssLocalEphemeralKey .~ Just kp
-             & hssSymmetricState    .~ ss''
-    return . convert $ pk'
-
-  tokenWS = do
-    hs <- get
-    let pk        = curvePubToBytes . snd . getLocalStaticKey $ hs
-        ss        = hs ^. hssSymmetricState
-        (ct, ss') = encryptAndHash ((Plaintext . convert) pk) ss
-    put $ hs & hssSymmetricState .~ ss'
-    return . convert $ ct
-
-  tokenDHEE = do
-    hs <- get
-    let ss       = hs ^. hssSymmetricState
-        ~(sk, _) = getLocalEphemeralKey hs
-        rpk      = getRemoteEphemeralKey hs
-        dh       = curveDH sk rpk
-        ss'      = mixKey dh ss
-    put $ hs & hssSymmetricState .~ ss'
-
-  tokenDHES = do
-    hs <- get
-    let ss       = hs ^. hssSymmetricState
-        ~(sk, _) = getLocalEphemeralKey hs
-        rpk      = getRemoteStaticKey hs
-        dh       = curveDH sk rpk
-        ss'      = mixKey dh ss
-    put $ hs & hssSymmetricState .~ ss'
-
-  tokenDHSE = do
-    hs <- get
-    let ss       = hs ^. hssSymmetricState
-        ~(sk, _) = getLocalStaticKey hs
-        rpk      = getRemoteEphemeralKey hs
-        dh       = curveDH sk rpk
-        ss'      = mixKey dh ss
-    put $ hs & hssSymmetricState .~ ss'
-
-  tokenDHSS = do
-    hs <- get
-    let ss       = hs ^. hssSymmetricState
-        ~(sk, _) = getLocalStaticKey hs
-        rpk      = getRemoteStaticKey hs
-        dh       = curveDH sk rpk
-        ss'      = mixKey dh ss
-    put $ hs & hssSymmetricState .~ ss'
-
-getLocalStaticKey :: Curve d => HandshakeState c d h -> KeyPair d
-getLocalStaticKey hs = fromMaybe (throw (HandshakeStateFailure "local static key not set"))
-                                 (hs ^. hssLocalStaticKey)
-
-getLocalEphemeralKey :: Curve d => HandshakeState c d h -> KeyPair d
-getLocalEphemeralKey hs = fromMaybe (throw (HandshakeStateFailure "local ephemeral key not set"))
-                                    (hs ^. hssLocalEphemeralKey)
-
--- | Returns the remote party's public static key. This is useful when
---   the static key has been transmitted to you and you want to save it for
---   future use.
-getRemoteStaticKey :: Curve d => HandshakeState c d h -> PublicKey d
-getRemoteStaticKey hs = fromMaybe (throw (HandshakeStateFailure "remote static key not set"))
-                                  (hs ^. hssRemoteStaticKey)
-
-getRemoteEphemeralKey :: Curve d => HandshakeState c d h -> PublicKey d
-getRemoteEphemeralKey hs = fromMaybe (throw (HandshakeStateFailure "remote ephemeral key not set"))
-                                     (hs ^. hssRemoteEphemeralKey)
-
-tokenPreLX :: (MonadState (HandshakeState c d h) m, Cipher c, Curve d, Hash h)
-           => Lens' (HandshakeState c d h) (Maybe (KeyPair d))
-           -> m ()
-tokenPreLX keyToView = do
-  hs <- get
-  let ss      = hs ^. hssSymmetricState
-      (_, pk) = fromMaybe (throw (HandshakeStateFailure "tokenPreLX: local key not set"))
-                          (hs ^. keyToView)
-      ss'     = mixHash (curvePubToBytes pk) ss
-  put $ hs & hssSymmetricState .~ ss'
-
-tokenPreRX :: (MonadState (HandshakeState c d h) m, Cipher c, Curve d, Hash h)
-           => Lens' (HandshakeState c d h) (Maybe (PublicKey d))
-           -> m ()
-tokenPreRX keyToView = do
-  hs <- get
-  let ss  = hs ^. hssSymmetricState
-      pk  = fromMaybe (throw (HandshakeStateFailure "tokenPreRX: remote key not set"))
-                      (hs ^. keyToView)
-      ss' = mixHash (curvePubToBytes pk) ss
-  put $ hs & hssSymmetricState .~ ss'
-
--- | Constructs a 'HandshakeState'. The keys you need to provide are
---   dependent on the type of handshake you are using. If you fail to
---   provide a key that your handshake type depends on, or you provide
---   a static key which is supposed to be set during the exchange, you will
---   receive a 'HandshakeStateFailure' exception.
+-- | Constructs a 'HandshakeState'.
 handshakeState :: forall c d h. (Cipher c, Curve d, Hash h)
-               => HandshakePattern c d h
-               -- ^ The handshake pattern to use
-               -> Plaintext
-               -- ^ Prologue
-               -> Maybe Plaintext
-               -- ^ Pre-shared key
-               -> Maybe (KeyPair d)
-               -- ^ Local static key
-               -> Maybe (KeyPair d)
-               -- ^ Local ephemeral key
-               -> Maybe (PublicKey d)
-               -- ^ Remote public static key
-               -> Maybe (PublicKey d)
-               -- ^ Remote public ephemeral key
+               => HandshakeStateParams c d
+               -- ^ Handshake state parameters
                -> HandshakeState c d h
-handshakeState hp (Plaintext pro) (Just (Plaintext psk)) ls le rs re =
-  maybe hs' hs'' $ hp ^. hpPreMsg
+handshakeState HandshakeStateParams{..} =
+  maybe hs'' hs''' $ hspPattern ^. hpPreActions
   where
-    hsPro x = x & hssSymmetricState %~ mixHash pro
-    hsPSK x = x & hssSymmetricState %~ mixPSK psk
-    hs      = HandshakeState (symmetricState (mkHPN hp True)) hp ls le rs re
-    hs'     = hsPSK . hsPro $ hs
-    hs'' mp = snd . runIdentity $ runMessagePatternT mp hs'
+    ss        = symmetricState $ mkHPN hs (hspPattern ^. hpName) (isJust hspPreSharedKey)
+    hs        = HandshakeState ss
+                               hspLocalStaticKey
+                               hspLocalEphemeralKey
+                               hspRemoteStaticKey
+                               hspRemoteEphemeralKey
+                               hspInitiator
+                               ""
+                               hspPattern
+    hs'       = doPrologue hspPrologue hs
+    hs''      = maybe hs' (`doPSK` hs') hspPreSharedKey
+    hs''' pmp = runIdentity . execStateT (iterM evalPreMsgPattern pmp) $ hs''
 
-handshakeState hp (Plaintext pro) Nothing ls le rs re =
-  maybe hs' hs'' $ hp ^. hpPreMsg
-  where
-    hsPro x = x & hssSymmetricState %~ mixHash pro
-    hs      = HandshakeState (symmetricState (mkHPN hp False)) hp ls le rs re
-    hs'     = hsPro hs
-    hs'' mp = snd . runIdentity $ runMessagePatternT mp hs'
+doPrologue :: forall c d h. (Cipher c, Curve d, Hash h)
+           => Plaintext
+           -> HandshakeState c d h
+           -> HandshakeState c d h
+doPrologue (Plaintext pro) hs = hs & hsSymmetricState %~ mixHash pro
+
+doPSK :: forall c d h. (Cipher c, Curve d, Hash h)
+      => Plaintext
+      -> HandshakeState c d h
+      -> HandshakeState c d h
+doPSK (Plaintext psk) hs = hs & hsSymmetricState %~ mixPSK psk
 
 mkHPN :: forall c d h. (Cipher c, Curve d, Hash h)
-      => HandshakePattern c d h
+      => HandshakeState c d h
+      -> ByteString
       -> Bool
       -> ScrubbedBytes
-mkHPN hp psk = if psk then hpn' ppsk else hpn' p
+mkHPN _ hpn psk = if psk then hpn' ppsk else hpn' p
   where
     p        = bsToSB' "Noise_"
     ppsk     = bsToSB' "NoisePSK_"
@@ -293,92 +142,246 @@ mkHPN hp psk = if psk then hpn' ppsk else hpn' p
     b        = cipherName (Proxy :: Proxy c)
     c        = hashName   (Proxy :: Proxy h)
     u        = bsToSB' "_"
-    hpn' pfx = concatSB [pfx, bsToSB' (hp ^. hpName), u, a, u, b, u, c]
+    hpn' pfx = concatSB [pfx, bsToSB' hpn, u, a, u, b, u, c]
 
--- | Creates a handshake message. The plaintext can be left empty if no
---   plaintext is to be transmitted. All subsequent handshake processing
---   must use the returned state.
-writeMessage :: (Cipher c, Curve d, Hash h)
+-- | Given a 'HandshakeState' and 'HandshakeCallbacks', runs a handshake
+--   from start to finish. The 'SendingCipherState' and
+--   'ReceivingCipherState' are intended to be used by 'encryptPayload'
+--   and 'decryptPayload', respectively.
+runHandshake :: (Cipher c, Curve d, Hash h)
              => HandshakeState c d h
-             -- ^ The handshake state
-             -> Plaintext
-             -- ^ Optional message to transmit
-             -> IO (ByteString, HandshakeState c d h)
-writeMessage hs payload = do
-  let (wmp:wmps) = hs ^. hssHandshakePattern . hpWriteMsg
+             -> HandshakeCallbacks
+             -> IO (SendingCipherState c, ReceivingCipherState c)
+runHandshake hs hscb = do
+  (cs1, cs2) <- evalStateT p hs
+  if hs ^. hsInitiator then
+    return (SCS cs1, RCS cs2)
+  else
+    return (SCS cs2, RCS cs1)
 
-  (d, hs') <- runMessagePatternT wmp hs
-
-  let (ep, ss') = encryptAndHash payload $ hs' ^. hssSymmetricState
-      hs''      = hs' & hssSymmetricState .~ ss'
-                      & hssHandshakePattern . hpWriteMsg .~ wmps
-  return (d `B.append` convert ep, hs'')
-
--- | Reads a handshake message. All subsequent handshake processing must
---   use the returned state.
-readMessage :: (Cipher c, Curve d, Hash h)
-            => HandshakeState c d h
-            -- ^ The handshake state
-            -> ByteString
-            -- ^ The handshake message received
-            -> (Plaintext, HandshakeState c d h)
-readMessage hs buf = (dp, hs'')
   where
-    (rmp:rmps) = hs ^. hssHandshakePattern . hpReadMsg
-    (d, hs')   = runIdentity $ runMessagePatternT (rmp buf) hs
-    (dp, ss')  = decryptAndHash (cipherBytesToText (convert d))
-                 $ hs' ^. hssSymmetricState
-    hs''       = hs' & hssSymmetricState .~ ss'
-                     & hssHandshakePattern . hpReadMsg .~ rmps
+    p = iterM (evalHandshakePattern hscb) (hs ^. hsPattern ^. hpActions)
 
--- | The final call of a handshake negotiation. Used to generate a pair of
---   CipherStates, one for each transmission direction.
-writeMessageFinal :: (Cipher c, Curve d, Hash h)
-                  => HandshakeState c d h
-                  -- ^ The handshake state
-                  -> Plaintext
-                  -- ^ Optional message to transmit
-                  -> IO (ByteString, CipherState c, CipherState c)
-writeMessageFinal hs payload = do
-  (d, hs') <- writeMessage hs payload
-  let (cs1, cs2) = split $ hs' ^. hssSymmetricState
-  return (d, cs1, cs2)
+evalHandshakePattern :: (Cipher c, Curve d, Hash h)
+                     => HandshakeCallbacks
+                     -> HandshakePatternF (HandshakeMonad c d h (CipherState c, CipherState c))
+                     -> HandshakeMonad c d h (CipherState c, CipherState c)
+evalHandshakePattern hscb p = do
+  hs <- get
 
--- | The final call of a handshake negotiation. Used to generate a pair of
---   CipherStates, one for each transmission direction.
-readMessageFinal :: (Cipher c, Curve d, Hash h)
-                 => HandshakeState c d h
-                 -- ^ The handshake state
-                 -> ByteString
-                 -- ^ The handshake message received
-                 -> (Plaintext, CipherState c, CipherState c)
-readMessageFinal hs buf = (pt, cs1, cs2)
+  case p of
+    Initiator t next -> sendOrRecv hs True t next
+    Responder t next -> sendOrRecv hs False t next
+    Split            -> return . split $ hs ^. hsSymmetricState
+
   where
-    (pt, hs')  = readMessage hs buf
-    (cs1, cs2) = split $ hs' ^. hssSymmetricState
+    sendOrRecv hs i t next = do
+      if i == hs ^. hsInitiator then do
+        iterM (evalToken i) t
+        hs' <- get
+        payload <- liftIO $ hscb ^. hscbPayloadOut
+        let (ep, ss) = encryptAndHash payload $ hs' ^. hsSymmetricState
+            toSend   = (hs' ^. hsMsgBuffer) `mappend` sbToBS' ep
+        liftIO . (hscb ^. hscbSend) $ toSend
+        put $ hs' & hsMsgBuffer      .~ B.empty
+                  & hsSymmetricState .~ ss
+      else do
+        msg <- liftIO $ hscb ^. hscbRecv
+        put $ hs & hsMsgBuffer .~ msg
+        iterM (evalToken i) t
+        hs' <- get
+        let remaining = hs' ^. hsMsgBuffer
+            (dp, ss)  = decryptAndHash (cipherBytesToText (bsToSB' remaining))
+                        $ hs' ^. hsSymmetricState
+        liftIO . (hscb ^. hscbPayloadIn) $ dp
+        put $ hs' & hsMsgBuffer      .~ B.empty
+                  & hsSymmetricState .~ ss
+      next
 
--- | Encrypts a payload. The returned 'CipherState' must be used for all
---   subsequent calls.
+evalToken :: forall c d h. (Cipher c, Curve d, Hash h)
+          => Bool
+          -> TokenF (HandshakeMonad c d h ())
+          -> HandshakeMonad c d h ()
+evalToken i (E next) = do
+  hs <- get
+
+  if i == hs ^. hsInitiator then do
+    ~kp@(_, pk) <- liftIO curveGenKey
+    let pk'  = curvePubToBytes pk
+        ss   = hs ^. hsSymmetricState
+        ss'  = mixHash pk' ss
+        ss'' = if ss' ^. ssHasPSK then mixKey pk' ss' else ss'
+    put $ hs & hsLocalEphemeralKey .~ Just kp
+             & hsSymmetricState    .~ ss''
+             & hsMsgBuffer         %~ (flip mappend . convert) pk'
+  else do
+    let (b, rest) = B.splitAt (curveLength (Proxy :: Proxy d)) $ hs ^. hsMsgBuffer
+        reBytes   = convert b
+        ss        = hs ^. hsSymmetricState
+        ss'       = mixHash reBytes ss
+        ss''      = if ss ^. ssHasPSK then mixKey reBytes ss' else ss'
+    put $ hs & hsRemoteEphemeralKey .~ Just (curveBytesToPub reBytes)
+             & hsSymmetricState     .~ ss''
+             & hsMsgBuffer          .~ rest
+  next
+
+evalToken i (S next) = do
+  hs <- get
+
+  if i == hs ^. hsInitiator then do
+    let pk        = curvePubToBytes . snd . getLocalStaticKey $ hs
+        ss        = hs ^. hsSymmetricState
+        (ct, ss') = encryptAndHash ((Plaintext . convert) pk) ss
+    put $ hs & hsSymmetricState .~ ss'
+             & hsMsgBuffer      %~ (flip mappend . convert) ct
+  else
+    if isJust (hs ^. hsRemoteStaticKey) then
+      throw . HandshakeStateFailure $ "unable to overwrite remote static key"
+    else do
+      let hasKey    = hs ^. hsSymmetricState . ssHasKey
+          len       = curveLength (Proxy :: Proxy d)
+          d         = if hasKey then len + 16 else len
+          (b, rest) = B.splitAt d $ hs ^. hsMsgBuffer
+          ct        = cipherBytesToText . convert $ b
+          ss        = hs ^. hsSymmetricState
+          (Plaintext pt, ss') = decryptAndHash ct ss
+
+      put $ hs & hsRemoteStaticKey .~ Just (curveBytesToPub pt)
+               & hsSymmetricState  .~ ss'
+               & hsMsgBuffer       .~ rest
+
+  next
+
+evalToken _ (Dhee next) = do
+  hs <- get
+
+  let ss       = hs ^. hsSymmetricState
+      ~(sk, _) = getLocalEphemeralKey hs
+      rpk      = getRemoteEphemeralKey hs
+      dh       = curveDH sk rpk
+      ss'      = mixKey dh ss
+
+  put $ hs & hsSymmetricState .~ ss'
+
+  next
+
+evalToken i (Dhes next) = do
+  hs <- get
+
+  if i == hs ^. hsInitiator then do
+    let ss       = hs ^. hsSymmetricState
+        ~(sk, _) = getLocalEphemeralKey hs
+        rpk      = getRemoteStaticKey hs
+        dh       = curveDH sk rpk
+        ss'      = mixKey dh ss
+    put $ hs & hsSymmetricState .~ ss'
+    next
+  else
+    evalToken (not i) $ Dhse next
+
+evalToken i (Dhse next) = do
+  hs <- get
+
+  if i == hs ^. hsInitiator then do
+    let ss       = hs ^. hsSymmetricState
+        ~(sk, _) = getLocalStaticKey hs
+        rpk      = getRemoteEphemeralKey hs
+        dh       = curveDH sk rpk
+        ss'      = mixKey dh ss
+    put $ hs & hsSymmetricState .~ ss'
+    next
+  else
+    evalToken (not i) $ Dhes next
+
+evalToken _ (Dhss next) = do
+  hs <- get
+
+  let ss       = hs ^. hsSymmetricState
+      ~(sk, _) = getLocalStaticKey hs
+      rpk      = getRemoteStaticKey hs
+      dh       = curveDH sk rpk
+      ss'      = mixKey dh ss
+  put $ hs & hsSymmetricState .~ ss'
+
+  next
+
+evalPreMsgPattern :: forall c d h. (Cipher c, Curve d, Hash h)
+                  => HandshakePatternF (PreMsgMonad c d h ())
+                  -> PreMsgMonad c d h ()
+evalPreMsgPattern (Initiator t next) = do
+  iterM (evalPreMsgToken True) t
+  next
+
+evalPreMsgPattern (Responder t next) = do
+  iterM (evalPreMsgToken False) t
+  next
+
+evalPreMsgPattern _ = error "invalid pre-message pattern operation"
+
+evalPreMsgToken :: forall c d h. (Cipher c, Curve d, Hash h)
+                => Bool
+                -> TokenF (PreMsgMonad c d h ())
+                -> PreMsgMonad c d h ()
+evalPreMsgToken i (E next) = do
+  hs <- get
+
+  let ss  = hs ^. hsSymmetricState
+      pk  = if i == hs ^. hsInitiator then (snd . getLocalEphemeralKey) hs else getRemoteEphemeralKey hs
+      ss' = mixHash (curvePubToBytes pk) ss
+  put $ hs & hsSymmetricState .~ ss'
+
+  next
+
+evalPreMsgToken i (S next) = do
+  hs <- get
+
+  let ss  = hs ^. hsSymmetricState
+      pk  = if i == hs ^. hsInitiator then (snd . getLocalStaticKey) hs else getRemoteStaticKey hs
+      ss' = mixHash (curvePubToBytes pk) ss
+  put $ hs & hsSymmetricState .~ ss'
+
+  next
+
+evalPreMsgToken _ _ = error "invalid pre-message pattern token"
+
+getLocalStaticKey :: Curve d => HandshakeState c d h -> KeyPair d
+getLocalStaticKey hs = fromMaybe (throw (HandshakeStateFailure "local static key not set"))
+                                 (hs ^. hsLocalStaticKey)
+
+getLocalEphemeralKey :: Curve d => HandshakeState c d h -> KeyPair d
+getLocalEphemeralKey hs = fromMaybe (throw (HandshakeStateFailure "local ephemeral key not set"))
+                                    (hs ^. hsLocalEphemeralKey)
+
+getRemoteStaticKey :: Curve d => HandshakeState c d h -> PublicKey d
+getRemoteStaticKey hs = fromMaybe (throw (HandshakeStateFailure "remote static key not set"))
+                                  (hs ^. hsRemoteStaticKey)
+
+getRemoteEphemeralKey :: Curve d => HandshakeState c d h -> PublicKey d
+getRemoteEphemeralKey hs = fromMaybe (throw (HandshakeStateFailure "remote ephemeral key not set"))
+                                     (hs ^. hsRemoteEphemeralKey)
+
+-- | Encrypts a payload. The returned 'SendingCipherState' must be used
+--   for all subsequent calls.
 encryptPayload :: Cipher c
                => Plaintext
                -- ^ The data to encrypt
-               -> CipherState c
+               -> SendingCipherState c
                -- ^ The CipherState to use for encryption
-               -> (ByteString, CipherState c)
-encryptPayload pt cs = ((convert . cipherTextToBytes) ct, cs')
+               -> (ByteString, SendingCipherState c)
+encryptPayload pt (SCS cs) = ((convert . cipherTextToBytes) ct, SCS cs')
   where
     (ct, cs') = encryptAndIncrement ad pt cs
     ad = AssocData . bsToSB' $ ""
 
--- | Decrypts a payload. The returned 'CipherState' must be used for all
---   subsequent calls.
+-- | Decrypts a payload. The returned 'ReceivingCipherState' must be used
+--   for all subsequent calls.
 decryptPayload :: Cipher c
                => ByteString
                -- ^ The data to decrypt
-               -> CipherState c
+               -> ReceivingCipherState c
                -- ^ The CipherState to use for decryption
-               -> (Plaintext, CipherState c)
-decryptPayload ct cs = (pt, cs')
+               -> (Plaintext, ReceivingCipherState c)
+decryptPayload ct (RCS cs) = (pt, RCS cs')
   where
     (pt, cs') = decryptAndIncrement ad ((cipherBytesToText . convert) ct) cs
     ad = AssocData . bsToSB' $ ""

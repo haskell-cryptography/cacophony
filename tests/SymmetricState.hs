@@ -26,7 +26,7 @@ manyRoundTripsProp pts = (fst . manyDecrypts . manyEncrypts) pts === pts
   where
     encrypt = encryptAndHash
     decrypt = decryptAndHash . cipherBytesToText
-    doMany f xs = runState . mapM (state . f) $ xs
+    doMany f = runState . mapM (state . f)
     manyEncrypts xs = doMany encrypt xs shs
     manyDecrypts (cts, _) = doMany decrypt cts shs
 

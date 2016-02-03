@@ -8,8 +8,8 @@ import Test.QuickCheck
 
 import Crypto.Noise.Cipher
 import Crypto.Noise.Internal.CipherState
-import Crypto.Noise.Types (ScrubbedBytes, bsToSB', sbEq,
-                           sbToBS')
+import Crypto.Noise.Types (ScrubbedBytes, Plaintext(..), bsToSB',
+                           sbEq, sbToBS')
 
 instance Eq Plaintext where
   (Plaintext pt1) == (Plaintext pt2) = pt1 `sbEq` pt2

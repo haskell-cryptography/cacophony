@@ -60,6 +60,7 @@ data HandshakeStateParams c d =
                        , hspInitiator          :: Bool
                        }
 
+-- | Represents the state of a handshake.
 data HandshakeState c d h =
   HandshakeState { _hsSymmetricState     :: SymmetricState c h
                  , _hsLocalStaticKey     :: Maybe (KeyPair d)
@@ -71,16 +72,16 @@ data HandshakeState c d h =
                  , _hsPattern            :: HandshakePattern c
                  }
 
--- | Contains the callbacks required by 'runHandshake'. _hscbSend
---   and _hscbRecv are called when handshake data needs to be sent to
---   and received from the remote peer, respectively. _hscbPayloadIn
---   and _hscbPayloadOut are called when handshake payloads are received
+-- | Contains the callbacks required by 'runHandshake'. 'hscbSend'
+--   and 'hscbRecv' are called when handshake data needs to be sent to
+--   and received from the remote peer, respectively. 'hscbPayloadIn'
+--   and 'hscbPayloadOut' are called when handshake payloads are received
 --   and sent, respectively.
 data HandshakeCallbacks =
-  HandshakeCallbacks { _hscbSend       :: ByteString -> IO ()
-                     , _hscbRecv       :: IO ByteString
-                     , _hscbPayloadIn  :: Plaintext -> IO ()
-                     , _hscbPayloadOut :: IO Plaintext
+  HandshakeCallbacks { hscbSend       :: ByteString -> IO ()
+                     , hscbRecv       :: IO ByteString
+                     , hscbPayloadIn  :: Plaintext -> IO ()
+                     , hscbPayloadOut :: IO Plaintext
                      }
 
 type HandshakeMonad c d h = StateT (HandshakeState c d h) IO
@@ -93,8 +94,6 @@ newtype SendingCipherState   c = SCS { _unSCS :: CipherState c }
 newtype ReceivingCipherState c = RCS { _unRCS :: CipherState c }
 
 $(makeLenses ''HandshakeState)
-
-$(makeLenses ''HandshakeCallbacks)
 
 -- | Constructs a 'HandshakeState'.
 handshakeState :: forall c d h. (Cipher c, Curve d, Hash h)
@@ -179,21 +178,21 @@ evalHandshakePattern hscb p = do
       if i == hs ^. hsInitiator then do
         iterM (evalToken i) t
         hs' <- get
-        payload <- liftIO $ hscb ^. hscbPayloadOut
+        payload <- liftIO $ hscbPayloadOut hscb
         let (ep, ss) = encryptAndHash payload $ hs' ^. hsSymmetricState
             toSend   = (hs' ^. hsMsgBuffer) `mappend` sbToBS' ep
-        liftIO . (hscb ^. hscbSend) $ toSend
+        liftIO . hscbSend hscb $ toSend
         put $ hs' & hsMsgBuffer      .~ B.empty
                   & hsSymmetricState .~ ss
       else do
-        msg <- liftIO $ hscb ^. hscbRecv
+        msg <- liftIO $ hscbRecv hscb
         put $ hs & hsMsgBuffer .~ msg
         iterM (evalToken i) t
         hs' <- get
         let remaining = hs' ^. hsMsgBuffer
             (dp, ss)  = decryptAndHash (cipherBytesToText (bsToSB' remaining))
                         $ hs' ^. hsSymmetricState
-        liftIO . (hscb ^. hscbPayloadIn) $ dp
+        liftIO . hscbPayloadIn hscb $ dp
         put $ hs' & hsMsgBuffer      .~ B.empty
                   & hsSymmetricState .~ ss
       next

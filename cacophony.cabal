@@ -42,9 +42,9 @@ flag llvm
 
 library
   build-depends:
-    base >=4.8 && <5,
+    base       >=4.8 && <5,
     bytestring,
-    cryptonite,
+    cryptonite >=0.13,
     free,
     lens,
     memory,
@@ -57,6 +57,7 @@ library
     Crypto.Noise.Cipher.ChaChaPoly1305
     Crypto.Noise.Curve
     Crypto.Noise.Curve.Curve25519
+    Crypto.Noise.Curve.Curve448
     Crypto.Noise.Handshake
     Crypto.Noise.HandshakePatterns
     Crypto.Noise.Hash

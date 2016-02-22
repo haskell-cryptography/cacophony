@@ -1,5 +1,7 @@
 # 0.5.0
 
+* Added Curve448 support
+
 * Major refactoring and API changes
   A DSL was created to represent handshake patterns.
 

@@ -43,7 +43,7 @@ import Crypto.Noise.Internal.SymmetricState
 import Crypto.Noise.Internal.HandshakePattern hiding (s, split)
 import Crypto.Noise.Types
 
--- | Contains the parameters required to initialize a handshake state.
+-- | Contains the parameters required to initialize a 'HandshakeState'.
 --   The keys you need to provide are dependent on the type of handshake
 --   you are using. If you fail to provide a key that your handshake
 --   type depends on, or you provide a static key which is supposed to
@@ -76,7 +76,12 @@ data HandshakeState c d h =
 --   and 'hscbRecv' are called when handshake data needs to be sent to
 --   and received from the remote peer, respectively. 'hscbPayloadIn'
 --   and 'hscbPayloadOut' are called when handshake payloads are received
---   and sent, respectively.
+--   and sent, respectively. To be more precise, 'hscbPayloadIn' is called
+--   after an incoming handshake message has been decrypted successfully, and
+--   'hscbPayloadOut' is called during the construction of an outgoing
+--   handshake message. All four of these callbacks apply to handshake
+--   messages only. After the handshake is complete they are no longer
+--   used.
 data HandshakeCallbacks =
   HandshakeCallbacks { hscbSend       :: ByteString -> IO ()
                      , hscbRecv       :: IO ByteString
@@ -98,7 +103,6 @@ $(makeLenses ''HandshakeState)
 -- | Constructs a 'HandshakeState'.
 handshakeState :: forall c d h. (Cipher c, Curve d, Hash h)
                => HandshakeStateParams c d
-               -- ^ Handshake state parameters
                -> HandshakeState c d h
 handshakeState HandshakeStateParams{..} =
   maybe hs'' hs''' $ hspPattern ^. hpPreActions
@@ -365,7 +369,6 @@ encryptPayload :: Cipher c
                => Plaintext
                -- ^ The data to encrypt
                -> SendingCipherState c
-               -- ^ The CipherState to use for encryption
                -> (ByteString, SendingCipherState c)
 encryptPayload pt (SCS cs) = ((convert . cipherTextToBytes) ct, SCS cs')
   where
@@ -378,7 +381,6 @@ decryptPayload :: Cipher c
                => ByteString
                -- ^ The data to decrypt
                -> ReceivingCipherState c
-               -- ^ The CipherState to use for decryption
                -> (Plaintext, ReceivingCipherState c)
 decryptPayload ct (RCS cs) = (pt, RCS cs')
   where

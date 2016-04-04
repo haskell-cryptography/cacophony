@@ -17,7 +17,7 @@ import qualified Crypto.PubKey.Curve25519 as C
 import Crypto.Noise.Curve
 import Crypto.Noise.Types
 
--- | Represents curve25519 curve.
+-- | Represents curve25519.
 data Curve25519
 
 instance Curve Curve25519 where

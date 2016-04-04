@@ -37,7 +37,11 @@ instance Cipher ChaChaPoly1305 where
   cipherTextToBytes = ctToBytes
   cipherBytesToText = bytesToCt
 
-encrypt :: SymmetricKey ChaChaPoly1305 -> Nonce ChaChaPoly1305 -> AssocData -> Plaintext -> Ciphertext ChaChaPoly1305
+encrypt :: SymmetricKey ChaChaPoly1305
+        -> Nonce ChaChaPoly1305
+        -> AssocData
+        -> Plaintext
+        -> Ciphertext ChaChaPoly1305
 encrypt (SKCCP1305 k) (NCCP1305 n) (AssocData ad) (Plaintext plaintext) =
   CTCCP1305 (out, P.Auth (convert authTag))
   where
@@ -46,7 +50,11 @@ encrypt (SKCCP1305 k) (NCCP1305 n) (AssocData ad) (Plaintext plaintext) =
     (out, afterEnc) = CCP.encrypt plaintext afterAAD
     authTag         = CCP.finalize afterEnc
 
-decrypt :: SymmetricKey ChaChaPoly1305 -> Nonce ChaChaPoly1305 -> AssocData -> Ciphertext ChaChaPoly1305 -> Maybe Plaintext
+decrypt :: SymmetricKey ChaChaPoly1305
+        -> Nonce ChaChaPoly1305
+        -> AssocData
+        -> Ciphertext ChaChaPoly1305
+        -> Maybe Plaintext
 decrypt (SKCCP1305 k) (NCCP1305 n) (AssocData ad) (CTCCP1305 (ct, auth)) =
   if auth == calcAuthTag then
     return $ Plaintext out

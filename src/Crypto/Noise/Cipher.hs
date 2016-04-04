@@ -37,8 +37,8 @@ class Cipher c where
                     -> Plaintext
                     -> Ciphertext c
 
-  -- | Decrypts data. Will fail catastrophically if the authentication
-  --   tag is invalid.
+  -- | Decrypts data, returning @Nothing@ on error (such as when the auth tag
+  --   is invalid).
   cipherDecrypt     :: SymmetricKey c
                     -> Nonce c
                     -> AssocData

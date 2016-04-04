@@ -7,7 +7,7 @@
 -- Portability : POSIX
 --
 -- This module contains all of the handshake patterns specified in sections
--- 7.2 and 7.3 as well as unspecified patterns found in previous drafts of
+-- 8.2 and 8.3 as well as unspecified patterns found in previous drafts of
 -- the protocol spec.
 
 module Crypto.Noise.HandshakePatterns
@@ -122,6 +122,8 @@ noiseKK = HandshakePattern "KK" (Just pmp) hp
 --  ...
 --  -> e, dhee, dhes
 --  <- e, dhee@
+--
+--  This is not an officially recognized pattern (see section 8.6).
 noiseNE :: HandshakePattern c
 noiseNE = HandshakePattern "NE" (Just pmp) hp
   where
@@ -147,6 +149,8 @@ noiseNE = HandshakePattern "NE" (Just pmp) hp
 --  ...
 --  -> e, dhee, dhes, dhse
 --  <- e, dhee, dhes@
+--
+--  This is not an officially recognized pattern (see section 8.6).
 noiseKE :: HandshakePattern c
 noiseKE = HandshakePattern "KE" (Just pmp) hp
   where
@@ -298,6 +302,8 @@ noiseIK = HandshakePattern "IK" (Just pmp) hp
 --  -> e, dhee, dhes
 --  <- e, dhee
 --  -> s, dhse@
+--
+--  This is not an officially recognized pattern (see section 8.6).
 noiseXE :: HandshakePattern c
 noiseXE = HandshakePattern "XE" (Just pmp) hp
   where
@@ -326,6 +332,8 @@ noiseXE = HandshakePattern "XE" (Just pmp) hp
 --  ...
 --  -> e, dhee, dhes, s, dhse
 --  <- e, dhee, dhes@
+--
+--  This is not an officially recognized pattern (see section 8.6).
 noiseIE :: HandshakePattern c
 noiseIE = HandshakePattern "IE" (Just pmp) hp
   where

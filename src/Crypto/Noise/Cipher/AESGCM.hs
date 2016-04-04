@@ -25,7 +25,7 @@ import Foreign.Storable
 import Crypto.Noise.Cipher
 import Crypto.Noise.Types
 
--- | Represents the ChaCha cipher with Poly1305 for AEAD.
+-- | Represents the AES256 cipher with GCM for AEAD.
 data AESGCM
 
 instance Cipher AESGCM where
@@ -86,6 +86,8 @@ bytesToCt bytes =
         , B.take (B.length bytes - 16) bytes
         )
 
+-- Adapted from cryptonite's Crypto.Cipher.Types.Block module:
+-- https://github.com/haskell-crypto/cryptonite/blob/149bfa601081c27013811498fa507a83f5ce87ea/Crypto/Cipher/Types/Block.hs#L167
 ivAdd :: ByteArray b => b -> Int -> b
 ivAdd b i = copy b
   where copy :: ByteArray bs => bs -> bs

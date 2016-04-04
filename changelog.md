@@ -1,3 +1,11 @@
+# 0.6.0
+
+* Added ability to abort handshakes based on the remote party's public key
+
+* Improved documentation
+
+* Factored out ScrubbedBytes utilities to separate module
+
 # 0.5.0
 
 * Added Curve448 support

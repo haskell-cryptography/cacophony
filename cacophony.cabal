@@ -43,6 +43,7 @@ library
     base       >=4.8 && <5,
     bytestring,
     cryptonite >=0.13,
+    deepseq,
     free,
     lens,
     memory,

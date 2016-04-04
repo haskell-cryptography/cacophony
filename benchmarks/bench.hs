@@ -25,7 +25,6 @@ import Crypto.Noise.Types
 import Data.ByteArray.Extend
 
 import HandshakeStates
-import Instances()
 
 is25519 :: KeyPair Curve25519
 is25519 = curveBytesToPair . bsToSB' $ "I\f\232\218A\210\230\147\FS\222\167\v}l\243!\168.\ESC\t\SYN\"\169\179A`\DC28\211\169tC"

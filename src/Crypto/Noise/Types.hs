@@ -12,9 +12,10 @@ module Crypto.Noise.Types
     Plaintext(..)
   ) where
 
-import Control.Exception (Exception)
+import Control.DeepSeq       (NFData(..))
+import Control.Exception     (Exception)
 import Data.ByteString.Char8 (pack)
-import Data.String (IsString(..))
+import Data.String           (IsString(..))
 
 import Data.ByteArray.Extend
 
@@ -46,3 +47,6 @@ instance Eq Plaintext where
 
 instance Show Plaintext where
   show (Plaintext pt) = show . sbToBS' $ pt
+
+instance NFData Plaintext where
+  rnf (Plaintext p) = rnf p

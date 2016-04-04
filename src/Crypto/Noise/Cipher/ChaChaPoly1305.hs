@@ -19,6 +19,7 @@ import qualified Data.ByteString as BS (replicate)
 
 import Crypto.Noise.Cipher
 import Crypto.Noise.Types
+import Data.ByteArray.Extend
 
 -- | Represents the ChaCha cipher with Poly1305 for AEAD.
 data ChaChaPoly1305

@@ -15,7 +15,7 @@ import qualified Crypto.Hash     as H
 import qualified Crypto.MAC.HMAC as M
 
 import Crypto.Noise.Hash
-import Crypto.Noise.Types
+import Data.ByteArray.Extend
 
 -- | Represents the SHA256 hash.
 data SHA256

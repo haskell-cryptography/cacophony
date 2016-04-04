@@ -14,6 +14,7 @@ module Crypto.Noise.Cipher
   ) where
 
 import Crypto.Noise.Types
+import Data.ByteArray.Extend
 
 -- | Typeclass for ciphers.
 class Cipher c where
@@ -64,3 +65,12 @@ class Cipher c where
 
 -- | Represents the associated data for AEAD.
 newtype AssocData = AssocData ScrubbedBytes
+
+instance Show AssocData where
+  show (AssocData ad) = show . sbToBS' $ ad
+
+instance Show (SymmetricKey a) where
+  show _ = "<symmetric key>"
+
+instance Show (Nonce a) where
+  show _ = "<nonce>"

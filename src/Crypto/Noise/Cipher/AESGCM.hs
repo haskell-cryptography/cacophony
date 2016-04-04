@@ -24,6 +24,7 @@ import Foreign.Storable
 
 import Crypto.Noise.Cipher
 import Crypto.Noise.Types
+import Data.ByteArray.Extend
 
 -- | Represents the AES256 cipher with GCM for AEAD.
 data AESGCM

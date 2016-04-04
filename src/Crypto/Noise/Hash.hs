@@ -11,7 +11,7 @@ module Crypto.Noise.Hash
     Hash(..)
   ) where
 
-import Crypto.Noise.Types
+import Data.ByteArray.Extend
 
 -- | Typeclass for hashes.
 class Hash h where

@@ -34,6 +34,7 @@ import Crypto.Noise.Cipher
 import Crypto.Noise.Hash
 import Crypto.Noise.Internal.CipherState
 import Crypto.Noise.Types
+import Data.ByteArray.Extend
 
 data SymmetricState c h =
   SymmetricState { _ssCipher :: CipherState c

@@ -22,6 +22,7 @@ import Crypto.Noise.Hash.BLAKE2b
 import Crypto.Noise.Hash.SHA256
 import Crypto.Noise.Hash.SHA512
 import Crypto.Noise.Types
+import Data.ByteArray.Extend
 
 import HandshakeStates
 import Instances()

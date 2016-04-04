@@ -68,6 +68,7 @@ library
     Crypto.Noise.Internal.HandshakePattern
     Crypto.Noise.Internal.HandshakeState
     Crypto.Noise.Types
+    Data.ByteArray.Extend
   ghc-options:      -Wall -fwarn-tabs
 
   if flag(llvm)

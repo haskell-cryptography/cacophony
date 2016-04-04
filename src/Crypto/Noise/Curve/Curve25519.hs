@@ -15,7 +15,7 @@ import Crypto.Error          (throwCryptoError)
 import Crypto.Random.Entropy (getEntropy)
 import qualified Crypto.PubKey.Curve25519 as C
 import Crypto.Noise.Curve
-import Crypto.Noise.Types
+import Data.ByteArray.Extend
 
 -- | Represents curve25519.
 data Curve25519

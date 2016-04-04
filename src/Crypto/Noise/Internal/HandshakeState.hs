@@ -42,6 +42,7 @@ import Crypto.Noise.Internal.CipherState
 import Crypto.Noise.Internal.SymmetricState
 import Crypto.Noise.Internal.HandshakePattern hiding (s, split)
 import Crypto.Noise.Types
+import Data.ByteArray.Extend
 
 -- | Contains the parameters required to initialize a 'HandshakeState'.
 --   The keys you need to provide are dependent on the type of handshake

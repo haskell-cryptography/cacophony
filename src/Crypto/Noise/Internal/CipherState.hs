@@ -28,7 +28,7 @@ import Crypto.Noise.Types (NoiseException(DecryptionFailure), Plaintext(..))
 data CipherState c =
   CipherState { _csk :: SymmetricKey c
               , _csn :: Nonce c
-              }
+              } deriving (Show)
 
 $(makeLenses ''CipherState)
 

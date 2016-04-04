@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances, StandaloneDeriving #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Instances where
 
@@ -8,25 +8,8 @@ import Test.QuickCheck
 
 import Crypto.Noise.Cipher
 import Crypto.Noise.Internal.CipherState
-import Crypto.Noise.Types (ScrubbedBytes, Plaintext(..), bsToSB',
-                           sbEq, sbToBS')
-
-instance Eq Plaintext where
-  (Plaintext pt1) == (Plaintext pt2) = pt1 `sbEq` pt2
-
-instance Show Plaintext where
-  show (Plaintext pt) = show . sbToBS' $ pt
-
-instance Show AssocData where
-  show (AssocData ad) = show . sbToBS' $ ad
-
-instance Show (SymmetricKey a) where
-  show _ = "<symmetric key>"
-
-instance Show (Nonce a) where
-  show _ = "<nonce>"
-
-deriving instance Show (CipherState a)
+import Crypto.Noise.Types
+import Data.ByteArray.Extend
 
 instance Arbitrary ScrubbedBytes where
   arbitrary = bsToSB' `liftM` pack <$> arbitrary

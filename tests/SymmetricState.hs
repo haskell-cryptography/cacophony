@@ -11,6 +11,7 @@ import Crypto.Noise.Cipher.ChaChaPoly1305
 import Crypto.Noise.Hash.SHA256
 import Crypto.Noise.Internal.SymmetricState
 import Crypto.Noise.Types
+import Data.ByteArray.Extend
 
 shs :: SymmetricState ChaChaPoly1305 SHA256
 shs = symmetricState $ bsToSB' "handshake name"

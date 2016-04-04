@@ -7,52 +7,78 @@ This library implements the [Noise](https://github.com/trevp/noise/blob/master/n
 
 ## Basic usage
 
-1. Define functions which will be called when protocol messages are to be read and written to the remote peer.
-   The payloadIn and payloadOut functions are called when payloads are received and needed.
+1. Define the functions that will be called during various stages of the handshake.
    ```haskell
    writeMsg   :: ByteString -> IO ()
    readMsg    :: IO ByteString
    payloadIn  :: Plaintext -> IO ()
    payloadOut :: IO Plaintext
-   -- If you don't need to use payloads, do the following:
+   staticIn   :: PublicKey d -> IO Bool
+   ```
+
+   `writeMsg` and `readMsg` will typically be functions that write to and read from a socket.
+
+   The `payloadIn` and `payloadOut` functions are called when payloads are received and needed.
+
+   The `staticIn` function is called when a static key is received from the remote peer.
+   If this function returns `False`, the handshake is immediately aborted. Otherwise, it
+   continues normally. See the documentation of `HandshakeCallbacks` for details.
+
+   If you don't need to use payloads and want to accept all remote static keys, do the following:
+   ```haskell
    let hc = HandshakeCallbacks (writeMsg socket)
                                 (readMsg socket)
                                 (\_ -> return ())
                                 (return "")
+                                (\_ -> return True)
    ```
 
-2. Create the handshake state:
-   Select a handshake pattern to use. Patterns are defined in the Crypto.Noise.HandshakePatterns module.
+2. Create the handshake state.
+
+   Select a handshake pattern to use. Patterns are defined in the `Crypto.Noise.HandshakePatterns` module.
    Ensure that you provide the keys which are required by the handshake pattern you choose. For example,
    the Noise\_IK pattern requires that the initiator provides a local static key and a remote static key.
    Remote keys are communicated out-of-band.
    ```haskell
-   let hs = handshakeState $ HandshakeStateParams
+   let initiatorState = handshakeState $ HandshakeStateParams
       noiseIK
-      ""
-      -- ^ Prologue
-      (Just "foo")
-      -- ^ Pre-shared key
-      (Just initStatic)
-      -- ^ Local static key
-      Nothing
-      -- ^ Local ephemeral key
-      (Just (snd respStatic))
-      -- ^ Remote static key
-      Nothing
-      -- ^ Remote ephemeral key
-      True
-      -- ^ True if we are initiator
+      "prologue"
+      (Just "pre-shared-key")
+      (Just local_static_key)
+      Nothing -- local ephemeral key
+      (Just remote_static_key) -- communicated out-of-band
+      Nothing -- remote ephemeral key
+      True -- we are the initiator
+   ```
+
+   ```haskell
+   let responderState = handshakeState $ HandshakeStateParams
+      noiseIK
+      "prologue"
+      (Just "pre-shared-key")
+      (Just local_static_key)
+      Nothing -- local ephemeral key
+      Nothing -- we don't know their static key yet
+      Nothing -- remote ephemeral key
+      False -- we are the responder
    ```
 
 3. Run the handshake:
    ```haskell
-   (encryptionCipherState, decryptionCipherState) <- runHandshake hs hc
+   (encryptionCipherState, decryptionCipherState) <- runHandshake initiatorState hc
+   ```
+
+   ```haskell
+   (encryptionCipherState, decryptionCipherState) <- runHandshake responderState hc
    ```
 
 4. Send and receive transport messages:
    ```haskell
    let (cipherText, encryptionCipherState') = encryptPayload "hello world" encryptionCipherState
+   ```
+
+   ```haskell
    let (Plaintext pt, decryptionCipherState') = decryptPayload msg decryptionCipherState
    ```
-   Ensure that you never re-use a cipher state with encryptPayload and decryptPayload.
+
+   Ensure that you never re-use a cipher state.

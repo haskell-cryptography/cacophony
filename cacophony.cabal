@@ -31,8 +31,6 @@ source-repository head
 
 flag hlint
 
-flag doctest
-
 flag llvm
   default: False
   manual: True
@@ -116,22 +114,6 @@ test-suite hlint
     build-depends:
       base  >=4.8 && <5,
       hlint
-
-test-suite doctests
-  type:             exitcode-stdio-1.0
-  main-is:          doctests.hs
-  ghc-options:      -Wall -fwarn-tabs -threaded
-  hs-source-dirs:   tests
-  default-language: Haskell2010
-
-  if !flag(doctest)
-    buildable: False
-  else
-    build-depends:
-      base,
-      filepath,
-      directory,
-      doctest
 
 --------------------------------------------------------------------------------
 -- BENCHMARKS

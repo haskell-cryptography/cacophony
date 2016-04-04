@@ -66,7 +66,7 @@ handshakeProp :: (Cipher c, Curve d, Hash h)
               -> Property
 handshakeProp ihs rhs pt = ioProperty $ do
   chan <- newChan
-  let hc = HandshakeCallbacks (w chan) (r chan) (validatePayload pt) (return pt)
+  let hc = HandshakeCallbacks (w chan) (r chan) (validatePayload pt) (return pt) (\_ -> return True)
   ((csAlice1, csAlice2), (csBob1, csBob2)) <- concurrently (runHandshake ihs hc) (runHandshake rhs hc)
   return $ conjoin
     [ (decrypt csBob2 . encrypt csAlice1) pt === pt

@@ -60,7 +60,7 @@ handshakeBench :: (Cipher c, Curve d, Hash h)
                -> IO (Plaintext, Plaintext)
 handshakeBench ihs rhs = do
   chan <- newChan
-  let hc = HandshakeCallbacks (w chan) (r chan) (\_ -> return ()) (return "")
+  let hc = HandshakeCallbacks (w chan) (r chan) (\_ -> return ()) (return "") (\_ -> return True)
   ((csAlice1, csAlice2), (csBob1, csBob2)) <- concurrently (runHandshake ihs hc) (runHandshake rhs hc)
 
   let x = decrypt csBob2 . encrypt csAlice1 $ ""

@@ -41,6 +41,7 @@ import Prelude hiding (concat)
 --   to catch 'DecryptionFailure'.
 data NoiseException = DecryptionFailure String
                     | HandshakeStateFailure String
+                    | HandshakeAborted String
   deriving (Show)
 
 instance Exception NoiseException

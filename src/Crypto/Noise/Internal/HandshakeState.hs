@@ -72,21 +72,39 @@ data HandshakeState c d h =
                  , _hsPattern            :: HandshakePattern c
                  }
 
--- | Contains the callbacks required by 'runHandshake'. 'hscbSend'
---   and 'hscbRecv' are called when handshake data needs to be sent to
---   and received from the remote peer, respectively. 'hscbPayloadIn'
---   and 'hscbPayloadOut' are called when handshake payloads are received
---   and sent, respectively. To be more precise, 'hscbPayloadIn' is called
---   after an incoming handshake message has been decrypted successfully, and
---   'hscbPayloadOut' is called during the construction of an outgoing
---   handshake message. All four of these callbacks apply to handshake
---   messages only. After the handshake is complete they are no longer
---   used.
-data HandshakeCallbacks =
+-- | Contains the callbacks required by 'runHandshake'.
+--
+--   'hscbSend' and 'hscbRecv' are called when handshake data needs to be sent
+--   to and received from the remote peer, respectively. 'hscbSend' will
+--   typically be a function which writes to a socket, and 'hscbRecv' will
+--   typically be a function which reads from a socket.
+--
+--   'hscbPayloadIn' and 'hscbPayloadOut' are called when handshake payloads
+--   are received and sent, respectively. To be more precise, 'hscbPayloadIn'
+--   is called after an incoming handshake message has been decrypted
+--   successfully, and 'hscbPayloadOut' is called during the construction of
+--   an outgoing handshake message.
+--
+--   'hscbStaticIn' is called as soon as a static key is received from the
+--   remote party. If this function evaluates to @False@, the handshake is
+--   immediately aborted and a 'HandshakeAborted' exception is thrown.
+--   Otherwise, the handshake proceeds normally. This is intended to create
+--   a firewall/access control list which can be used to prohibit
+--   communication with certain parties. In the
+--   'Crypto.Noise.HandshakePatterns.noiseXR' and
+--   'Crypto.Noise.HandshakePatterns.noiseIX' patterns, this will prevent the
+--   initiator from discovering your identity. In the
+--   'Crypto.Noise.HandshakePatterns.noiseXX' pattern, this will prevent the
+--   responder from discovering your identity.
+--
+--   All five of these callbacks apply to handshake messages only. After the
+--   handshake is complete they are no longer used.
+data HandshakeCallbacks d =
   HandshakeCallbacks { hscbSend       :: ByteString -> IO ()
                      , hscbRecv       :: IO ByteString
                      , hscbPayloadIn  :: Plaintext -> IO ()
                      , hscbPayloadOut :: IO Plaintext
+                     , hscbStaticIn   :: PublicKey d -> IO Bool
                      }
 
 type HandshakeMonad c d h = StateT (HandshakeState c d h) IO
@@ -153,7 +171,7 @@ mkHPN _ hpn psk = if psk then hpn' ppsk else hpn' p
 --   and 'decryptPayload', respectively.
 runHandshake :: (Cipher c, Curve d, Hash h)
              => HandshakeState c d h
-             -> HandshakeCallbacks
+             -> HandshakeCallbacks d
              -> IO (SendingCipherState c, ReceivingCipherState c)
 runHandshake hs hscb = do
   (cs1, cs2) <- evalStateT p hs
@@ -166,7 +184,7 @@ runHandshake hs hscb = do
     p = iterM (evalHandshakePattern hscb) (hs ^. hsPattern ^. hpActions)
 
 evalHandshakePattern :: (Cipher c, Curve d, Hash h)
-                     => HandshakeCallbacks
+                     => HandshakeCallbacks d
                      -> HandshakePatternF (HandshakeMonad c d h (CipherState c, CipherState c))
                      -> HandshakeMonad c d h (CipherState c, CipherState c)
 evalHandshakePattern hscb p = do
@@ -180,7 +198,7 @@ evalHandshakePattern hscb p = do
   where
     sendOrRecv hs i t next = do
       if i == hs ^. hsInitiator then do
-        iterM (evalToken i) t
+        iterM (evalToken hscb i) t
         hs' <- get
         payload <- liftIO $ hscbPayloadOut hscb
         let (ep, ss) = encryptAndHash payload $ hs' ^. hsSymmetricState
@@ -191,7 +209,7 @@ evalHandshakePattern hscb p = do
       else do
         msg <- liftIO $ hscbRecv hscb
         put $ hs & hsMsgBuffer .~ msg
-        iterM (evalToken i) t
+        iterM (evalToken hscb i) t
         hs' <- get
         let remaining = hs' ^. hsMsgBuffer
             (dp, ss)  = decryptAndHash (cipherBytesToText (bsToSB' remaining))
@@ -202,10 +220,11 @@ evalHandshakePattern hscb p = do
       next
 
 evalToken :: forall c d h. (Cipher c, Curve d, Hash h)
-          => Bool
+          => HandshakeCallbacks d
+          -> Bool
           -> TokenF (HandshakeMonad c d h ())
           -> HandshakeMonad c d h ()
-evalToken i (E next) = do
+evalToken _ i (E next) = do
   hs <- get
 
   if i == hs ^. hsInitiator then do
@@ -228,7 +247,7 @@ evalToken i (E next) = do
              & hsMsgBuffer          .~ rest
   next
 
-evalToken i (S next) = do
+evalToken hscb i (S next) = do
   hs <- get
 
   if i == hs ^. hsInitiator then do
@@ -243,19 +262,25 @@ evalToken i (S next) = do
     else do
       let hasKey    = hs ^. hsSymmetricState . ssHasKey
           len       = curveLength (Proxy :: Proxy d)
+          -- The magic 16 here represents the length of the auth tag.
           d         = if hasKey then len + 16 else len
           (b, rest) = B.splitAt d $ hs ^. hsMsgBuffer
           ct        = cipherBytesToText . convert $ b
           ss        = hs ^. hsSymmetricState
           (Plaintext pt, ss') = decryptAndHash ct ss
+          theirKey  = curveBytesToPub pt
 
-      put $ hs & hsRemoteStaticKey .~ Just (curveBytesToPub pt)
-               & hsSymmetricState  .~ ss'
-               & hsMsgBuffer       .~ rest
+      proceed <- liftIO . hscbStaticIn hscb $ theirKey
+      if proceed then
+        put $ hs & hsRemoteStaticKey .~ Just theirKey
+                 & hsSymmetricState  .~ ss'
+                 & hsMsgBuffer       .~ rest
+      else
+        throw . HandshakeAborted $ "handshake aborted by user"
 
   next
 
-evalToken _ (Dhee next) = do
+evalToken _ _ (Dhee next) = do
   hs <- get
 
   let ss       = hs ^. hsSymmetricState
@@ -268,7 +293,7 @@ evalToken _ (Dhee next) = do
 
   next
 
-evalToken i (Dhes next) = do
+evalToken _ i (Dhes next) = do
   hs <- get
 
   if i == hs ^. hsInitiator then do
@@ -280,9 +305,9 @@ evalToken i (Dhes next) = do
     put $ hs & hsSymmetricState .~ ss'
     next
   else
-    evalToken (not i) $ Dhse next
+    evalToken undefined (not i) $ Dhse next
 
-evalToken i (Dhse next) = do
+evalToken _ i (Dhse next) = do
   hs <- get
 
   if i == hs ^. hsInitiator then do
@@ -294,9 +319,9 @@ evalToken i (Dhse next) = do
     put $ hs & hsSymmetricState .~ ss'
     next
   else
-    evalToken (not i) $ Dhes next
+    evalToken undefined (not i) $ Dhes next
 
-evalToken _ (Dhss next) = do
+evalToken _ _ (Dhss next) = do
   hs <- get
 
   let ss       = hs ^. hsSymmetricState

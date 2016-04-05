@@ -7,7 +7,17 @@ This library implements the [Noise](https://github.com/trevp/noise/blob/master/n
 
 ## Basic usage
 
-1. Define the functions that will be called during various stages of the handshake.
+1. Import the proper modules for the kind of handshake you'd like to use.
+
+   For example, if you want to use `Noise_IK_25519_AESGCM_SHA256`, your imports would be:
+   ```haskell
+   import Crypto.Noise.Cipher.AESGCM
+   import Crypto.Noise.Curve.Curve25519
+   import Crypto.Noise.Hash.SHA256
+   import Crypto.Noise.HandshakePatterns (noiseIK)
+   ```
+
+2. Define the functions that will be called during various stages of the handshake.
    ```haskell
    writeMsg   :: ByteString -> IO ()
    readMsg    :: IO ByteString
@@ -33,7 +43,7 @@ This library implements the [Noise](https://github.com/trevp/noise/blob/master/n
                                 (\_ -> return True)
    ```
 
-2. Create the handshake state.
+3. Create the handshake state.
 
    Select a handshake pattern to use. Patterns are defined in the `Crypto.Noise.HandshakePatterns` module.
    Ensure that you provide the keys which are required by the handshake pattern you choose. For example,
@@ -63,7 +73,7 @@ This library implements the [Noise](https://github.com/trevp/noise/blob/master/n
       False -- we are the responder
    ```
 
-3. Run the handshake:
+4. Run the handshake:
    ```haskell
    (encryptionCipherState, decryptionCipherState) <- runHandshake initiatorState hc
    ```
@@ -72,7 +82,7 @@ This library implements the [Noise](https://github.com/trevp/noise/blob/master/n
    (encryptionCipherState, decryptionCipherState) <- runHandshake responderState hc
    ```
 
-4. Send and receive transport messages:
+5. Send and receive transport messages:
    ```haskell
    let (cipherText, encryptionCipherState') = encryptPayload "hello world" encryptionCipherState
    ```

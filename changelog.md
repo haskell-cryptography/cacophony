@@ -6,7 +6,9 @@
 
 * Factored out ScrubbedBytes utilities to separate module
 
-* Added echo server example
+* Added echo-server and echo-client example
+
+* Renamed HandshakeStateParams to HandshakeOpts
 
 # 0.5.0
 

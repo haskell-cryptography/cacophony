@@ -13,17 +13,16 @@ import System.Environment
 import System.IO             (stderr, hPutStr, hPutStrLn)
 
 import Crypto.Noise.Curve
+import Crypto.Noise.Curve.Curve25519
 import Crypto.Noise.Types
 import Data.ByteArray.Extend
 
-import Server
-import Types
+import Client
 
 data Options =
   Options { optShowHelp :: Bool
           , optPSK      :: Maybe Plaintext
           , optPrologue :: Plaintext
-          , optLogFile  :: Maybe FilePath
           }
 
 defaultOptions :: Options
@@ -31,7 +30,6 @@ defaultOptions =
   Options { optShowHelp = False
           , optPSK      = Nothing
           , optPrologue = ""
-          , optLogFile  = Nothing
           }
 
 options :: [OptDescr (Options -> Options)]
@@ -45,9 +43,6 @@ options =
   , Option [] ["prologue"]
     (ReqArg (\p o -> o { optPrologue = (Plaintext . bsToSB' . pack) p }) "STRING")
     "prologue (default: empty string)"
-  , Option ['l'] []
-    (ReqArg (\f o -> o { optLogFile = Just f }) "FILE")
-    "log output to file (default: stdout)"
   ]
 
 parseOptions :: [String] -> Either [String] (Options, [String])
@@ -57,28 +52,17 @@ parseOptions argv =
     (_, _, errs) -> Left errs
 
 usageHeader :: String
-usageHeader = "Usage: echo-server [OPTION] PORT"
+usageHeader = "Usage: echo-server [OPTION] HOSTNAME PORT"
 
 processOptions :: (Options, [String]) -> IO ()
-processOptions (_, []) = do
-  hPutStrLn stderr "error: a port must be specified"
+processOptions (Options{..}, [hostname, port]) = do
+  localKey <- processPrivateKey "local_key" :: IO (KeyPair Curve25519)
+  remoteKey <- readPublicKey "remote_key.pub" :: IO (PublicKey Curve25519)
+  runClient hostname port optPrologue optPSK localKey remoteKey
+
+processOptions (_, _) = do
+  hPutStrLn stderr "error: a hostname and port must be specified"
   hPutStr stderr $ usageInfo usageHeader options
-
-processOptions (Options{..}, port : _) = do
-  local25519 <- processPrivateKey "local_curve25519"
-  remote25519 <- readPublicKey "remote_curve25519.pub"
-  local448 <- processPrivateKey "local_curve448"
-  remote448 <- readPublicKey "remote_curve448.pub"
-
-  startServer ServerOpts { soLogFile     = optLogFile
-                         , soPort        = port
-                         , soPrologue    = optPrologue
-                         , soPSK         = optPSK
-                         , soLocal25519  = local25519
-                         , soRemote25519 = remote25519
-                         , soLocal448    = local448
-                         , soRemote448   = remote448
-                         }
 
 readPrivateKey :: Curve d => FilePath -> IO (KeyPair d)
 readPrivateKey f = (curveBytesToPair . bsToSB') <$> readFile f

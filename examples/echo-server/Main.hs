@@ -20,8 +20,7 @@ import Server
 import Types
 
 data Options =
-  Options { optListen   :: Maybe String
-          , optShowHelp :: Bool
+  Options { optShowHelp :: Bool
           , optPSK      :: Maybe Plaintext
           , optPrologue :: Plaintext
           , optLogFile  :: Maybe FilePath
@@ -29,8 +28,7 @@ data Options =
 
 defaultOptions :: Options
 defaultOptions =
-  Options { optListen   = Nothing
-          , optShowHelp = False
+  Options { optShowHelp = False
           , optPSK      = Nothing
           , optPrologue = ""
           , optLogFile  = Nothing
@@ -38,10 +36,7 @@ defaultOptions =
 
 options :: [OptDescr (Options -> Options)]
 options =
-  [ Option ['p'] []
-    (ReqArg (\p o -> o { optListen = Just p}) "PORT")
-    "port on which to listen"
-  , Option ['h'] ["help"]
+  [ Option ['h'] ["help"]
     (NoArg (\o -> o { optShowHelp = True }))
     "show help"
   , Option [] ["psk"]
@@ -62,29 +57,28 @@ parseOptions argv =
     (_, _, errs) -> Left errs
 
 usageHeader :: String
-usageHeader = "Usage: echo-server OPTIONS"
+usageHeader = "Usage: echo-server [OPTION] PORT"
 
 processOptions :: (Options, [String]) -> IO ()
-processOptions (Options{..}, _) =
-  case optListen of
-    Nothing -> do
-      hPutStrLn stderr "error: a listen port must be specified"
-      hPutStr stderr $ usageInfo usageHeader options
-    Just port -> do
-      local25519 <- processPrivateKey "local_curve25519"
-      remote25519 <- readPublicKey "remote_curve25519.pub"
-      local448 <- processPrivateKey "local_curve448"
-      remote448 <- readPublicKey "remote_curve448.pub"
+processOptions (_, []) = do
+  hPutStrLn stderr "error: a port must be specified"
+  hPutStr stderr $ usageInfo usageHeader options
 
-      startServer ServerOpts { soLogFile     = optLogFile
-                             , soPort        = port
-                             , soPrologue    = optPrologue
-                             , soPSK         = optPSK
-                             , soLocal25519  = local25519
-                             , soRemote25519 = remote25519
-                             , soLocal448    = local448
-                             , soRemote448   = remote448
-                             }
+processOptions (Options{..}, port : _) = do
+  local25519 <- processPrivateKey "local_curve25519"
+  remote25519 <- readPublicKey "remote_curve25519.pub"
+  local448 <- processPrivateKey "local_curve448"
+  remote448 <- readPublicKey "remote_curve448.pub"
+
+  startServer ServerOpts { soLogFile     = optLogFile
+                         , soPort        = port
+                         , soPrologue    = optPrologue
+                         , soPSK         = optPSK
+                         , soLocal25519  = local25519
+                         , soRemote25519 = remote25519
+                         , soLocal448    = local448
+                         , soRemote448   = remote448
+                         }
 
 readPrivateKey :: Curve d => FilePath -> IO (KeyPair d)
 readPrivateKey f = (curveBytesToPair . bsToSB') <$> readFile f

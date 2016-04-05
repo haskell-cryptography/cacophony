@@ -58,7 +58,7 @@ writeSocket s msg = send s $ prependLength msg
 readSocket :: IORef ByteString
            -> Socket
            -> IO ByteString
-readSocket bufRef sock = fromMaybe "" <$> parseSocket bufRef sock messageParser
+readSocket bufRef sock = fromMaybe (error "connection reset") <$> parseSocket bufRef sock messageParser
 
 mkProtocolName :: ServerOpts
                -> Header
@@ -108,13 +108,15 @@ startServer opts@ServerOpts{..} = do
             log ip "failed to parse header"
 
           Just h@(hp, WrapCipherType cipherT, WrapCurveType curveT, WrapHashType hashT) -> do
+            payloadRef <- newIORef ""
+
             log ip $ "client selected " <> C8.pack (mkProtocolName opts h)
             let hk = mkHandshakeKeys opts curveT
                 hs = mkHandshake hk hp cipherT hashT
                 hc = HandshakeCallbacks (writeSocket sock)
                                         (readSocket leftoverBufRef sock)
-                                        (\_ -> return ())
-                                        (return "")
+                                        (modifyIORef' payloadRef . const)
+                                        (readIORef payloadRef)
                                         (\_ -> return True)
             (encryptionCipherState, decryptionCipherState) <- runHandshake hs hc
 

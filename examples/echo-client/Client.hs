@@ -38,7 +38,7 @@ writeSocket s msg = send s $ prependLength msg
 readSocket :: IORef ByteString
            -> Socket
            -> IO ByteString
-readSocket bufRef sock = fromMaybe "" <$> parseSocket bufRef sock messageParser
+readSocket bufRef sock = fromMaybe (error "connection reset") <$> parseSocket bufRef sock messageParser
 
 header :: ByteString
 header = "\x09\x01\x00\x00"
@@ -66,6 +66,16 @@ messageLoop bufRef sock = loop
 
           loop scs' rcs'
 
+payloadIn :: Plaintext
+          -> IO ()
+payloadIn (Plaintext p) = putStrLn . ("received payload: " <>) . C8.unpack . sbToBS' $ p
+
+payloadOut :: String
+           -> IO Plaintext
+payloadOut p = do
+  putStrLn $ "sending payload: " <> p
+  return . Plaintext . bsToSB' . C8.pack $ p
+
 runClient :: forall d. Curve d
           => String
           -> String
@@ -82,8 +92,8 @@ runClient hostname port prologue psk localKey remoteKey =
 
     let hc = HandshakeCallbacks (writeSocket sock)
                                 (readSocket leftoverBufRef sock)
-                                (\_ -> return ())
-                                (return "")
+                                payloadIn
+                                (payloadOut "cacophony")
                                 (\_ -> return True)
 
         hs :: HandshakeState AESGCM d SHA256

@@ -49,6 +49,8 @@ data HandshakePatternF next
   | Split
   deriving Functor
 
+-- | This type represents a single handshake pattern and is implemented as a
+--   Free Monad.
 data HandshakePattern c =
   HandshakePattern { _hpName       :: ByteString
                    , _hpPreActions :: Maybe (F HandshakePatternF ())

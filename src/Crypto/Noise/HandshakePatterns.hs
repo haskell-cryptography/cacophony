@@ -8,11 +8,13 @@
 --
 -- This module contains all of the handshake patterns specified in sections
 -- 8.2 and 8.3 as well as unspecified patterns found in previous drafts of
--- the protocol spec.
+-- the protocol.
 
 module Crypto.Noise.HandshakePatterns
-  ( -- * Functions
-    noiseNN
+  ( -- * Types
+    HandshakePattern
+    -- * Functions
+  , noiseNN
   , noiseKN
   , noiseNK
   , noiseKK

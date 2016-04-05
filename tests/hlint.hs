@@ -11,6 +11,7 @@ main = do
   hints <- hlint $ [ "src"
                    , "benchmarks"
                    , "tests"
+                   , "examples"
                    , "--hint=tests/.hlint"
                    , "--cpp-define=HLINT"
                    ] `mappend` args

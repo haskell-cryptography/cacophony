@@ -6,6 +6,8 @@
 
 * Factored out ScrubbedBytes utilities to separate module
 
+* Added echo server example
+
 # 0.5.0
 
 * Added Curve448 support

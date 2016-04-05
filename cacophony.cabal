@@ -1,5 +1,5 @@
 name:          cacophony
-version:       0.5.0
+version:       0.6.0
 synopsis:      A library implementing the Noise protocol.
 license:       PublicDomain
 license-file:  LICENSE
@@ -30,6 +30,11 @@ source-repository head
 -- FLAGS
 
 flag hlint
+
+flag build-examples
+  description: Build example executables
+  default: False
+  manual: True
 
 flag llvm
   default: False
@@ -74,6 +79,41 @@ library
 
   if flag(llvm)
     ghc-options: -fllvm
+
+--------------------------------------------------------------------------------
+-- EXAMPLES
+
+executable echo-server
+  default-language: Haskell2010
+  hs-source-dirs:   examples/echo-server
+  main-is:          Main.hs
+
+  if flag(build-examples)
+    build-depends:
+      aeson,
+      attoparsec,
+      auto-update,
+      base               >=4.8 && <5,
+      base64-bytestring,
+      bytestring,
+      cacophony          >=0.6,
+      directory,
+      fast-logger,
+      network,
+      network-simple,
+      unix,
+      unix-time
+  else
+    buildable: False
+
+  other-modules:
+    Handshakes
+    Log
+    Parse
+    Server
+    Types
+
+  ghc-options:      -threaded -rtsopts -with-rtsopts=-N -Wall -fwarn-tabs
 
 --------------------------------------------------------------------------------
 -- TESTS

@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings, RecordWildCards #-}
-module HandshakeStates where
+module Handshakes where
 
 import Crypto.Noise.Cipher
 import Crypto.Noise.Curve
@@ -18,7 +18,7 @@ data HandshakeKeys d =
 noiseNNIHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseNNIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+noiseNNIHS HandshakeKeys{..} = handshakeState $ HandshakeOpts
   noiseNN
   ""
   psk
@@ -31,7 +31,7 @@ noiseNNIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
 noiseNNRHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseNNRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+noiseNNRHS HandshakeKeys{..} = handshakeState $ HandshakeOpts
   noiseNN
   ""
   psk
@@ -44,7 +44,7 @@ noiseNNRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
 noiseKNIHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseKNIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+noiseKNIHS HandshakeKeys{..} = handshakeState $ HandshakeOpts
   noiseKN
   ""
   psk
@@ -57,7 +57,7 @@ noiseKNIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
 noiseKNRHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseKNRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+noiseKNRHS HandshakeKeys{..} = handshakeState $ HandshakeOpts
   noiseKN
   ""
   psk
@@ -70,7 +70,7 @@ noiseKNRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
 noiseNKIHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseNKIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+noiseNKIHS HandshakeKeys{..} = handshakeState $ HandshakeOpts
   noiseNK
   ""
   psk
@@ -83,7 +83,7 @@ noiseNKIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
 noiseNKRHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseNKRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+noiseNKRHS HandshakeKeys{..} = handshakeState $ HandshakeOpts
   noiseNK
   ""
   psk
@@ -96,7 +96,7 @@ noiseNKRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
 noiseKKIHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseKKIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+noiseKKIHS HandshakeKeys{..} = handshakeState $ HandshakeOpts
   noiseKK
   ""
   psk
@@ -109,7 +109,7 @@ noiseKKIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
 noiseKKRHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseKKRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+noiseKKRHS HandshakeKeys{..} = handshakeState $ HandshakeOpts
   noiseKK
   ""
   psk
@@ -122,7 +122,7 @@ noiseKKRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
 noiseNEIHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseNEIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+noiseNEIHS HandshakeKeys{..} = handshakeState $ HandshakeOpts
   noiseNE
   ""
   psk
@@ -135,7 +135,7 @@ noiseNEIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
 noiseNERHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseNERHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+noiseNERHS HandshakeKeys{..} = handshakeState $ HandshakeOpts
   noiseNE
   ""
   psk
@@ -148,7 +148,7 @@ noiseNERHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
 noiseKEIHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseKEIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+noiseKEIHS HandshakeKeys{..} = handshakeState $ HandshakeOpts
   noiseKE
   ""
   psk
@@ -161,7 +161,7 @@ noiseKEIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
 noiseKERHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseKERHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+noiseKERHS HandshakeKeys{..} = handshakeState $ HandshakeOpts
   noiseKE
   ""
   psk
@@ -174,7 +174,7 @@ noiseKERHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
 noiseNXIHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseNXIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+noiseNXIHS HandshakeKeys{..} = handshakeState $ HandshakeOpts
   noiseNX
   ""
   psk
@@ -187,7 +187,7 @@ noiseNXIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
 noiseNXRHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseNXRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+noiseNXRHS HandshakeKeys{..} = handshakeState $ HandshakeOpts
   noiseNX
   ""
   psk
@@ -200,7 +200,7 @@ noiseNXRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
 noiseKXIHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseKXIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+noiseKXIHS HandshakeKeys{..} = handshakeState $ HandshakeOpts
   noiseKX
   ""
   psk
@@ -213,7 +213,7 @@ noiseKXIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
 noiseKXRHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseKXRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+noiseKXRHS HandshakeKeys{..} = handshakeState $ HandshakeOpts
   noiseKX
   ""
   psk
@@ -226,7 +226,7 @@ noiseKXRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
 noiseXNIHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseXNIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+noiseXNIHS HandshakeKeys{..} = handshakeState $ HandshakeOpts
   noiseXN
   ""
   psk
@@ -239,7 +239,7 @@ noiseXNIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
 noiseXNRHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseXNRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+noiseXNRHS HandshakeKeys{..} = handshakeState $ HandshakeOpts
   noiseXN
   ""
   psk
@@ -252,7 +252,7 @@ noiseXNRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
 noiseINIHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseINIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+noiseINIHS HandshakeKeys{..} = handshakeState $ HandshakeOpts
   noiseIN
   ""
   psk
@@ -265,7 +265,7 @@ noiseINIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
 noiseINRHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseINRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+noiseINRHS HandshakeKeys{..} = handshakeState $ HandshakeOpts
   noiseIN
   ""
   psk
@@ -278,7 +278,7 @@ noiseINRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
 noiseXKIHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseXKIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+noiseXKIHS HandshakeKeys{..} = handshakeState $ HandshakeOpts
   noiseXK
   ""
   psk
@@ -291,7 +291,7 @@ noiseXKIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
 noiseXKRHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseXKRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+noiseXKRHS HandshakeKeys{..} = handshakeState $ HandshakeOpts
   noiseXK
   ""
   psk
@@ -304,7 +304,7 @@ noiseXKRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
 noiseIKIHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseIKIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+noiseIKIHS HandshakeKeys{..} = handshakeState $ HandshakeOpts
   noiseIK
   ""
   psk
@@ -317,7 +317,7 @@ noiseIKIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
 noiseIKRHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseIKRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+noiseIKRHS HandshakeKeys{..} = handshakeState $ HandshakeOpts
   noiseIK
   ""
   psk
@@ -330,7 +330,7 @@ noiseIKRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
 noiseXEIHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseXEIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+noiseXEIHS HandshakeKeys{..} = handshakeState $ HandshakeOpts
   noiseXE
   ""
   psk
@@ -343,7 +343,7 @@ noiseXEIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
 noiseXERHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseXERHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+noiseXERHS HandshakeKeys{..} = handshakeState $ HandshakeOpts
   noiseXE
   ""
   psk
@@ -356,7 +356,7 @@ noiseXERHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
 noiseIEIHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseIEIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+noiseIEIHS HandshakeKeys{..} = handshakeState $ HandshakeOpts
   noiseIE
   ""
   psk
@@ -369,7 +369,7 @@ noiseIEIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
 noiseIERHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseIERHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+noiseIERHS HandshakeKeys{..} = handshakeState $ HandshakeOpts
   noiseIE
   ""
   psk
@@ -382,7 +382,7 @@ noiseIERHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
 noiseXXIHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseXXIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+noiseXXIHS HandshakeKeys{..} = handshakeState $ HandshakeOpts
   noiseXX
   ""
   psk
@@ -395,7 +395,7 @@ noiseXXIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
 noiseXXRHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseXXRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+noiseXXRHS HandshakeKeys{..} = handshakeState $ HandshakeOpts
   noiseXX
   ""
   psk
@@ -408,7 +408,7 @@ noiseXXRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
 noiseIXIHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseIXIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+noiseIXIHS HandshakeKeys{..} = handshakeState $ HandshakeOpts
   noiseIX
   ""
   psk
@@ -421,7 +421,7 @@ noiseIXIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
 noiseIXRHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseIXRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+noiseIXRHS HandshakeKeys{..} = handshakeState $ HandshakeOpts
   noiseIX
   ""
   psk
@@ -434,7 +434,7 @@ noiseIXRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
 noiseXRIHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseXRIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+noiseXRIHS HandshakeKeys{..} = handshakeState $ HandshakeOpts
   noiseXR
   ""
   psk
@@ -447,7 +447,7 @@ noiseXRIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
 noiseXRRHS :: (Cipher c, Curve d, Hash h)
            => HandshakeKeys d
            -> HandshakeState c d h
-noiseXRRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+noiseXRRHS HandshakeKeys{..} = handshakeState $ HandshakeOpts
   noiseXR
   ""
   psk
@@ -460,7 +460,7 @@ noiseXRRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
 noiseNIHS :: (Cipher c, Curve d, Hash h)
           => HandshakeKeys d
           -> HandshakeState c d h
-noiseNIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+noiseNIHS HandshakeKeys{..} = handshakeState $ HandshakeOpts
   noiseN
   ""
   psk
@@ -473,7 +473,7 @@ noiseNIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
 noiseNRHS :: (Cipher c, Curve d, Hash h)
           => HandshakeKeys d
           -> HandshakeState c d h
-noiseNRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+noiseNRHS HandshakeKeys{..} = handshakeState $ HandshakeOpts
   noiseN
   ""
   psk
@@ -486,7 +486,7 @@ noiseNRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
 noiseKIHS :: (Cipher c, Curve d, Hash h)
           => HandshakeKeys d
           -> HandshakeState c d h
-noiseKIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+noiseKIHS HandshakeKeys{..} = handshakeState $ HandshakeOpts
   noiseK
   ""
   psk
@@ -499,7 +499,7 @@ noiseKIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
 noiseKRHS :: (Cipher c, Curve d, Hash h)
           => HandshakeKeys d
           -> HandshakeState c d h
-noiseKRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+noiseKRHS HandshakeKeys{..} = handshakeState $ HandshakeOpts
   noiseK
   ""
   psk
@@ -512,7 +512,7 @@ noiseKRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
 noiseXIHS :: (Cipher c, Curve d, Hash h)
           => HandshakeKeys d
           -> HandshakeState c d h
-noiseXIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+noiseXIHS HandshakeKeys{..} = handshakeState $ HandshakeOpts
   noiseX
   ""
   psk
@@ -525,7 +525,7 @@ noiseXIHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
 noiseXRHS :: (Cipher c, Curve d, Hash h)
           => HandshakeKeys d
           -> HandshakeState c d h
-noiseXRHS HandshakeKeys{..} = handshakeState $ HandshakeStateParams
+noiseXRHS HandshakeKeys{..} = handshakeState $ HandshakeOpts
   noiseX
   ""
   psk

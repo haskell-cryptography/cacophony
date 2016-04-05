@@ -137,8 +137,8 @@ test-suite properties
 
   other-modules:
     CipherState,
-    Handshakes,
-    HandshakeStates
+    Handshake,
+    Handshakes
     Imports,
     Instances,
     SymmetricState

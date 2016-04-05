@@ -24,7 +24,7 @@ mkHandshake :: (Cipher c, Curve d, Hash h)
             -> HashType h
             -> HandshakeState c d h
 mkHandshake HandshakeKeys{..} NoiseNN _ _ = handshakeState
-  HandshakeStateParams { hspPattern            = noiseNN
+  HandshakeOpts { hspPattern            = noiseNN
                        , hspPrologue           = hkPrologue
                        , hspPreSharedKey       = hkPSK
                        , hspLocalStaticKey     = Nothing
@@ -35,7 +35,7 @@ mkHandshake HandshakeKeys{..} NoiseNN _ _ = handshakeState
                        }
 
 mkHandshake HandshakeKeys{..} NoiseKN _ _ = handshakeState
-  HandshakeStateParams { hspPattern            = noiseKN
+  HandshakeOpts { hspPattern            = noiseKN
                        , hspPrologue           = hkPrologue
                        , hspPreSharedKey       = hkPSK
                        , hspLocalStaticKey     = Nothing
@@ -46,7 +46,7 @@ mkHandshake HandshakeKeys{..} NoiseKN _ _ = handshakeState
                        }
 
 mkHandshake HandshakeKeys{..} NoiseNK _ _ = handshakeState
-  HandshakeStateParams { hspPattern            = noiseNK
+  HandshakeOpts { hspPattern            = noiseNK
                        , hspPrologue           = hkPrologue
                        , hspPreSharedKey       = hkPSK
                        , hspLocalStaticKey     = Just hkLocalStatic
@@ -57,7 +57,7 @@ mkHandshake HandshakeKeys{..} NoiseNK _ _ = handshakeState
                        }
 
 mkHandshake HandshakeKeys{..} NoiseKK _ _ = handshakeState
-  HandshakeStateParams { hspPattern            = noiseKK
+  HandshakeOpts { hspPattern            = noiseKK
                        , hspPrologue           = hkPrologue
                        , hspPreSharedKey       = hkPSK
                        , hspLocalStaticKey     = Just hkLocalStatic
@@ -68,7 +68,7 @@ mkHandshake HandshakeKeys{..} NoiseKK _ _ = handshakeState
                        }
 
 mkHandshake HandshakeKeys{..} NoiseNX _ _ = handshakeState
-  HandshakeStateParams { hspPattern            = noiseNX
+  HandshakeOpts { hspPattern            = noiseNX
                        , hspPrologue           = hkPrologue
                        , hspPreSharedKey       = hkPSK
                        , hspLocalStaticKey     = Just hkLocalStatic
@@ -79,7 +79,7 @@ mkHandshake HandshakeKeys{..} NoiseNX _ _ = handshakeState
                        }
 
 mkHandshake HandshakeKeys{..} NoiseKX _ _ = handshakeState
-  HandshakeStateParams { hspPattern            = noiseKX
+  HandshakeOpts { hspPattern            = noiseKX
                        , hspPrologue           = hkPrologue
                        , hspPreSharedKey       = hkPSK
                        , hspLocalStaticKey     = Just hkLocalStatic
@@ -90,7 +90,7 @@ mkHandshake HandshakeKeys{..} NoiseKX _ _ = handshakeState
                        }
 
 mkHandshake HandshakeKeys{..} NoiseXN _ _ = handshakeState
-  HandshakeStateParams { hspPattern            = noiseXN
+  HandshakeOpts { hspPattern            = noiseXN
                        , hspPrologue           = hkPrologue
                        , hspPreSharedKey       = hkPSK
                        , hspLocalStaticKey     = Nothing
@@ -101,7 +101,7 @@ mkHandshake HandshakeKeys{..} NoiseXN _ _ = handshakeState
                        }
 
 mkHandshake HandshakeKeys{..} NoiseIN _ _ = handshakeState
-  HandshakeStateParams { hspPattern            = noiseIN
+  HandshakeOpts { hspPattern            = noiseIN
                        , hspPrologue           = hkPrologue
                        , hspPreSharedKey       = hkPSK
                        , hspLocalStaticKey     = Nothing
@@ -112,7 +112,7 @@ mkHandshake HandshakeKeys{..} NoiseIN _ _ = handshakeState
                        }
 
 mkHandshake HandshakeKeys{..} NoiseXK _ _ = handshakeState
-  HandshakeStateParams { hspPattern            = noiseXK
+  HandshakeOpts { hspPattern            = noiseXK
                        , hspPrologue           = hkPrologue
                        , hspPreSharedKey       = hkPSK
                        , hspLocalStaticKey     = Just hkLocalStatic
@@ -123,7 +123,7 @@ mkHandshake HandshakeKeys{..} NoiseXK _ _ = handshakeState
                        }
 
 mkHandshake HandshakeKeys{..} NoiseIK _ _ = handshakeState
-  HandshakeStateParams { hspPattern            = noiseIK
+  HandshakeOpts { hspPattern            = noiseIK
                        , hspPrologue           = hkPrologue
                        , hspPreSharedKey       = hkPSK
                        , hspLocalStaticKey     = Just hkLocalStatic
@@ -134,7 +134,7 @@ mkHandshake HandshakeKeys{..} NoiseIK _ _ = handshakeState
                        }
 
 mkHandshake HandshakeKeys{..} NoiseXX _ _ = handshakeState
-  HandshakeStateParams { hspPattern            = noiseXX
+  HandshakeOpts { hspPattern            = noiseXX
                        , hspPrologue           = hkPrologue
                        , hspPreSharedKey       = hkPSK
                        , hspLocalStaticKey     = Just hkLocalStatic
@@ -145,7 +145,7 @@ mkHandshake HandshakeKeys{..} NoiseXX _ _ = handshakeState
                        }
 
 mkHandshake HandshakeKeys{..} NoiseIX _ _ = handshakeState
-  HandshakeStateParams { hspPattern            = noiseIX
+  HandshakeOpts { hspPattern            = noiseIX
                        , hspPrologue           = hkPrologue
                        , hspPreSharedKey       = hkPSK
                        , hspLocalStaticKey     = Just hkLocalStatic
@@ -156,7 +156,7 @@ mkHandshake HandshakeKeys{..} NoiseIX _ _ = handshakeState
                        }
 
 mkHandshake HandshakeKeys{..} NoiseXR _ _ = handshakeState
-  HandshakeStateParams { hspPattern            = noiseXR
+  HandshakeOpts { hspPattern            = noiseXR
                        , hspPrologue           = hkPrologue
                        , hspPreSharedKey       = hkPSK
                        , hspLocalStaticKey     = Just hkLocalStatic

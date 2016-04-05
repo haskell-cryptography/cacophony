@@ -40,7 +40,7 @@ This library implements the [Noise](https://github.com/trevp/noise/blob/master/n
    the Noise\_IK pattern requires that the initiator provides a local static key and a remote static key.
    Remote keys are communicated out-of-band.
    ```haskell
-   let initiatorState = handshakeState $ HandshakeStateParams
+   let initiatorState = handshakeState $ HandshakeOpts
       noiseIK
       "prologue"
       (Just "pre-shared-key")
@@ -52,7 +52,7 @@ This library implements the [Noise](https://github.com/trevp/noise/blob/master/n
    ```
 
    ```haskell
-   let responderState = handshakeState $ HandshakeStateParams
+   let responderState = handshakeState $ HandshakeOpts
       noiseIK
       "prologue"
       (Just "pre-shared-key")

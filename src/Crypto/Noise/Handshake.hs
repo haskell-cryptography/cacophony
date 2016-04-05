@@ -14,7 +14,7 @@ module Crypto.Noise.Handshake
     ReceivingCipherState,
     HandshakeCallbacks(..),
     HandshakeState,
-    HandshakeStateParams(..),
+    HandshakeOpts(..),
     -- * Functions
     handshakeState,
     runHandshake,

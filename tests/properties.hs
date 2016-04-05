@@ -4,13 +4,13 @@ import Imports
 
 import qualified CipherState
 import qualified SymmetricState
-import qualified Handshakes
+import qualified Handshake
 
 tests :: TestTree
 tests = testGroup "cacophony"
   [ CipherState.tests
   , SymmetricState.tests
-  , Handshakes.tests
+  , Handshake.tests
   ]
 
 main :: IO ()

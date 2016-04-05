@@ -14,7 +14,7 @@ module Crypto.Noise.Internal.HandshakeState
   ( -- * Types
     HandshakeCallbacks(..),
     HandshakeState,
-    HandshakeStateParams(..),
+    HandshakeOpts(..),
     SendingCipherState,
     ReceivingCipherState,
     -- * Functions
@@ -50,8 +50,8 @@ import Data.ByteArray.Extend
 --   type depends on, or you provide a static key which is supposed to
 --   be set during the exchange, you will receive a
 --   'HandshakeStateFailure' exception.
-data HandshakeStateParams c d =
-  HandshakeStateParams { hspPattern            :: HandshakePattern c
+data HandshakeOpts c d =
+  HandshakeOpts { hspPattern            :: HandshakePattern c
                        , hspPrologue           :: Plaintext
                        , hspPreSharedKey       :: Maybe Plaintext
                        , hspLocalStaticKey     :: Maybe (KeyPair d)
@@ -121,9 +121,9 @@ $(makeLenses ''HandshakeState)
 
 -- | Constructs a 'HandshakeState'.
 handshakeState :: forall c d h. (Cipher c, Curve d, Hash h)
-               => HandshakeStateParams c d
+               => HandshakeOpts c d
                -> HandshakeState c d h
-handshakeState HandshakeStateParams{..} =
+handshakeState HandshakeOpts{..} =
   maybe hs'' hs''' $ hspPattern ^. hpPreActions
   where
     ss        = symmetricState $ mkHPN hs (hspPattern ^. hpName) (isJust hspPreSharedKey)

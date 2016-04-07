@@ -29,7 +29,14 @@ source-repository head
 --------------------------------------------------------------------------------
 -- FLAGS
 
+flag properties
+  description: Build property tests
+
 flag hlint
+  description: Build hlint test
+
+flag vectors
+  description: Build vector test
 
 flag build-examples
   description: Build example executables
@@ -147,18 +154,21 @@ test-suite properties
   type:             exitcode-stdio-1.0
   main-is:          properties.hs
   ghc-options:      -Wall -fwarn-tabs -threaded
-  hs-source-dirs:   tests
+  hs-source-dirs:   tests/properties
   default-language: Haskell2010
 
-  build-depends:
-    async,
-    base >=4.8 && <5,
-    bytestring,
-    cacophony,
-    mtl,
-    QuickCheck,
-    tasty,
-    tasty-quickcheck
+  if !flag(properties)
+    buildable: False
+  else
+    build-depends:
+      async,
+      base >=4.8 && <5,
+      bytestring,
+      cacophony,
+      mtl,
+      QuickCheck,
+      tasty,
+      tasty-quickcheck
 
   other-modules:
     CipherState,
@@ -172,7 +182,7 @@ test-suite hlint
   type:             exitcode-stdio-1.0
   main-is:          hlint.hs
   ghc-options:      -Wall -fwarn-tabs
-  hs-source-dirs:   tests
+  hs-source-dirs:   tests/hlint
   default-language: Haskell2010
 
   if !flag(hlint)
@@ -181,6 +191,30 @@ test-suite hlint
     build-depends:
       base  >=4.8 && <5,
       hlint
+
+test-suite vectors
+  type:             exitcode-stdio-1.0
+  main-is:          vectors.hs
+  ghc-options:      -Wall -fwarn-tabs -threaded
+  hs-source-dirs:   tests/vectors
+  default-language: Haskell2010
+
+  if !flag(vectors)
+    buildable: False
+  else
+    build-depends:
+      aeson,
+      base      >=4.8 && <5,
+      bytestring,
+      cacophony,
+      free,
+      lens,
+      mtl
+
+  other-modules:
+    HandshakeState,
+    Types,
+    VectorFile
 
 --------------------------------------------------------------------------------
 -- BENCHMARKS

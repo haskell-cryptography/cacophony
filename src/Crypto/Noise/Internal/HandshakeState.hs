@@ -22,6 +22,7 @@ module Crypto.Noise.Internal.HandshakeState
     runHandshake,
     evalHandshakePattern,
     evalToken,
+    evalPreMsgPattern,
     encryptPayload,
     decryptPayload
   ) where
@@ -51,15 +52,15 @@ import Data.ByteArray.Extend
 --   be set during the exchange, you will receive a
 --   'HandshakeStateFailure' exception.
 data HandshakeOpts c d =
-  HandshakeOpts { hspPattern            :: HandshakePattern c
-                       , hspPrologue           :: Plaintext
-                       , hspPreSharedKey       :: Maybe Plaintext
-                       , hspLocalStaticKey     :: Maybe (KeyPair d)
-                       , hspLocalEphemeralKey  :: Maybe (KeyPair d)
-                       , hspRemoteStaticKey    :: Maybe (PublicKey d)
-                       , hspRemoteEphemeralKey :: Maybe (PublicKey d)
-                       , hspInitiator          :: Bool
-                       }
+  HandshakeOpts { hoPattern            :: HandshakePattern c
+                , hoPrologue           :: Plaintext
+                , hoPreSharedKey       :: Maybe Plaintext
+                , hoLocalStaticKey     :: Maybe (KeyPair d)
+                , hoLocalEphemeralKey  :: Maybe (KeyPair d)
+                , hoRemoteStaticKey    :: Maybe (PublicKey d)
+                , hoRemoteEphemeralKey :: Maybe (PublicKey d)
+                , hoInitiator          :: Bool
+                }
 
 -- | Represents the state of a handshake.
 data HandshakeState c d h =
@@ -124,19 +125,19 @@ handshakeState :: forall c d h. (Cipher c, Curve d, Hash h)
                => HandshakeOpts c d
                -> HandshakeState c d h
 handshakeState HandshakeOpts{..} =
-  maybe hs'' hs''' $ hspPattern ^. hpPreActions
+  maybe hs'' hs''' $ hoPattern ^. hpPreActions
   where
-    ss        = symmetricState $ mkHPN hs (hspPattern ^. hpName) (isJust hspPreSharedKey)
+    ss        = symmetricState $ mkHPN hs (hoPattern ^. hpName) (isJust hoPreSharedKey)
     hs        = HandshakeState ss
-                               hspLocalStaticKey
-                               hspLocalEphemeralKey
-                               hspRemoteStaticKey
-                               hspRemoteEphemeralKey
-                               hspInitiator
+                               hoLocalStaticKey
+                               hoLocalEphemeralKey
+                               hoRemoteStaticKey
+                               hoRemoteEphemeralKey
+                               hoInitiator
                                ""
-                               hspPattern
-    hs'       = doPrologue hspPrologue hs
-    hs''      = maybe hs' (`doPSK` hs') hspPreSharedKey
+                               hoPattern
+    hs'       = doPrologue hoPrologue hs
+    hs''      = maybe hs' (`doPSK` hs') hoPreSharedKey
     hs''' pmp = runIdentity . execStateT (iterM evalPreMsgPattern pmp) $ hs''
 
 doPrologue :: forall c d h. (Cipher c, Curve d, Hash h)

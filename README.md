@@ -51,27 +51,29 @@ This library implements the [Noise](https://github.com/trevp/noise/blob/master/n
    the `Noise_IK` pattern requires that the initiator provides a local static key and a remote static key.
    Remote keys are communicated out-of-band.
    ```haskell
-   let initiatorState = handshakeState $ HandshakeOpts
-      noiseIK
-      "prologue"
-      (Just "pre-shared-key")
-      (Just local_static_key)
-      Nothing                  -- local ephemeral key
-      (Just remote_static_key) -- communicated out-of-band
-      Nothing                  -- remote ephemeral key
-      True                     -- we are the initiator
+   let initiatorState = handshakeState
+     HandshakeOpts { hoPattern            = noiseIK
+                   , hoPrologue           = "prologue"
+                   , hoPreSharedKey       = Just "pre-shared-key"
+                   , hoLocalStaticKey     = Just local_static_key
+                   , hoLocalEphemeralKey  = Nothing
+                   , hoRemoteStaticKey    = Just remote_static_key -- communicated out-of-band
+                   , hoRemoteEphemeralKey = Nothing
+                   , hoInitiator          = True
+                   }
    ```
 
    ```haskell
-   let responderState = handshakeState $ HandshakeOpts
-      noiseIK
-      "prologue"
-      (Just "pre-shared-key")
-      (Just local_static_key)
-      Nothing -- local ephemeral key
-      Nothing -- we don't know their static key yet
-      Nothing -- remote ephemeral key
-      False   -- we are the responder
+   let responderState = handshakeState
+     HandshakeOpts { hoPattern            = noiseIK
+                   , hoPrologue           = "prologue"
+                   , hoPreSharedKey       = Just "pre-shared-key"
+                   , hoLocalStaticKey     = Just local_static_key
+                   , hoLocalEphemeralKey  = Nothing
+                   , hoRemoteStaticKey    = Nothing
+                   , hoRemoteEphemeralKey = Nothing
+                   , hoInitiator          = False
+                   }
    ```
 
 4. Run the handshake:

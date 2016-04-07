@@ -24,144 +24,144 @@ mkHandshake :: (Cipher c, Curve d, Hash h)
             -> HashType h
             -> HandshakeState c d h
 mkHandshake HandshakeKeys{..} NoiseNN _ _ = handshakeState
-  HandshakeOpts { hspPattern            = noiseNN
-                       , hspPrologue           = hkPrologue
-                       , hspPreSharedKey       = hkPSK
-                       , hspLocalStaticKey     = Nothing
-                       , hspLocalEphemeralKey  = Nothing
-                       , hspRemoteStaticKey    = Nothing
-                       , hspRemoteEphemeralKey = Nothing
-                       , hspInitiator          = False
-                       }
+  HandshakeOpts { hoPattern            = noiseNN
+                , hoPrologue           = hkPrologue
+                , hoPreSharedKey       = hkPSK
+                , hoLocalStaticKey     = Nothing
+                , hoLocalEphemeralKey  = Nothing
+                , hoRemoteStaticKey    = Nothing
+                , hoRemoteEphemeralKey = Nothing
+                , hoInitiator          = False
+                }
 
 mkHandshake HandshakeKeys{..} NoiseKN _ _ = handshakeState
-  HandshakeOpts { hspPattern            = noiseKN
-                       , hspPrologue           = hkPrologue
-                       , hspPreSharedKey       = hkPSK
-                       , hspLocalStaticKey     = Nothing
-                       , hspLocalEphemeralKey  = Nothing
-                       , hspRemoteStaticKey    = Just hkRemoteStatic
-                       , hspRemoteEphemeralKey = Nothing
-                       , hspInitiator          = False
-                       }
+  HandshakeOpts { hoPattern            = noiseKN
+                , hoPrologue           = hkPrologue
+                , hoPreSharedKey       = hkPSK
+                , hoLocalStaticKey     = Nothing
+                , hoLocalEphemeralKey  = Nothing
+                , hoRemoteStaticKey    = Just hkRemoteStatic
+                , hoRemoteEphemeralKey = Nothing
+                , hoInitiator          = False
+                }
 
 mkHandshake HandshakeKeys{..} NoiseNK _ _ = handshakeState
-  HandshakeOpts { hspPattern            = noiseNK
-                       , hspPrologue           = hkPrologue
-                       , hspPreSharedKey       = hkPSK
-                       , hspLocalStaticKey     = Just hkLocalStatic
-                       , hspLocalEphemeralKey  = Nothing
-                       , hspRemoteStaticKey    = Nothing
-                       , hspRemoteEphemeralKey = Nothing
-                       , hspInitiator          = False
-                       }
+  HandshakeOpts { hoPattern            = noiseNK
+                , hoPrologue           = hkPrologue
+                , hoPreSharedKey       = hkPSK
+                , hoLocalStaticKey     = Just hkLocalStatic
+                , hoLocalEphemeralKey  = Nothing
+                , hoRemoteStaticKey    = Nothing
+                , hoRemoteEphemeralKey = Nothing
+                , hoInitiator          = False
+                }
 
 mkHandshake HandshakeKeys{..} NoiseKK _ _ = handshakeState
-  HandshakeOpts { hspPattern            = noiseKK
-                       , hspPrologue           = hkPrologue
-                       , hspPreSharedKey       = hkPSK
-                       , hspLocalStaticKey     = Just hkLocalStatic
-                       , hspLocalEphemeralKey  = Nothing
-                       , hspRemoteStaticKey    = Just hkRemoteStatic
-                       , hspRemoteEphemeralKey = Nothing
-                       , hspInitiator          = False
-                       }
+  HandshakeOpts { hoPattern            = noiseKK
+                , hoPrologue           = hkPrologue
+                , hoPreSharedKey       = hkPSK
+                , hoLocalStaticKey     = Just hkLocalStatic
+                , hoLocalEphemeralKey  = Nothing
+                , hoRemoteStaticKey    = Just hkRemoteStatic
+                , hoRemoteEphemeralKey = Nothing
+                , hoInitiator          = False
+                }
 
 mkHandshake HandshakeKeys{..} NoiseNX _ _ = handshakeState
-  HandshakeOpts { hspPattern            = noiseNX
-                       , hspPrologue           = hkPrologue
-                       , hspPreSharedKey       = hkPSK
-                       , hspLocalStaticKey     = Just hkLocalStatic
-                       , hspLocalEphemeralKey  = Nothing
-                       , hspRemoteStaticKey    = Nothing
-                       , hspRemoteEphemeralKey = Nothing
-                       , hspInitiator          = False
-                       }
+  HandshakeOpts { hoPattern            = noiseNX
+                , hoPrologue           = hkPrologue
+                , hoPreSharedKey       = hkPSK
+                , hoLocalStaticKey     = Just hkLocalStatic
+                , hoLocalEphemeralKey  = Nothing
+                , hoRemoteStaticKey    = Nothing
+                , hoRemoteEphemeralKey = Nothing
+                , hoInitiator          = False
+                }
 
 mkHandshake HandshakeKeys{..} NoiseKX _ _ = handshakeState
-  HandshakeOpts { hspPattern            = noiseKX
-                       , hspPrologue           = hkPrologue
-                       , hspPreSharedKey       = hkPSK
-                       , hspLocalStaticKey     = Just hkLocalStatic
-                       , hspLocalEphemeralKey  = Nothing
-                       , hspRemoteStaticKey    = Just hkRemoteStatic
-                       , hspRemoteEphemeralKey = Nothing
-                       , hspInitiator          = False
-                       }
+  HandshakeOpts { hoPattern            = noiseKX
+                , hoPrologue           = hkPrologue
+                , hoPreSharedKey       = hkPSK
+                , hoLocalStaticKey     = Just hkLocalStatic
+                , hoLocalEphemeralKey  = Nothing
+                , hoRemoteStaticKey    = Just hkRemoteStatic
+                , hoRemoteEphemeralKey = Nothing
+                , hoInitiator          = False
+                }
 
 mkHandshake HandshakeKeys{..} NoiseXN _ _ = handshakeState
-  HandshakeOpts { hspPattern            = noiseXN
-                       , hspPrologue           = hkPrologue
-                       , hspPreSharedKey       = hkPSK
-                       , hspLocalStaticKey     = Nothing
-                       , hspLocalEphemeralKey  = Nothing
-                       , hspRemoteStaticKey    = Nothing
-                       , hspRemoteEphemeralKey = Nothing
-                       , hspInitiator          = False
-                       }
+  HandshakeOpts { hoPattern            = noiseXN
+                , hoPrologue           = hkPrologue
+                , hoPreSharedKey       = hkPSK
+                , hoLocalStaticKey     = Nothing
+                , hoLocalEphemeralKey  = Nothing
+                , hoRemoteStaticKey    = Nothing
+                , hoRemoteEphemeralKey = Nothing
+                , hoInitiator          = False
+                }
 
 mkHandshake HandshakeKeys{..} NoiseIN _ _ = handshakeState
-  HandshakeOpts { hspPattern            = noiseIN
-                       , hspPrologue           = hkPrologue
-                       , hspPreSharedKey       = hkPSK
-                       , hspLocalStaticKey     = Nothing
-                       , hspLocalEphemeralKey  = Nothing
-                       , hspRemoteStaticKey    = Nothing
-                       , hspRemoteEphemeralKey = Nothing
-                       , hspInitiator          = False
-                       }
+  HandshakeOpts { hoPattern            = noiseIN
+                , hoPrologue           = hkPrologue
+                , hoPreSharedKey       = hkPSK
+                , hoLocalStaticKey     = Nothing
+                , hoLocalEphemeralKey  = Nothing
+                , hoRemoteStaticKey    = Nothing
+                , hoRemoteEphemeralKey = Nothing
+                , hoInitiator          = False
+                }
 
 mkHandshake HandshakeKeys{..} NoiseXK _ _ = handshakeState
-  HandshakeOpts { hspPattern            = noiseXK
-                       , hspPrologue           = hkPrologue
-                       , hspPreSharedKey       = hkPSK
-                       , hspLocalStaticKey     = Just hkLocalStatic
-                       , hspLocalEphemeralKey  = Nothing
-                       , hspRemoteStaticKey    = Nothing
-                       , hspRemoteEphemeralKey = Nothing
-                       , hspInitiator          = False
-                       }
+  HandshakeOpts { hoPattern            = noiseXK
+                , hoPrologue           = hkPrologue
+                , hoPreSharedKey       = hkPSK
+                , hoLocalStaticKey     = Just hkLocalStatic
+                , hoLocalEphemeralKey  = Nothing
+                , hoRemoteStaticKey    = Nothing
+                , hoRemoteEphemeralKey = Nothing
+                , hoInitiator          = False
+                }
 
 mkHandshake HandshakeKeys{..} NoiseIK _ _ = handshakeState
-  HandshakeOpts { hspPattern            = noiseIK
-                       , hspPrologue           = hkPrologue
-                       , hspPreSharedKey       = hkPSK
-                       , hspLocalStaticKey     = Just hkLocalStatic
-                       , hspLocalEphemeralKey  = Nothing
-                       , hspRemoteStaticKey    = Nothing
-                       , hspRemoteEphemeralKey = Nothing
-                       , hspInitiator          = False
-                       }
+  HandshakeOpts { hoPattern            = noiseIK
+                , hoPrologue           = hkPrologue
+                , hoPreSharedKey       = hkPSK
+                , hoLocalStaticKey     = Just hkLocalStatic
+                , hoLocalEphemeralKey  = Nothing
+                , hoRemoteStaticKey    = Nothing
+                , hoRemoteEphemeralKey = Nothing
+                , hoInitiator          = False
+                }
 
 mkHandshake HandshakeKeys{..} NoiseXX _ _ = handshakeState
-  HandshakeOpts { hspPattern            = noiseXX
-                       , hspPrologue           = hkPrologue
-                       , hspPreSharedKey       = hkPSK
-                       , hspLocalStaticKey     = Just hkLocalStatic
-                       , hspLocalEphemeralKey  = Nothing
-                       , hspRemoteStaticKey    = Nothing
-                       , hspRemoteEphemeralKey = Nothing
-                       , hspInitiator          = False
-                       }
+  HandshakeOpts { hoPattern            = noiseXX
+                , hoPrologue           = hkPrologue
+                , hoPreSharedKey       = hkPSK
+                , hoLocalStaticKey     = Just hkLocalStatic
+                , hoLocalEphemeralKey  = Nothing
+                , hoRemoteStaticKey    = Nothing
+                , hoRemoteEphemeralKey = Nothing
+                , hoInitiator          = False
+                }
 
 mkHandshake HandshakeKeys{..} NoiseIX _ _ = handshakeState
-  HandshakeOpts { hspPattern            = noiseIX
-                       , hspPrologue           = hkPrologue
-                       , hspPreSharedKey       = hkPSK
-                       , hspLocalStaticKey     = Just hkLocalStatic
-                       , hspLocalEphemeralKey  = Nothing
-                       , hspRemoteStaticKey    = Nothing
-                       , hspRemoteEphemeralKey = Nothing
-                       , hspInitiator          = False
-                       }
+  HandshakeOpts { hoPattern            = noiseIX
+                , hoPrologue           = hkPrologue
+                , hoPreSharedKey       = hkPSK
+                , hoLocalStaticKey     = Just hkLocalStatic
+                , hoLocalEphemeralKey  = Nothing
+                , hoRemoteStaticKey    = Nothing
+                , hoRemoteEphemeralKey = Nothing
+                , hoInitiator          = False
+                }
 
 mkHandshake HandshakeKeys{..} NoiseXR _ _ = handshakeState
-  HandshakeOpts { hspPattern            = noiseXR
-                       , hspPrologue           = hkPrologue
-                       , hspPreSharedKey       = hkPSK
-                       , hspLocalStaticKey     = Just hkLocalStatic
-                       , hspLocalEphemeralKey  = Nothing
-                       , hspRemoteStaticKey    = Nothing
-                       , hspRemoteEphemeralKey = Nothing
-                       , hspInitiator          = False
-                       }
+  HandshakeOpts { hoPattern            = noiseXR
+                , hoPrologue           = hkPrologue
+                , hoPreSharedKey       = hkPSK
+                , hoLocalStaticKey     = Just hkLocalStatic
+                , hoLocalEphemeralKey  = Nothing
+                , hoRemoteStaticKey    = Nothing
+                , hoRemoteEphemeralKey = Nothing
+                , hoInitiator          = False
+                }

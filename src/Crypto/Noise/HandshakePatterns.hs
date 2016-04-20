@@ -41,56 +41,46 @@ import Crypto.Noise.Internal.HandshakePattern
 -- | @Noise_NN():
 --  -> e
 --  <- e, dhee@
-noiseNN :: HandshakePattern c
-noiseNN = HandshakePattern "NN" Nothing $ do
+noiseNN :: HandshakePattern
+noiseNN = HandshakePattern "NN" $ do
   initiator e
 
   responder $ do
     e
     dhee
 
-  split
-
 -- | @Noise_KN(s):
 --  -> s
 --  ...
 --  -> e
 --  <- e, dhee, dhes@
-noiseKN :: HandshakePattern c
-noiseKN = HandshakePattern "KN" (Just pmp) hp
-  where
-    pmp = initiator s
+noiseKN :: HandshakePattern
+noiseKN = HandshakePattern "KN" $ do
+  preInitiator s
 
-    hp = do
-      initiator e
+  initiator e
 
-      responder $ do
-        e
-        dhee
-        dhes
-
-      split
+  responder $ do
+    e
+    dhee
+    dhes
 
 -- | @Noise_NK(rs):
 --  <- s
 --  ...
 --  -> e, dhes
 --  <- e, dhee@
-noiseNK :: HandshakePattern c
-noiseNK = HandshakePattern "NK" (Just pmp) hp
-  where
-    pmp = responder s
+noiseNK :: HandshakePattern
+noiseNK = HandshakePattern "NK" $ do
+  preResponder s
 
-    hp = do
-      initiator $ do
-        e
-        dhes
+  initiator $ do
+    e
+    dhes
 
-      responder $ do
-        e
-        dhee
-
-      split
+  responder $ do
+    e
+    dhee
 
 -- | @Noise_KK(s, rs):
 --  -> s
@@ -98,26 +88,21 @@ noiseNK = HandshakePattern "NK" (Just pmp) hp
 --  ...
 --  -> e, dhes, dhss
 --  <- e, dhee, dhes@
-noiseKK :: HandshakePattern c
-noiseKK = HandshakePattern "KK" (Just pmp) hp
-  where
-    pmp = do
-      initiator s
+noiseKK :: HandshakePattern
+noiseKK = HandshakePattern "KK" $ do
+  preInitiator s
 
-      responder s
+  preResponder s
 
-    hp = do
-      initiator $ do
-        e
-        dhes
-        dhss
+  initiator $ do
+    e
+    dhes
+    dhss
 
-      responder $ do
-        e
-        dhee
-        dhes
-
-      split
+  responder $ do
+    e
+    dhee
+    dhes
 
 -- | @Noise_NE(rs, re):
 --  <- s, e
@@ -126,24 +111,20 @@ noiseKK = HandshakePattern "KK" (Just pmp) hp
 --  <- e, dhee@
 --
 --  This is not an officially recognized pattern (see section 8.6).
-noiseNE :: HandshakePattern c
-noiseNE = HandshakePattern "NE" (Just pmp) hp
-  where
-    pmp = responder $ do
-      s
-      e
+noiseNE :: HandshakePattern
+noiseNE = HandshakePattern "NE" $ do
+  preResponder $ do
+    s
+    e
 
-    hp = do
-      initiator $ do
-        e
-        dhee
-        dhes
+  initiator $ do
+    e
+    dhee
+    dhes
 
-      responder $ do
-        e
-        dhee
-
-      split
+  responder $ do
+    e
+    dhee
 
 -- | @Noise_KE(s, rs, re):
 --  -> s
@@ -153,35 +134,30 @@ noiseNE = HandshakePattern "NE" (Just pmp) hp
 --  <- e, dhee, dhes@
 --
 --  This is not an officially recognized pattern (see section 8.6).
-noiseKE :: HandshakePattern c
-noiseKE = HandshakePattern "KE" (Just pmp) hp
-  where
-    pmp = do
-      initiator s
+noiseKE :: HandshakePattern
+noiseKE = HandshakePattern "KE" $ do
+  preInitiator s
 
-      responder $ do
-        s
-        e
+  preResponder $ do
+    s
+    e
 
-    hp = do
-      initiator $ do
-        e
-        dhee
-        dhes
-        dhse
+  initiator $ do
+    e
+    dhee
+    dhes
+    dhse
 
-      responder $ do
-        e
-        dhee
-        dhes
-
-      split
+  responder $ do
+    e
+    dhee
+    dhes
 
 -- | @Noise_NX(rs):
 --  -> e
 --  <- e, dhee, s, dhse@
-noiseNX :: HandshakePattern c
-noiseNX = HandshakePattern "NX" Nothing $ do
+noiseNX :: HandshakePattern
+noiseNX = HandshakePattern "NX" $ do
   initiator e
 
   responder $ do
@@ -190,36 +166,30 @@ noiseNX = HandshakePattern "NX" Nothing $ do
     s
     dhse
 
-  split
-
 -- | @Noise_KX(s, rs):
 --  -> s
 --  ...
 --  -> e
 --  <- e, dhee, dhes, s, dhse@
-noiseKX :: HandshakePattern c
-noiseKX = HandshakePattern "KX" (Just pmp) hp
-  where
-    pmp = initiator s
+noiseKX :: HandshakePattern
+noiseKX = HandshakePattern "KX" $ do
+  preInitiator s
 
-    hp = do
-      initiator e
+  initiator e
 
-      responder $ do
-        e
-        dhee
-        dhes
-        s
-        dhse
-
-      split
+  responder $ do
+    e
+    dhee
+    dhes
+    s
+    dhse
 
 -- | @Noise_XN(s):
 --  -> e
 --  <- e, dhee
 --  -> s, dhse@
-noiseXN :: HandshakePattern c
-noiseXN = HandshakePattern "XN" Nothing $ do
+noiseXN :: HandshakePattern
+noiseXN = HandshakePattern "XN" $ do
   initiator e
 
   responder $ do
@@ -230,13 +200,11 @@ noiseXN = HandshakePattern "XN" Nothing $ do
     s
     dhse
 
-  split
-
 -- | @Noise_IN(s):
 --  -> e, s
 --  <- e, dhee, dhes@
-noiseIN :: HandshakePattern c
-noiseIN = HandshakePattern "IN" Nothing $ do
+noiseIN :: HandshakePattern
+noiseIN = HandshakePattern "IN" $ do
   initiator $ do
     e
     s
@@ -246,57 +214,47 @@ noiseIN = HandshakePattern "IN" Nothing $ do
     dhee
     dhes
 
-  split
-
 -- | @Noise_XK(s, rs):
 --  <- s
 --  ...
 --  -> e, dhes
 --  <- e, dhee
 --  -> s, dhse@
-noiseXK :: HandshakePattern c
-noiseXK = HandshakePattern "XK" (Just pmp) hp
-  where
-    pmp = responder s
+noiseXK :: HandshakePattern
+noiseXK = HandshakePattern "XK" $ do
+  preResponder s
 
-    hp = do
-      initiator $ do
-        e
-        dhes
+  initiator $ do
+    e
+    dhes
 
-      responder $ do
-        e
-        dhee
+  responder $ do
+    e
+    dhee
 
-      initiator $ do
-        s
-        dhse
-
-      split
+  initiator $ do
+    s
+    dhse
 
 -- | @Noise_IK(s, rs):
 --  <- s
 --  ...
 --  -> e, dhes, s, dhss
 --  <- e, dhee, dhes@
-noiseIK :: HandshakePattern c
-noiseIK = HandshakePattern "IK" (Just pmp) hp
-  where
-    pmp = responder s
+noiseIK :: HandshakePattern
+noiseIK = HandshakePattern "IK" $ do
+  preResponder s
 
-    hp = do
-      initiator $ do
-        e
-        dhes
-        s
-        dhss
+  initiator $ do
+    e
+    dhes
+    s
+    dhss
 
-      responder $ do
-        e
-        dhee
-        dhes
-
-      split
+  responder $ do
+    e
+    dhee
+    dhes
 
 -- | @Noise_XE(s, rs, re):
 --  <- s, e
@@ -306,28 +264,24 @@ noiseIK = HandshakePattern "IK" (Just pmp) hp
 --  -> s, dhse@
 --
 --  This is not an officially recognized pattern (see section 8.6).
-noiseXE :: HandshakePattern c
-noiseXE = HandshakePattern "XE" (Just pmp) hp
-  where
-    pmp = responder $ do
-      s
-      e
+noiseXE :: HandshakePattern
+noiseXE = HandshakePattern "XE" $ do
+  preResponder $ do
+    s
+    e
 
-    hp = do
-      initiator $ do
-        e
-        dhee
-        dhes
+  initiator $ do
+    e
+    dhee
+    dhes
 
-      responder $ do
-        e
-        dhee
+  responder $ do
+    e
+    dhee
 
-      initiator $ do
-        s
-        dhse
-
-      split
+  initiator $ do
+    s
+    dhse
 
 -- | @Noise_IE(s, rs, re):
 --  <- s, e
@@ -336,34 +290,30 @@ noiseXE = HandshakePattern "XE" (Just pmp) hp
 --  <- e, dhee, dhes@
 --
 --  This is not an officially recognized pattern (see section 8.6).
-noiseIE :: HandshakePattern c
-noiseIE = HandshakePattern "IE" (Just pmp) hp
-  where
-    pmp = responder $ do
-      s
-      e
+noiseIE :: HandshakePattern
+noiseIE = HandshakePattern "IE" $ do
+  preResponder $ do
+    s
+    e
 
-    hp = do
-      initiator $ do
-        e
-        dhee
-        dhes
-        s
-        dhse
+  initiator $ do
+    e
+    dhee
+    dhes
+    s
+    dhse
 
-      responder $ do
-        e
-        dhee
-        dhes
-
-      split
+  responder $ do
+    e
+    dhee
+    dhes
 
 -- | @Noise_XX(s, rs):
 --  -> e
 --  <- e, dhee, s, dhse
 --  -> s, dhse@
-noiseXX :: HandshakePattern c
-noiseXX = HandshakePattern "XX" Nothing $ do
+noiseXX :: HandshakePattern
+noiseXX = HandshakePattern "XX" $ do
   initiator e
 
   responder $ do
@@ -376,13 +326,11 @@ noiseXX = HandshakePattern "XX" Nothing $ do
     s
     dhse
 
-  split
-
 -- | @Noise_IX(s, rs):
 --  -> e, s
 --  <- e, dhee, dhes, s, dhse@
-noiseIX :: HandshakePattern c
-noiseIX = HandshakePattern "IX" Nothing $ do
+noiseIX :: HandshakePattern
+noiseIX = HandshakePattern "IX" $ do
   initiator $ do
     e
     s
@@ -394,15 +342,13 @@ noiseIX = HandshakePattern "IX" Nothing $ do
     s
     dhse
 
-  split
-
 -- | @Noise_XR(s, rs):
 --  -> e
 --  <- e, dhee
 --  -> s, dhse
 --  <- s, dhse@
-noiseXR :: HandshakePattern c
-noiseXR = HandshakePattern "XR" Nothing $ do
+noiseXR :: HandshakePattern
+noiseXR = HandshakePattern "XR" $ do
   initiator e
 
   responder $ do
@@ -417,59 +363,44 @@ noiseXR = HandshakePattern "XR" Nothing $ do
     s
     dhse
 
-  split
-
 -- | @Noise_N(rs):
 --  <- s
 --  ...
 --  -> e, dhes@
-noiseN :: HandshakePattern c
-noiseN = HandshakePattern "N" (Just pmp) hp
-  where
-    pmp = responder s
+noiseN :: HandshakePattern
+noiseN = HandshakePattern "N" $ do
+  preResponder s
 
-    hp = do
-      initiator $ do
-        e
-        dhes
-
-      split
+  initiator $ do
+    e
+    dhes
 
 -- | @Noise_K(s, rs):
 --  -> s
 --  <- s
 --  ...
 --  -> e, dhes, dhss@
-noiseK :: HandshakePattern c
-noiseK = HandshakePattern "K" (Just pmp) hp
-  where
-    pmp = do
-      initiator s
+noiseK :: HandshakePattern
+noiseK = HandshakePattern "K" $ do
+  preInitiator s
 
-      responder s
+  preResponder s
 
-    hp = do
-      initiator $ do
-        e
-        dhes
-        dhss
-
-      split
+  initiator $ do
+    e
+    dhes
+    dhss
 
 -- | @Noise_X(s, rs):
 --  <- s
 --  ...
 --  -> e, dhes, s, dhss@
-noiseX :: HandshakePattern c
-noiseX = HandshakePattern "X" (Just pmp) hp
-  where
-    pmp = responder s
+noiseX :: HandshakePattern
+noiseX = HandshakePattern "X" $ do
+  preResponder s
 
-    hp = do
-      initiator $ do
-        e
-        dhes
-        s
-        dhss
-
-      split
+  initiator $ do
+    e
+    dhes
+    s
+    dhss

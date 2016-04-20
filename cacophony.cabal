@@ -1,5 +1,5 @@
 name:          cacophony
-version:       0.6.0
+version:       0.7.0
 synopsis:      A library implementing the Noise protocol.
 license:       PublicDomain
 license-file:  LICENSE
@@ -21,6 +21,10 @@ extra-source-files:
   changelog.md
   LICENSE
   tests/.hlint
+  tools/convert_vectors.py
+  tools/run_benchmarks.sh
+  tools/vector_template.jinja
+  vectors/cacophony.txt
 
 source-repository head
   type: git
@@ -28,9 +32,6 @@ source-repository head
 
 --------------------------------------------------------------------------------
 -- FLAGS
-
-flag properties
-  description: Build property tests
 
 flag hlint
   description: Build hlint test
@@ -54,22 +55,24 @@ library
   build-depends:
     base       >=4.8 && <5,
     bytestring,
-    cryptonite >=0.13,
+    cryptonite >=0.16,
     deepseq,
     free,
     lens,
     memory,
-    mtl
+    monad-coroutine,
+    mtl,
+    transformers
   hs-source-dirs:   src
   default-language: Haskell2010
   exposed-modules:
+    Crypto.Noise
     Crypto.Noise.Cipher
     Crypto.Noise.Cipher.AESGCM
     Crypto.Noise.Cipher.ChaChaPoly1305
-    Crypto.Noise.Curve
-    Crypto.Noise.Curve.Curve25519
-    Crypto.Noise.Curve.Curve448
-    Crypto.Noise.Handshake
+    Crypto.Noise.DH
+    Crypto.Noise.DH.Curve25519
+    Crypto.Noise.DH.Curve448
     Crypto.Noise.HandshakePatterns
     Crypto.Noise.Hash
     Crypto.Noise.Hash.BLAKE2b
@@ -77,10 +80,10 @@ library
     Crypto.Noise.Hash.SHA256
     Crypto.Noise.Hash.SHA512
     Crypto.Noise.Internal.CipherState
-    Crypto.Noise.Internal.SymmetricState
     Crypto.Noise.Internal.HandshakePattern
-    Crypto.Noise.Internal.HandshakeState
-    Crypto.Noise.Types
+    Crypto.Noise.Internal.Handshake
+    Crypto.Noise.Internal.NoiseState
+    Crypto.Noise.Internal.SymmetricState
     Data.ByteArray.Extend
   ghc-options:      -Wall -fwarn-tabs
 
@@ -103,9 +106,10 @@ executable echo-server
       base               >=4.8 && <5,
       base64-bytestring,
       bytestring,
-      cacophony          >=0.6,
+      cacophony,
       directory,
       fast-logger,
+      lens,
       network,
       network-simple,
       unix,
@@ -120,7 +124,7 @@ executable echo-server
     Server
     Types
 
-  ghc-options:      -threaded -rtsopts -with-rtsopts=-N -Wall -fwarn-tabs
+  ghc-options:      -threaded -O2 -rtsopts -with-rtsopts=-N -Wall -fwarn-tabs
 
 executable echo-client
   default-language: Haskell2010
@@ -133,8 +137,9 @@ executable echo-client
       base               >=4.8 && <5,
       base64-bytestring,
       bytestring,
-      cacophony          >=0.6,
+      cacophony,
       directory,
+      lens,
       network,
       network-simple,
       unix
@@ -145,38 +150,10 @@ executable echo-client
     Client
     Parse
 
-  ghc-options:      -threaded -rtsopts -with-rtsopts=-N -Wall -fwarn-tabs
+  ghc-options:      -threaded -O2 -rtsopts -with-rtsopts=-N -Wall -fwarn-tabs
 
 --------------------------------------------------------------------------------
 -- TESTS
-
-test-suite properties
-  type:             exitcode-stdio-1.0
-  main-is:          properties.hs
-  ghc-options:      -Wall -fwarn-tabs -threaded
-  hs-source-dirs:   tests/properties
-  default-language: Haskell2010
-
-  if !flag(properties)
-    buildable: False
-  else
-    build-depends:
-      async,
-      base >=4.8 && <5,
-      bytestring,
-      cacophony,
-      mtl,
-      QuickCheck,
-      tasty,
-      tasty-quickcheck
-
-  other-modules:
-    CipherState,
-    Handshake,
-    Handshakes
-    Imports,
-    Instances,
-    SymmetricState
 
 test-suite hlint
   type:             exitcode-stdio-1.0
@@ -195,7 +172,7 @@ test-suite hlint
 test-suite vectors
   type:             exitcode-stdio-1.0
   main-is:          vectors.hs
-  ghc-options:      -Wall -fwarn-tabs -threaded
+  ghc-options:      -threaded -O2 -rtsopts -with-rtsopts=-N -Wall -fwarn-tabs
   hs-source-dirs:   tests/vectors
   default-language: Haskell2010
 
@@ -204,17 +181,23 @@ test-suite vectors
   else
     build-depends:
       aeson,
-      base      >=4.8 && <5,
+      async,
+      base              >=4.8 && <5,
+      base16-bytestring,
       bytestring,
       cacophony,
+      directory,
       free,
       lens,
-      mtl
+      mtl,
+      text
 
   other-modules:
-    HandshakeState,
-    Types,
-    VectorFile
+    Generate,
+    Handshakes,
+    Types
+    VectorFile,
+    Verify
 
 --------------------------------------------------------------------------------
 -- BENCHMARKS
@@ -222,14 +205,20 @@ test-suite vectors
 benchmark bench
   type:             exitcode-stdio-1.0
   main-is:          bench.hs
-  ghc-options:      -Wall -fwarn-tabs -threaded
+  ghc-options:      -threaded -O2 -rtsopts -with-rtsopts=-N -Wall -fwarn-tabs
   hs-source-dirs:   benchmarks
   default-language: Haskell2010
 
   build-depends:
     async,
     base >=4.8 && <5,
+    base16-bytestring,
     bytestring,
     cacophony,
     criterion,
-    deepseq
+    deepseq,
+    lens
+
+  other-modules:
+    Handshakes
+    Types

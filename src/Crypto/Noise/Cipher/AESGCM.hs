@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, TypeFamilies, FlexibleInstances #-}
+{-# LANGUAGE OverloadedStrings, TypeFamilies #-}
 ----------------------------------------------------------------
 -- |
 -- Module      : Crypto.Noise.Cipher.AESGCM
@@ -23,7 +23,6 @@ import Foreign.Ptr
 import Foreign.Storable
 
 import Crypto.Noise.Cipher
-import Crypto.Noise.Types
 import Data.ByteArray.Extend
 
 -- | Represents the AES256 cipher with GCM for AEAD.
@@ -34,7 +33,7 @@ instance Cipher AESGCM where
   newtype SymmetricKey AESGCM = SKAES ScrubbedBytes
   newtype Nonce        AESGCM = NAES  ScrubbedBytes
 
-  cipherName _      = bsToSB' "AESGCM"
+  cipherName _      = "AESGCM"
   cipherEncrypt     = encrypt
   cipherDecrypt     = decrypt
   cipherZeroNonce   = zeroNonce
@@ -48,7 +47,7 @@ encrypt :: SymmetricKey AESGCM
         -> AssocData
         -> Plaintext
         -> Ciphertext AESGCM
-encrypt (SKAES k) (NAES n) (AssocData ad) (Plaintext plaintext) =
+encrypt (SKAES k) (NAES n) ad plaintext =
   CTAES $ aeadSimpleEncrypt aead ad plaintext 16
   where
     state = throwCryptoError . cipherInit $ k :: AES256
@@ -59,8 +58,8 @@ decrypt :: SymmetricKey AESGCM
         -> AssocData
         -> Ciphertext AESGCM
         -> Maybe Plaintext
-decrypt (SKAES k) (NAES n) (AssocData ad) (CTAES (authTag, ct)) =
-  Plaintext <$> aeadSimpleDecrypt aead ad ct authTag
+decrypt (SKAES k) (NAES n) ad (CTAES (authTag, ct)) =
+  aeadSimpleDecrypt aead ad ct authTag
   where
     state = throwCryptoError . cipherInit $ k :: AES256
     aead  = throwCryptoError $ aeadInit AEAD_GCM state n
@@ -78,7 +77,7 @@ bytesToSym = SKAES . B.take 32
 
 ctToBytes :: Ciphertext AESGCM
           -> ScrubbedBytes
-ctToBytes (CTAES (a, ct)) = ct `append` convert a
+ctToBytes (CTAES (a, ct)) = ct `mappend` convert a
 
 bytesToCt :: ScrubbedBytes
           -> Ciphertext AESGCM

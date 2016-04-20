@@ -3,23 +3,23 @@ module Client
   ( runClient
   ) where
 
-import Data.Bits                  ((.&.), shiftR)
-import Data.ByteString            (ByteString, pack, length)
+import Control.Lens       ((.~), (&))
+import Data.Bits          ((.&.), shiftR)
+import Data.ByteString    (ByteString, pack, length)
 import qualified Data.ByteString.Char8 as C8 (pack, unpack)
 import Data.IORef
-import Data.Maybe (fromMaybe)
-import Data.Monoid                ((<>))
+import Data.Monoid        ((<>))
 import Network.Simple.TCP
-import Prelude hiding             (length)
+import Prelude hiding     (length)
 
+import Crypto.Noise
 import Crypto.Noise.Cipher
 import Crypto.Noise.Cipher.AESGCM
-import Crypto.Noise.Curve
-import Crypto.Noise.Handshake
+import Crypto.Noise.DH
 import Crypto.Noise.HandshakePatterns (noiseIK)
+import Crypto.Noise.Hash
 import Crypto.Noise.Hash.SHA256
-import Crypto.Noise.Types
-import Data.ByteArray.Extend
+import Data.ByteArray.Extend hiding (length)
 
 import Parse
 
@@ -35,80 +35,56 @@ writeSocket :: Socket
             -> IO ()
 writeSocket s msg = send s $ prependLength msg
 
-readSocket :: IORef ByteString
-           -> Socket
-           -> IO ByteString
-readSocket bufRef sock = fromMaybe (error "connection reset") <$> parseSocket bufRef sock messageParser
-
-header :: ByteString
-header = "\x09\x01\x00\x00"
-
-messageLoop :: Cipher c
+messageLoop :: (Cipher c, DH d, Hash h)
             => IORef ByteString
             -> Socket
-            -> SendingCipherState c
-            -> ReceivingCipherState c
+            -> NoiseState c d h
             -> IO ()
 messageLoop bufRef sock = loop
   where
-    loop scs rcs = do
-      msg <- Plaintext . bsToSB' . C8.pack <$> getLine
+    loop ns = do
+      msg <- convert . C8.pack <$> getLine
 
-      let (ct, scs') = encryptPayload msg scs
+      let (ct, ns') = either (error . show) id $ writeMessage ns msg
       writeSocket sock ct
 
       maybeMessage <- parseSocket bufRef sock messageParser
       case maybeMessage of
         Nothing -> return ()
         Just m  -> do
-          let (Plaintext pt, rcs') = decryptPayload m rcs
-          putStrLn . ("received: " <>) . C8.unpack . sbToBS' $ pt
+          let (pt, ns'')  = either (error . show) id $ readMessage ns' m
+          putStrLn . ("received: " <>) . C8.unpack . convert $ pt
 
-          loop scs' rcs'
+          loop ns''
 
-payloadIn :: Plaintext
-          -> IO ()
-payloadIn (Plaintext p) = putStrLn . ("received payload: " <>) . C8.unpack . sbToBS' $ p
-
-payloadOut :: String
-           -> IO Plaintext
-payloadOut p = do
-  putStrLn $ "sending payload: " <> p
-  return . Plaintext . bsToSB' . C8.pack $ p
-
-runClient :: forall d. Curve d
+runClient :: forall d. DH d
           => String
           -> String
-          -> Plaintext
-          -> Maybe Plaintext
+          -> ScrubbedBytes
+          -> Maybe ScrubbedBytes
           -> KeyPair d
           -> PublicKey d
           -> IO ()
 runClient hostname port prologue psk localKey remoteKey =
   connect hostname port $ \(sock, _) -> do
-    putStrLn "connected"
-
     leftoverBufRef <- newIORef ""
 
-    let hc = HandshakeCallbacks (writeSocket sock)
-                                (readSocket leftoverBufRef sock)
-                                payloadIn
-                                (payloadOut "cacophony")
-                                (\_ -> return True)
+    lek <- dhGenKey :: IO (KeyPair d)
 
-        hs :: HandshakeState AESGCM d SHA256
-        hs = handshakeState $ HandshakeOpts
-          noiseIK
-          prologue
-          psk
-          (Just localKey)
-          Nothing
-          (Just remoteKey)
-          Nothing
-          True
+    let dho = defaultHandshakeOpts noiseIK InitiatorRole
+        hdr = maybe "\x00\x09\x01\x00\x00" (const "\x01\x09\x01\x00\x00") psk
+        ho  = dho & hoPrologue       .~ prologue
+                  & hoPreSharedKey   .~ psk
+                  & hoLocalStatic    .~ Just localKey
+                  & hoLocalEphemeral .~ Just lek
+                  & hoRemoteStatic   .~ Just remoteKey
 
-    send sock header
-    (encryptionCipherState, decryptionCipherState) <- runHandshake hs hc
-    putStrLn "handshake complete, begin typing"
+        ns :: NoiseState AESGCM d SHA256
+        ns = noiseState ho
 
-    messageLoop leftoverBufRef sock encryptionCipherState decryptionCipherState
+    send sock hdr
+    putStrLn "connection established, begin typing"
+
+    messageLoop leftoverBufRef sock ns
+
+    putStrLn "connection closed"

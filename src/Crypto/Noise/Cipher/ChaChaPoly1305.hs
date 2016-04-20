@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, TypeFamilies, FlexibleInstances #-}
+{-# LANGUAGE OverloadedStrings, TypeFamilies #-}
 ----------------------------------------------------------------
 -- |
 -- Module      : Crypto.Noise.Cipher.ChaChaPoly1305
@@ -18,7 +18,6 @@ import qualified Data.ByteArray as B (take, drop, length)
 import qualified Data.ByteString as BS (replicate)
 
 import Crypto.Noise.Cipher
-import Crypto.Noise.Types
 import Data.ByteArray.Extend
 
 -- | Represents the ChaCha cipher with Poly1305 for AEAD.
@@ -29,7 +28,7 @@ instance Cipher ChaChaPoly1305 where
   newtype SymmetricKey ChaChaPoly1305 = SKCCP1305 ScrubbedBytes
   newtype Nonce        ChaChaPoly1305 = NCCP1305  CCP.Nonce
 
-  cipherName _      = bsToSB' "ChaChaPoly"
+  cipherName _      = "ChaChaPoly"
   cipherEncrypt     = encrypt
   cipherDecrypt     = decrypt
   cipherZeroNonce   = zeroNonce
@@ -43,7 +42,7 @@ encrypt :: SymmetricKey ChaChaPoly1305
         -> AssocData
         -> Plaintext
         -> Ciphertext ChaChaPoly1305
-encrypt (SKCCP1305 k) (NCCP1305 n) (AssocData ad) (Plaintext plaintext) =
+encrypt (SKCCP1305 k) (NCCP1305 n) ad plaintext =
   CTCCP1305 (out, P.Auth (convert authTag))
   where
     initState       = throwCryptoError $ CCP.initialize k n
@@ -56,11 +55,10 @@ decrypt :: SymmetricKey ChaChaPoly1305
         -> AssocData
         -> Ciphertext ChaChaPoly1305
         -> Maybe Plaintext
-decrypt (SKCCP1305 k) (NCCP1305 n) (AssocData ad) (CTCCP1305 (ct, auth)) =
-  if auth == calcAuthTag then
-    return $ Plaintext out
-  else
-    Nothing
+decrypt (SKCCP1305 k) (NCCP1305 n) ad (CTCCP1305 (ct, auth)) =
+  if auth == calcAuthTag
+    then return out
+    else Nothing
   where
     initState       = throwCryptoError $ CCP.initialize k n
     afterAAD        = CCP.finalizeAAD (CCP.appendAAD ad initState)
@@ -80,7 +78,7 @@ bytesToSym :: ScrubbedBytes -> SymmetricKey ChaChaPoly1305
 bytesToSym = SKCCP1305 . B.take 32
 
 ctToBytes :: Ciphertext ChaChaPoly1305 -> ScrubbedBytes
-ctToBytes (CTCCP1305 (ct, a)) = ct `append` convert a
+ctToBytes (CTCCP1305 (ct, a)) = ct `mappend` convert a
 
 bytesToCt :: ScrubbedBytes -> Ciphertext ChaChaPoly1305
 bytesToCt bytes =

@@ -1,167 +1,195 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards, ScopedTypeVariables #-}
 module Handshakes where
 
+import Control.Lens
+
+import Crypto.Noise
 import Crypto.Noise.Cipher
-import Crypto.Noise.Curve
+import Crypto.Noise.DH
 import Crypto.Noise.Hash
-import Crypto.Noise.Handshake
 import Crypto.Noise.HandshakePatterns
-import Crypto.Noise.Types
 
 import Types
 
 data HandshakeKeys d =
-  HandshakeKeys { hkPrologue     :: Plaintext
-                , hkPSK          :: Maybe Plaintext
-                , hkLocalStatic  :: KeyPair d
-                , hkRemoteStatic :: PublicKey d
+  HandshakeKeys { hkPrologue       :: Plaintext
+                , hkPSK            :: Maybe Plaintext
+                , hkLocalStatic    :: KeyPair d
+                , hkLocalEphemeral :: KeyPair d
+                , hkRemoteStatic   :: PublicKey d
                 }
 
-mkHandshake :: (Cipher c, Curve d, Hash h)
-            => HandshakeKeys d
-            -> HandshakeType
-            -> CipherType c
-            -> HashType h
-            -> HandshakeState c d h
-mkHandshake HandshakeKeys{..} NoiseNN _ _ = handshakeState
-  HandshakeOpts { hoPattern            = noiseNN
-                , hoPrologue           = hkPrologue
-                , hoPreSharedKey       = hkPSK
-                , hoLocalStaticKey     = Nothing
-                , hoLocalEphemeralKey  = Nothing
-                , hoRemoteStaticKey    = Nothing
-                , hoRemoteEphemeralKey = Nothing
-                , hoInitiator          = False
-                }
+mkNoiseState :: forall c d h. (Cipher c, DH d, Hash h)
+             => HandshakeKeys d
+             -> HandshakeType
+             -> HandshakeRole
+             -> CipherType c
+             -> HashType h
+             -> NoiseState c d h
+mkNoiseState HandshakeKeys{..} NoiseNN r _ _ = noiseState ho
+  where
+    dho = defaultHandshakeOpts noiseNN r :: HandshakeOpts d
+    ho  = dho & hoPrologue       .~ hkPrologue
+              & hoPreSharedKey   .~ hkPSK
+              & hoLocalEphemeral .~ Just hkLocalEphemeral
 
-mkHandshake HandshakeKeys{..} NoiseKN _ _ = handshakeState
-  HandshakeOpts { hoPattern            = noiseKN
-                , hoPrologue           = hkPrologue
-                , hoPreSharedKey       = hkPSK
-                , hoLocalStaticKey     = Nothing
-                , hoLocalEphemeralKey  = Nothing
-                , hoRemoteStaticKey    = Just hkRemoteStatic
-                , hoRemoteEphemeralKey = Nothing
-                , hoInitiator          = False
-                }
+mkNoiseState HandshakeKeys{..} NoiseKN InitiatorRole _ _ = noiseState ho
+  where
+    dho = defaultHandshakeOpts noiseKN InitiatorRole :: HandshakeOpts d
+    ho  = dho & hoPrologue       .~ hkPrologue
+              & hoPreSharedKey   .~ hkPSK
+              & hoLocalStatic    .~ Just hkLocalStatic
+              & hoLocalEphemeral .~ Just hkLocalEphemeral
 
-mkHandshake HandshakeKeys{..} NoiseNK _ _ = handshakeState
-  HandshakeOpts { hoPattern            = noiseNK
-                , hoPrologue           = hkPrologue
-                , hoPreSharedKey       = hkPSK
-                , hoLocalStaticKey     = Just hkLocalStatic
-                , hoLocalEphemeralKey  = Nothing
-                , hoRemoteStaticKey    = Nothing
-                , hoRemoteEphemeralKey = Nothing
-                , hoInitiator          = False
-                }
+mkNoiseState HandshakeKeys{..} NoiseKN ResponderRole _ _ = noiseState ho
+  where
+    dho = defaultHandshakeOpts noiseKN ResponderRole :: HandshakeOpts d
+    ho  = dho & hoPrologue       .~ hkPrologue
+              & hoPreSharedKey   .~ hkPSK
+              & hoRemoteStatic   .~ Just hkRemoteStatic
+              & hoLocalEphemeral .~ Just hkLocalEphemeral
 
-mkHandshake HandshakeKeys{..} NoiseKK _ _ = handshakeState
-  HandshakeOpts { hoPattern            = noiseKK
-                , hoPrologue           = hkPrologue
-                , hoPreSharedKey       = hkPSK
-                , hoLocalStaticKey     = Just hkLocalStatic
-                , hoLocalEphemeralKey  = Nothing
-                , hoRemoteStaticKey    = Just hkRemoteStatic
-                , hoRemoteEphemeralKey = Nothing
-                , hoInitiator          = False
-                }
+mkNoiseState HandshakeKeys{..} NoiseNK InitiatorRole _ _ = noiseState ho
+  where
+    dho = defaultHandshakeOpts noiseNK InitiatorRole :: HandshakeOpts d
+    ho  = dho & hoPrologue       .~ hkPrologue
+              & hoPreSharedKey   .~ hkPSK
+              & hoRemoteStatic   .~ Just hkRemoteStatic
+              & hoLocalEphemeral .~ Just hkLocalEphemeral
 
-mkHandshake HandshakeKeys{..} NoiseNX _ _ = handshakeState
-  HandshakeOpts { hoPattern            = noiseNX
-                , hoPrologue           = hkPrologue
-                , hoPreSharedKey       = hkPSK
-                , hoLocalStaticKey     = Just hkLocalStatic
-                , hoLocalEphemeralKey  = Nothing
-                , hoRemoteStaticKey    = Nothing
-                , hoRemoteEphemeralKey = Nothing
-                , hoInitiator          = False
-                }
+mkNoiseState HandshakeKeys{..} NoiseNK ResponderRole _ _ = noiseState ho
+  where
+    dho = defaultHandshakeOpts noiseNK ResponderRole :: HandshakeOpts d
+    ho  = dho & hoPrologue       .~ hkPrologue
+              & hoPreSharedKey   .~ hkPSK
+              & hoLocalStatic    .~ Just hkLocalStatic
+              & hoLocalEphemeral .~ Just hkLocalEphemeral
 
-mkHandshake HandshakeKeys{..} NoiseKX _ _ = handshakeState
-  HandshakeOpts { hoPattern            = noiseKX
-                , hoPrologue           = hkPrologue
-                , hoPreSharedKey       = hkPSK
-                , hoLocalStaticKey     = Just hkLocalStatic
-                , hoLocalEphemeralKey  = Nothing
-                , hoRemoteStaticKey    = Just hkRemoteStatic
-                , hoRemoteEphemeralKey = Nothing
-                , hoInitiator          = False
-                }
+mkNoiseState HandshakeKeys{..} NoiseKK r _ _ = noiseState ho
+  where
+    dho = defaultHandshakeOpts noiseKK r :: HandshakeOpts d
+    ho  = dho & hoPrologue       .~ hkPrologue
+              & hoPreSharedKey   .~ hkPSK
+              & hoLocalStatic    .~ Just hkLocalStatic
+              & hoRemoteStatic   .~ Just hkRemoteStatic
+              & hoLocalEphemeral .~ Just hkLocalEphemeral
 
-mkHandshake HandshakeKeys{..} NoiseXN _ _ = handshakeState
-  HandshakeOpts { hoPattern            = noiseXN
-                , hoPrologue           = hkPrologue
-                , hoPreSharedKey       = hkPSK
-                , hoLocalStaticKey     = Nothing
-                , hoLocalEphemeralKey  = Nothing
-                , hoRemoteStaticKey    = Nothing
-                , hoRemoteEphemeralKey = Nothing
-                , hoInitiator          = False
-                }
+mkNoiseState HandshakeKeys{..} NoiseNX InitiatorRole _ _ = noiseState ho
+  where
+    dho = defaultHandshakeOpts noiseNX InitiatorRole :: HandshakeOpts d
+    ho  = dho & hoPrologue       .~ hkPrologue
+              & hoPreSharedKey   .~ hkPSK
+              & hoLocalEphemeral .~ Just hkLocalEphemeral
 
-mkHandshake HandshakeKeys{..} NoiseIN _ _ = handshakeState
-  HandshakeOpts { hoPattern            = noiseIN
-                , hoPrologue           = hkPrologue
-                , hoPreSharedKey       = hkPSK
-                , hoLocalStaticKey     = Nothing
-                , hoLocalEphemeralKey  = Nothing
-                , hoRemoteStaticKey    = Nothing
-                , hoRemoteEphemeralKey = Nothing
-                , hoInitiator          = False
-                }
+mkNoiseState HandshakeKeys{..} NoiseNX ResponderRole _ _ = noiseState ho
+  where
+    dho = defaultHandshakeOpts noiseNX ResponderRole :: HandshakeOpts d
+    ho  = dho & hoPrologue       .~ hkPrologue
+              & hoPreSharedKey   .~ hkPSK
+              & hoLocalStatic    .~ Just hkLocalStatic
+              & hoLocalEphemeral .~ Just hkLocalEphemeral
 
-mkHandshake HandshakeKeys{..} NoiseXK _ _ = handshakeState
-  HandshakeOpts { hoPattern            = noiseXK
-                , hoPrologue           = hkPrologue
-                , hoPreSharedKey       = hkPSK
-                , hoLocalStaticKey     = Just hkLocalStatic
-                , hoLocalEphemeralKey  = Nothing
-                , hoRemoteStaticKey    = Nothing
-                , hoRemoteEphemeralKey = Nothing
-                , hoInitiator          = False
-                }
+mkNoiseState HandshakeKeys{..} NoiseKX InitiatorRole _ _ = noiseState ho
+  where
+    dho = defaultHandshakeOpts noiseKX InitiatorRole :: HandshakeOpts d
+    ho  = dho & hoPrologue       .~ hkPrologue
+              & hoPreSharedKey   .~ hkPSK
+              & hoLocalStatic    .~ Just hkLocalStatic
+              & hoLocalEphemeral .~ Just hkLocalEphemeral
 
-mkHandshake HandshakeKeys{..} NoiseIK _ _ = handshakeState
-  HandshakeOpts { hoPattern            = noiseIK
-                , hoPrologue           = hkPrologue
-                , hoPreSharedKey       = hkPSK
-                , hoLocalStaticKey     = Just hkLocalStatic
-                , hoLocalEphemeralKey  = Nothing
-                , hoRemoteStaticKey    = Nothing
-                , hoRemoteEphemeralKey = Nothing
-                , hoInitiator          = False
-                }
+mkNoiseState HandshakeKeys{..} NoiseKX ResponderRole _ _ = noiseState ho
+  where
+    dho = defaultHandshakeOpts noiseKX ResponderRole :: HandshakeOpts d
+    ho  = dho & hoPrologue       .~ hkPrologue
+              & hoPreSharedKey   .~ hkPSK
+              & hoLocalStatic    .~ Just hkLocalStatic
+              & hoRemoteStatic   .~ Just hkRemoteStatic
+              & hoLocalEphemeral .~ Just hkLocalEphemeral
 
-mkHandshake HandshakeKeys{..} NoiseXX _ _ = handshakeState
-  HandshakeOpts { hoPattern            = noiseXX
-                , hoPrologue           = hkPrologue
-                , hoPreSharedKey       = hkPSK
-                , hoLocalStaticKey     = Just hkLocalStatic
-                , hoLocalEphemeralKey  = Nothing
-                , hoRemoteStaticKey    = Nothing
-                , hoRemoteEphemeralKey = Nothing
-                , hoInitiator          = False
-                }
+mkNoiseState HandshakeKeys{..} NoiseXN InitiatorRole _ _ = noiseState ho
+  where
+    dho = defaultHandshakeOpts noiseXN InitiatorRole :: HandshakeOpts d
+    ho  = dho & hoPrologue       .~ hkPrologue
+              & hoPreSharedKey   .~ hkPSK
+              & hoLocalStatic    .~ Just hkLocalStatic
+              & hoLocalEphemeral .~ Just hkLocalEphemeral
 
-mkHandshake HandshakeKeys{..} NoiseIX _ _ = handshakeState
-  HandshakeOpts { hoPattern            = noiseIX
-                , hoPrologue           = hkPrologue
-                , hoPreSharedKey       = hkPSK
-                , hoLocalStaticKey     = Just hkLocalStatic
-                , hoLocalEphemeralKey  = Nothing
-                , hoRemoteStaticKey    = Nothing
-                , hoRemoteEphemeralKey = Nothing
-                , hoInitiator          = False
-                }
+mkNoiseState HandshakeKeys{..} NoiseXN ResponderRole _ _ = noiseState ho
+  where
+    dho = defaultHandshakeOpts noiseXN ResponderRole :: HandshakeOpts d
+    ho  = dho & hoPrologue       .~ hkPrologue
+              & hoPreSharedKey   .~ hkPSK
+              & hoLocalEphemeral .~ Just hkLocalEphemeral
 
-mkHandshake HandshakeKeys{..} NoiseXR _ _ = handshakeState
-  HandshakeOpts { hoPattern            = noiseXR
-                , hoPrologue           = hkPrologue
-                , hoPreSharedKey       = hkPSK
-                , hoLocalStaticKey     = Just hkLocalStatic
-                , hoLocalEphemeralKey  = Nothing
-                , hoRemoteStaticKey    = Nothing
-                , hoRemoteEphemeralKey = Nothing
-                , hoInitiator          = False
-                }
+mkNoiseState HandshakeKeys{..} NoiseIN InitiatorRole _ _ = noiseState ho
+  where
+    dho = defaultHandshakeOpts noiseIN InitiatorRole :: HandshakeOpts d
+    ho  = dho & hoPrologue       .~ hkPrologue
+              & hoPreSharedKey   .~ hkPSK
+              & hoLocalStatic    .~ Just hkLocalStatic
+              & hoLocalEphemeral .~ Just hkLocalEphemeral
+
+mkNoiseState HandshakeKeys{..} NoiseIN ResponderRole _ _ = noiseState ho
+  where
+    dho = defaultHandshakeOpts noiseIN ResponderRole :: HandshakeOpts d
+    ho  = dho & hoPrologue       .~ hkPrologue
+              & hoPreSharedKey   .~ hkPSK
+              & hoLocalEphemeral .~ Just hkLocalEphemeral
+
+mkNoiseState HandshakeKeys{..} NoiseXK InitiatorRole _ _ = noiseState ho
+  where
+    dho = defaultHandshakeOpts noiseXK InitiatorRole :: HandshakeOpts d
+    ho  = dho & hoPrologue       .~ hkPrologue
+              & hoPreSharedKey   .~ hkPSK
+              & hoLocalStatic    .~ Just hkLocalStatic
+              & hoRemoteStatic   .~ Just hkRemoteStatic
+              & hoLocalEphemeral .~ Just hkLocalEphemeral
+
+mkNoiseState HandshakeKeys{..} NoiseXK ResponderRole _ _ = noiseState ho
+  where
+    dho = defaultHandshakeOpts noiseXK ResponderRole :: HandshakeOpts d
+    ho  = dho & hoPrologue       .~ hkPrologue
+              & hoPreSharedKey   .~ hkPSK
+              & hoLocalStatic    .~ Just hkLocalStatic
+              & hoLocalEphemeral .~ Just hkLocalEphemeral
+
+mkNoiseState HandshakeKeys{..} NoiseIK InitiatorRole _ _ = noiseState ho
+  where
+    dho = defaultHandshakeOpts noiseIK InitiatorRole :: HandshakeOpts d
+    ho  = dho & hoPrologue       .~ hkPrologue
+              & hoPreSharedKey   .~ hkPSK
+              & hoLocalStatic    .~ Just hkLocalStatic
+              & hoRemoteStatic   .~ Just hkRemoteStatic
+              & hoLocalEphemeral .~ Just hkLocalEphemeral
+
+mkNoiseState HandshakeKeys{..} NoiseIK ResponderRole _ _ = noiseState ho
+  where
+    dho = defaultHandshakeOpts noiseIK ResponderRole :: HandshakeOpts d
+    ho  = dho & hoPrologue       .~ hkPrologue
+              & hoPreSharedKey   .~ hkPSK
+              & hoLocalStatic    .~ Just hkLocalStatic
+              & hoLocalEphemeral .~ Just hkLocalEphemeral
+
+mkNoiseState HandshakeKeys{..} NoiseXX r _ _ = noiseState ho
+  where
+    dho = defaultHandshakeOpts noiseXX r :: HandshakeOpts d
+    ho  = dho & hoPrologue       .~ hkPrologue
+              & hoPreSharedKey   .~ hkPSK
+              & hoLocalStatic    .~ Just hkLocalStatic
+              & hoLocalEphemeral .~ Just hkLocalEphemeral
+
+mkNoiseState HandshakeKeys{..} NoiseIX r _ _ = noiseState ho
+  where
+    dho = defaultHandshakeOpts noiseIX r :: HandshakeOpts d
+    ho  = dho & hoPrologue       .~ hkPrologue
+              & hoPreSharedKey   .~ hkPSK
+              & hoLocalStatic    .~ Just hkLocalStatic
+              & hoLocalEphemeral .~ Just hkLocalEphemeral
+
+mkNoiseState HandshakeKeys{..} NoiseXR r _ _ = noiseState ho
+  where
+    dho = defaultHandshakeOpts noiseXR r :: HandshakeOpts d
+    ho  = dho & hoPrologue       .~ hkPrologue
+              & hoPreSharedKey   .~ hkPSK
+              & hoLocalStatic    .~ Just hkLocalStatic
+              & hoLocalEphemeral .~ Just hkLocalEphemeral

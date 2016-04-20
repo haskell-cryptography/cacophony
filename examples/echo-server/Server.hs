@@ -1,47 +1,57 @@
-{-# LANGUAGE OverloadedStrings, RecordWildCards, GADTs, RankNTypes #-}
+{-# LANGUAGE OverloadedStrings, RecordWildCards, GADTs,
+    ScopedTypeVariables #-}
 module Server
   ( startServer
   ) where
 
-import Control.AutoUpdate         (mkAutoUpdate, defaultUpdateSettings, updateAction)
-import Control.Exception          (handle)
-import Control.Monad              (void)
-import Data.Bits                  ((.&.), shiftR)
-import Data.ByteString            (ByteString, pack, length)
+import Control.AutoUpdate (mkAutoUpdate, defaultUpdateSettings, updateAction)
+import Control.Exception  (handle)
+import Control.Monad      (void)
+import Data.Bits          ((.&.), shiftR)
+import Data.ByteString    (ByteString, pack, length)
 import qualified Data.ByteString.Char8 as C8 (pack)
 import Data.IORef
-import Data.Maybe                 (fromMaybe)
-import Data.Monoid                ((<>))
+import Data.Monoid        ((<>))
 import Network.Simple.TCP
-import Prelude hiding             (log, length)
+import Prelude hiding     (log, length)
 import System.Timeout
 
+import Crypto.Noise
 import Crypto.Noise.Cipher
-import Crypto.Noise.Curve
-import Crypto.Noise.Handshake
+import Crypto.Noise.DH
+import Crypto.Noise.Hash
 
 import Handshakes
 import Log
 import Parse
 import Types
 
-mkHandshakeKeys :: Curve d
-                => ServerOpts
-                -> CurveType d
-                -> HandshakeKeys d
-mkHandshakeKeys ServerOpts{..} CTCurve25519 =
-  HandshakeKeys { hkPrologue     = soPrologue
-                , hkPSK          = soPSK
-                , hkLocalStatic  = soLocal25519
-                , hkRemoteStatic = soRemote25519
-                }
+mkHandshakeKeys :: forall d. DH d
+                => Bool
+                -> ServerOpts
+                -> DHType d
+                -> IO (HandshakeKeys d)
+mkHandshakeKeys psk ServerOpts{..} DTCurve25519 = do
+  lek <- dhGenKey :: IO (KeyPair d)
 
-mkHandshakeKeys ServerOpts{..} CTCurve448 =
-  HandshakeKeys { hkPrologue     = soPrologue
-                , hkPSK          = soPSK
-                , hkLocalStatic  = soLocal448
-                , hkRemoteStatic = soRemote448
-                }
+  return
+    HandshakeKeys { hkPrologue       = soPrologue
+                  , hkPSK            = if psk then Just soPSK else Nothing
+                  , hkLocalStatic    = soLocal25519
+                  , hkLocalEphemeral = lek
+                  , hkRemoteStatic   = soRemote25519
+                  }
+
+mkHandshakeKeys psk ServerOpts{..} DTCurve448 = do
+  lek <- dhGenKey :: IO (KeyPair d)
+
+  return
+    HandshakeKeys { hkPrologue       = soPrologue
+                  , hkPSK            = if psk then Just soPSK else Nothing
+                  , hkLocalStatic    = soLocal448
+                  , hkLocalEphemeral = lek
+                  , hkRemoteStatic   = soRemote448
+                  }
 
 prependLength :: ByteString
               -> ByteString
@@ -55,36 +65,31 @@ writeSocket :: Socket
             -> IO ()
 writeSocket s msg = send s $ prependLength msg
 
-readSocket :: IORef ByteString
-           -> Socket
-           -> IO ByteString
-readSocket bufRef sock = fromMaybe (error "connection reset") <$> parseSocket bufRef sock messageParser
-
 mkProtocolName :: ServerOpts
                -> Header
                -> String
-mkProtocolName ServerOpts{..} (hp, WrapCipherType cipherT, WrapCurveType curveT, WrapHashType hashT) =
-  psk <> show hp <> "_" <> show cipherT <> "_" <> show curveT <> "_" <> show hashT
+mkProtocolName ServerOpts{..} (psk, hp, WrapCipherType cipherT, WrapDHType curveT, WrapHashType hashT) =
+  p <> show hp <> "_" <> show curveT <> "_" <> show cipherT <> "_" <> show hashT
   where
-    psk = maybe "Noise_" (const "NoisePSK_") soPSK
+    p = if psk then "NoisePSK_" else "Noise_"
 
-messageLoop :: Cipher c
+messageLoop :: (Cipher c, DH d, Hash h)
             => IORef ByteString
             -> Socket
-            -> SendingCipherState c
-            -> ReceivingCipherState c
+            -> NoiseState c d h
             -> IO ()
 messageLoop bufRef sock = loop
   where
-    loop scs rcs = do
+    loop ns = do
       maybeMessage <- parseSocket bufRef sock messageParser
       case maybeMessage of
         Nothing -> return ()
         Just m  -> do
-          let (pt, rcs') = decryptPayload m rcs
-              (ct, scs') = encryptPayload pt scs
+          let (pt, ns')  = either (error . show) id $ readMessage ns m
+              (ct, ns'') = either (error . show) id $ writeMessage ns' pt
+
           writeSocket sock ct
-          loop scs' rcs'
+          loop ns''
 
 startServer :: ServerOpts
             -> IO ()
@@ -107,19 +112,12 @@ startServer opts@ServerOpts{..} = do
             send sock "failed to parse header\n"
             log ip "failed to parse header"
 
-          Just h@(hp, WrapCipherType cipherT, WrapCurveType curveT, WrapHashType hashT) -> do
-            payloadRef <- newIORef ""
-
+          Just h@(psk, hp, WrapCipherType cipherT, WrapDHType curveT, WrapHashType hashT) -> do
             log ip $ "client selected " <> C8.pack (mkProtocolName opts h)
-            let hk = mkHandshakeKeys opts curveT
-                hs = mkHandshake hk hp cipherT hashT
-                hc = HandshakeCallbacks (writeSocket sock)
-                                        (readSocket leftoverBufRef sock)
-                                        (modifyIORef' payloadRef . const)
-                                        (readIORef payloadRef)
-                                        (\_ -> return True)
-            (encryptionCipherState, decryptionCipherState) <- runHandshake hs hc
 
-            void . timeout 60000000 $ messageLoop leftoverBufRef sock encryptionCipherState decryptionCipherState
+            hk <- mkHandshakeKeys psk opts curveT
+            let ns  = mkNoiseState hk hp ResponderRole cipherT hashT
+
+            void . timeout 60000000 $ messageLoop leftoverBufRef sock ns
 
     log ip "connection closed"

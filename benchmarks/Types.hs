@@ -16,17 +16,6 @@ import Crypto.Noise.Hash.BLAKE2s
 import Crypto.Noise.Hash.BLAKE2b
 import Data.ByteArray.Extend
 
-data ServerOpts =
-  ServerOpts { soLogFile     :: Maybe FilePath
-             , soPort        :: String
-             , soPrologue    :: ScrubbedBytes
-             , soPSK         :: ScrubbedBytes
-             , soLocal25519  :: KeyPair Curve25519
-             , soRemote25519 :: PublicKey Curve25519
-             , soLocal448    :: KeyPair Curve448
-             , soRemote448   :: PublicKey Curve448
-             }
-
 data HandshakeType = NoiseNN
                    | NoiseKN
                    | NoiseNK
@@ -40,6 +29,10 @@ data HandshakeType = NoiseNN
                    | NoiseXX
                    | NoiseIX
                    | NoiseXR
+                   | NoiseN
+                   | NoiseK
+                   | NoiseX
+                   deriving Eq
 
 data CipherType :: * -> * where
   CTChaChaPoly1305 :: CipherType ChaChaPoly1305
@@ -64,8 +57,6 @@ data HashType :: * -> * where
 data SomeHashType where
   WrapHashType :: forall h. Hash h => HashType h -> SomeHashType
 
-type Header = (Bool, HandshakeType, SomeCipherType, SomeDHType, SomeHashType)
-
 instance Show HandshakeType where
   show NoiseNN = "NN"
   show NoiseKN = "KN"
@@ -80,6 +71,9 @@ instance Show HandshakeType where
   show NoiseXX = "XX"
   show NoiseIX = "IX"
   show NoiseXR = "XR"
+  show NoiseN  = "N"
+  show NoiseK  = "K"
+  show NoiseX  = "X"
 
 instance Cipher c => Show (CipherType c) where
   show = unpack . convert . cipherName

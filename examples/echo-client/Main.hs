@@ -5,6 +5,7 @@ import Control.Monad         (forM_)
 import Data.ByteString       (writeFile, readFile)
 import qualified Data.ByteString.Base64 as B64 (encode, decode)
 import Data.ByteString.Char8 (pack)
+import Data.Maybe            (fromMaybe)
 import Data.Monoid           ((<>))
 import Prelude hiding        (writeFile, readFile)
 import System.Console.GetOpt
@@ -12,17 +13,17 @@ import System.Directory      (doesFileExist)
 import System.Environment
 import System.IO             (stderr, hPutStr, hPutStrLn)
 
-import Crypto.Noise.Curve
-import Crypto.Noise.Curve.Curve25519
-import Crypto.Noise.Types
+import Crypto.Noise.DH
+import Crypto.Noise.DH.Curve25519
+import Crypto.Noise.DH.Curve448
 import Data.ByteArray.Extend
 
 import Client
 
 data Options =
   Options { optShowHelp :: Bool
-          , optPSK      :: Maybe Plaintext
-          , optPrologue :: Plaintext
+          , optPSK      :: Maybe ScrubbedBytes
+          , optPrologue :: ScrubbedBytes
           }
 
 defaultOptions :: Options
@@ -38,10 +39,10 @@ options =
     (NoArg (\o -> o { optShowHelp = True }))
     "show help"
   , Option [] ["psk"]
-    (ReqArg (\p o -> o { optPSK = (Just . Plaintext . bsToSB' . pack) p }) "STRING")
+    (ReqArg (\p o -> o { optPSK = (Just . convert . pack) p }) "STRING")
     "pre-shared key (default: off)"
   , Option [] ["prologue"]
-    (ReqArg (\p o -> o { optPrologue = (Plaintext . bsToSB' . pack) p }) "STRING")
+    (ReqArg (\p o -> o { optPrologue = (convert . pack) p }) "STRING")
     "prologue (default: empty string)"
   ]
 
@@ -56,34 +57,34 @@ usageHeader = "Usage: echo-server [OPTION] HOSTNAME PORT"
 
 processOptions :: (Options, [String]) -> IO ()
 processOptions (Options{..}, [hostname, port]) = do
-  localKey <- processPrivateKey "local_key" :: IO (KeyPair Curve25519)
-  remoteKey <- readPublicKey "remote_key.pub" :: IO (PublicKey Curve25519)
+  localKey <- processPrivateKey "client_key_25519" :: IO (KeyPair Curve25519)
+  _ <- processPrivateKey "client_key_448" :: IO (KeyPair Curve448)
+  remoteKey <- readPublicKey "server_key_25519.pub" :: IO (PublicKey Curve25519)
   runClient hostname port optPrologue optPSK localKey remoteKey
 
 processOptions (_, _) = do
   hPutStrLn stderr "error: a hostname and port must be specified"
   hPutStr stderr $ usageInfo usageHeader options
 
-readPrivateKey :: Curve d => FilePath -> IO (KeyPair d)
-readPrivateKey f = (curveBytesToPair . bsToSB') <$> readFile f
+readPrivateKey :: DH d => FilePath -> IO (KeyPair d)
+readPrivateKey f = fromMaybe (error $ "error importing " <> f) . dhBytesToPair . convert <$> readFile f
 
-readPublicKey :: Curve d => FilePath -> IO (PublicKey d)
-readPublicKey f = (curveBytesToPub . bsToSB' . either (error ("error decoding " <> f)) id . B64.decode) <$> readFile f
+readPublicKey :: DH d => FilePath -> IO (PublicKey d)
+readPublicKey f = (fromMaybe (error $ "error importing " <> f) . dhBytesToPub . convert . either (error ("error decoding " <> f)) id . B64.decode) <$> readFile f
 
-genAndWriteKey :: Curve d => FilePath -> IO (KeyPair d)
+genAndWriteKey :: DH d => FilePath -> IO (KeyPair d)
 genAndWriteKey f = do
-  pair@(sec, pub) <- curveGenKey
-  writeFile f $ (sbToBS' . curveSecToBytes) sec
-  writeFile (f <> ".pub") $ (B64.encode . sbToBS' . curvePubToBytes) pub
+  pair@(sec, pub) <- dhGenKey
+  writeFile f $ (convert . dhSecToBytes) sec
+  writeFile (f <> ".pub") $ (B64.encode . convert . dhPubToBytes) pub
   return pair
 
-processPrivateKey :: Curve d => FilePath -> IO (KeyPair d)
+processPrivateKey :: DH d => FilePath -> IO (KeyPair d)
 processPrivateKey f = do
   exists <- doesFileExist f
-  if exists then
-    readPrivateKey f
-  else
-    genAndWriteKey f
+  if exists
+    then readPrivateKey f
+    else genAndWriteKey f
 
 main :: IO ()
 main = do

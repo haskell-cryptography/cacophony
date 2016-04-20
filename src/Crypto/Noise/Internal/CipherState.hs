@@ -7,40 +7,38 @@
 -- Stability   : experimental
 -- Portability : POSIX
 
-module Crypto.Noise.Internal.CipherState
-  ( -- * Types
-    CipherState(CipherState),
-    -- * Lenses
-    csk,
-    csn,
-    -- * Functions
-    encryptAndIncrement,
-    decryptAndIncrement
-  ) where
+module Crypto.Noise.Internal.CipherState where
 
-import Control.Exception (throw)
 import Control.Lens
-import Data.Maybe (fromMaybe)
 
 import Crypto.Noise.Cipher
-import Crypto.Noise.Types (NoiseException(DecryptionFailure), Plaintext(..))
 
 data CipherState c =
   CipherState { _csk :: SymmetricKey c
               , _csn :: Nonce c
-              } deriving (Show)
+              } deriving Show
 
 $(makeLenses ''CipherState)
 
-encryptAndIncrement :: Cipher c => AssocData -> Plaintext -> CipherState c -> (Ciphertext c, CipherState c)
+encryptAndIncrement :: Cipher c
+                    => AssocData
+                    -> Plaintext
+                    -> CipherState c
+                    -> (Ciphertext c, CipherState c)
 encryptAndIncrement ad plaintext cs = (ct, newState)
   where
     ct       = cipherEncrypt (cs ^. csk) (cs ^. csn) ad plaintext
     newState = cs & csn %~ cipherIncNonce
 
-decryptAndIncrement :: Cipher c => AssocData -> Ciphertext c -> CipherState c -> (Plaintext, CipherState c)
-decryptAndIncrement ad ct cs = (pt, newState)
+decryptAndIncrement :: Cipher c
+                    => AssocData
+                    -> Ciphertext c
+                    -> CipherState c
+                    -> Maybe (Plaintext, CipherState c)
+decryptAndIncrement ad ct cs =
+  maybe Nothing
+        (\x -> Just (x, newState))
+        pt
   where
-    pt       = fromMaybe (throw (DecryptionFailure "decryptAndIncrement"))
-                         (cipherDecrypt (cs ^. csk) (cs ^. csn) ad ct)
-    newState = cs & csn %~ cipherIncNonce
+    pt       = cipherDecrypt (cs ^. csk) (cs ^. csn) ad ct
+    newState = maybe cs (const (cs & csn %~ cipherIncNonce)) pt

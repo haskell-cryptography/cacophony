@@ -7,32 +7,12 @@
 -- Stability   : experimental
 -- Portability : POSIX
 
-module Crypto.Noise.Internal.HandshakePattern
-  ( -- * Types
-    TokenF(..),
-    HandshakePatternF(..),
-    HandshakePattern(..),
-    -- * Functions
-    e,
-    s,
-    dhee,
-    dhes,
-    dhse,
-    dhss,
-    initiator,
-    responder,
-    split,
-    hpName,
-    hpPreActions,
-    hpActions
-  ) where
+module Crypto.Noise.Internal.HandshakePattern where
 
-import Data.ByteString (ByteString)
 import Control.Lens
-import Control.Monad.Free.Church
+import Control.Monad.Trans.Free.Church
 import Control.Monad.Free.TH
-
-import Crypto.Noise.Internal.CipherState
+import Data.ByteString (ByteString)
 
 data TokenF next
   = E next
@@ -43,22 +23,22 @@ data TokenF next
   | Dhss next
   deriving Functor
 
+$(makeFree ''TokenF)
+
 data HandshakePatternF next
-  = Initiator (F TokenF ()) next
-  | Responder (F TokenF ()) next
-  | Split
+  = PreInitiator (FT TokenF Identity ()) next
+  | PreResponder (FT TokenF Identity ()) next
+  | Initiator (FT TokenF Identity ()) next
+  | Responder (FT TokenF Identity ()) next
   deriving Functor
+
+$(makeFree ''HandshakePatternF)
 
 -- | This type represents a single handshake pattern and is implemented as a
 --   Free Monad.
-data HandshakePattern c =
-  HandshakePattern { _hpName       :: ByteString
-                   , _hpPreActions :: Maybe (F HandshakePatternF ())
-                   , _hpActions    :: F HandshakePatternF (CipherState c, CipherState c)
+data HandshakePattern =
+  HandshakePattern { _hpName    :: ByteString
+                   , _hpActions :: FT HandshakePatternF Identity ()
                    }
-
-$(makeFree ''TokenF)
-
-$(makeFree ''HandshakePatternF)
 
 $(makeLenses ''HandshakePattern)

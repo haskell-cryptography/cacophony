@@ -1,4 +1,4 @@
-{-# LANGUAGE TemplateHaskell, FlexibleContexts, ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell, ScopedTypeVariables #-}
 {-# OPTIONS_HADDOCK hide #-}
 ----------------------------------------------------------------
 -- |
@@ -7,33 +7,16 @@
 -- Stability   : experimental
 -- Portability : POSIX
 
-module Crypto.Noise.Internal.SymmetricState
-  ( -- * Types
-    SymmetricState(SymmetricState),
-    -- * Lenses
-    ssCipher,
-    ssHasKey,
-    ssHasPSK,
-    ssh,
-    -- * Functions
-    symmetricState,
-    mixKey,
-    mixPSK,
-    mixHash,
-    encryptAndHash,
-    decryptAndHash,
-    split
-  ) where
+module Crypto.Noise.Internal.SymmetricState where
 
 import Control.Lens
-import Data.ByteArray as BA (length, replicate)
 import Data.ByteString (empty)
 import Data.Proxy
+import Prelude hiding  (length, replicate)
 
 import Crypto.Noise.Cipher
 import Crypto.Noise.Hash
 import Crypto.Noise.Internal.CipherState
-import Crypto.Noise.Types
 import Data.ByteArray.Extend
 
 data SymmetricState c h =
@@ -46,19 +29,23 @@ data SymmetricState c h =
 
 $(makeLenses ''SymmetricState)
 
-symmetricState :: forall c h. (Cipher c, Hash h) => ScrubbedBytes -> SymmetricState c h
+symmetricState :: forall c h. (Cipher c, Hash h)
+               => ScrubbedBytes
+               -> SymmetricState c h
 symmetricState hsn = SymmetricState cs False False ck hsn'
   where
     hashLen    = hashLength (Proxy :: Proxy h)
-    shouldHash = BA.length hsn > hashLen
-    hsn'       = if shouldHash then
-                   Right $ hash hsn
-                 else
-                   Left $ hsn `append` BA.replicate (hashLen - BA.length hsn) 0
+    shouldHash = length hsn > hashLen
+    hsn'       = if shouldHash
+                   then Right $ hash hsn
+                   else Left $ hsn `mappend` replicate (hashLen - length hsn) 0
     ck         = hashBytesToCK . sshBytes $ hsn'
     cs         = CipherState undefined undefined
 
-mixKey :: (Cipher c, Hash h) => ScrubbedBytes -> SymmetricState c h -> SymmetricState c h
+mixKey :: (Cipher c, Hash h)
+       => ScrubbedBytes
+       -> SymmetricState c h
+       -> SymmetricState c h
 mixKey d ss = ss & ssCipher .~ cs
                  & ssHasKey .~ True
                  & ssck     .~ ck
@@ -66,35 +53,49 @@ mixKey d ss = ss & ssCipher .~ cs
     (ck, k) = hashHKDF (ss ^. ssck) d
     cs      = CipherState (cipherBytesToSym k) cipherZeroNonce
 
-mixPSK :: (Cipher c, Hash h) => ScrubbedBytes -> SymmetricState c h -> SymmetricState c h
+mixPSK :: (Cipher c, Hash h)
+       => ScrubbedBytes
+       -> SymmetricState c h
+       -> SymmetricState c h
 mixPSK psk ss = ss'' & ssHasPSK .~ True
   where
     (ck, tmp) = hashHKDF (ss ^. ssck) psk
     ss'       = ss & ssck .~ ck
     ss''      = mixHash tmp ss'
 
-mixHash :: (Cipher c, Hash h) => ScrubbedBytes -> SymmetricState c h -> SymmetricState c h
-mixHash d ss = ss & ssh %~ Right . hash . (`append` d) . sshBytes
+mixHash :: (Cipher c, Hash h)
+        => ScrubbedBytes
+        -> SymmetricState c h
+        -> SymmetricState c h
+mixHash d ss = ss & ssh %~ Right . hash . (`mappend` d) . sshBytes
 
-encryptAndHash :: (Cipher c, Hash h) => Plaintext -> SymmetricState c h -> (ScrubbedBytes, SymmetricState c h)
-encryptAndHash (Plaintext pt) ss
+encryptAndHash :: (Cipher c, Hash h)
+               => Plaintext
+               -> SymmetricState c h
+               -> (ScrubbedBytes, SymmetricState c h)
+encryptAndHash pt ss
   | ss ^. ssHasKey = (cipherTextToBytes ct, kss)
   | otherwise      = (pt, nkss)
   where
-    (ct, cs) = encryptAndIncrement (AssocData (sshBytes (ss ^. ssh))) (Plaintext pt) (ss ^. ssCipher)
+    (ct, cs) = encryptAndIncrement (sshBytes (ss ^. ssh)) pt (ss ^. ssCipher)
     kss      = mixHash (cipherTextToBytes ct) ss & ssCipher .~ cs
     nkss     = mixHash pt ss
 
-decryptAndHash :: (Cipher c, Hash h) => Ciphertext c -> SymmetricState c h -> (Plaintext, SymmetricState c h)
+decryptAndHash :: (Cipher c, Hash h)
+               => Ciphertext c
+               -> SymmetricState c h
+               -> Maybe (Plaintext, SymmetricState c h)
 decryptAndHash ct ss
-  | ss ^. ssHasKey = (pt, kss)
-  | otherwise      = (Plaintext (cipherTextToBytes ct), nkss)
+  | ss ^. ssHasKey = maybe Nothing (\(pt, cs') -> Just (pt, kss cs')) dec
+  | otherwise      = Just (cipherTextToBytes ct, nkss)
   where
-    (pt, cs) = decryptAndIncrement (AssocData (sshBytes (ss ^. ssh))) ct (ss ^. ssCipher)
-    kss      = mixHash (cipherTextToBytes ct) ss & ssCipher .~ cs
-    nkss     = mixHash (cipherTextToBytes ct) ss
+    dec    = decryptAndIncrement (sshBytes (ss ^. ssh)) ct (ss ^. ssCipher)
+    kss cs = mixHash (cipherTextToBytes ct) ss & ssCipher .~ cs
+    nkss   = mixHash (cipherTextToBytes ct) ss
 
-split :: (Cipher c, Hash h) => SymmetricState c h -> (CipherState c, CipherState c)
+split :: (Cipher c, Hash h)
+      => SymmetricState c h
+      -> (CipherState c, CipherState c)
 split ss = (cs1, cs2)
   where
     (cs1k, cs2k) = hashHKDF (ss ^. ssck) (convert empty)
@@ -103,6 +104,8 @@ split ss = (cs1, cs2)
     cs1   = CipherState cs1k' cipherZeroNonce
     cs2   = CipherState cs2k' cipherZeroNonce
 
-sshBytes :: Hash h => Either ScrubbedBytes (Digest h) -> ScrubbedBytes
+sshBytes :: Hash h
+         => Either ScrubbedBytes (Digest h)
+         -> ScrubbedBytes
 sshBytes (Left  h) = h
 sshBytes (Right h) = hashToBytes h

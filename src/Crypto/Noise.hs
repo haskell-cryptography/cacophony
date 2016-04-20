@@ -1,0 +1,107 @@
+{-# LANGUAGE OverloadedStrings #-}
+----------------------------------------------------------------
+-- |
+-- Module      : Crypto.Noise
+-- Maintainer  : John Galt <jgalt@centromere.net>
+-- Stability   : experimental
+-- Portability : POSIX
+--
+-- Please see the README for usage information.
+
+module Crypto.Noise
+  ( -- * Types
+    HandshakeRole(..)
+  , HandshakeOpts
+  , NoiseException(..)
+  , NoiseState
+    -- * Functions
+  , defaultHandshakeOpts
+  , noiseState
+  , writeMessage
+  , readMessage
+  , remoteStaticKey
+  , handshakeComplete
+  , sessionId
+    -- * Lenses
+  , hoPattern
+  , hoRole
+  , hoPrologue
+  , hoPreSharedKey
+  , hoLocalStatic
+  , hoLocalSemiEphemeral
+  , hoLocalEphemeral
+  , hoRemoteStatic
+  , hoRemoteSemiEphemeral
+  , hoRemoteEphemeral
+  ) where
+
+import Control.Arrow
+import Control.Lens
+import Data.ByteString (ByteString)
+import Data.Maybe      (isJust)
+
+import Crypto.Noise.Cipher
+import Crypto.Noise.DH
+import Crypto.Noise.Hash
+import Crypto.Noise.Internal.CipherState
+import Crypto.Noise.Internal.Handshake
+import Crypto.Noise.Internal.NoiseState
+import Crypto.Noise.Internal.SymmetricState
+import Data.ByteArray.Extend
+
+-- | Creates a Noise message with the provided payload. Note that the
+--   first payload may or may not be encrypted depending on the chosen
+--   handshake parameters. See the protocol document for details.
+writeMessage :: (Cipher c, DH d, Hash h)
+             => NoiseState c d h
+             -> ScrubbedBytes
+             -> Either NoiseException (ByteString, NoiseState c d h)
+writeMessage ns msg = right toByteString $
+  maybe (runHandshake msg ns)
+        (Right . (ctToBytes *** updateState) . encryptAndIncrement "" msg)
+        (ns ^. nsSendingCipherState)
+  where
+    ctToBytes    = arr cipherTextToBytes
+    updateState  = arr $ \cs -> ns & nsSendingCipherState .~ Just cs
+    toByteString = first (arr convert)
+
+-- | Reads a Noise message and returns the embedded payload. If the
+--   handshake fails, a 'HandshakeError' will be returned. After the handshake
+--   is complete, if decryption fails a 'DecryptionError' is returned.
+readMessage :: (Cipher c, DH d, Hash h)
+            => NoiseState c d h
+            -> ByteString
+            -> Either NoiseException (ScrubbedBytes, NoiseState c d h)
+readMessage ns ct =
+  maybe (runHandshake (convert ct) ns)
+        ((right . second) updateState . validate . (decryptAndIncrement "" . cipherBytesToText . convert) ct)
+        (ns ^. nsReceivingCipherState)
+  where
+    updateState = arr $ \cs -> ns & nsReceivingCipherState .~ Just cs
+    validate    = arr $ maybe (Left (DecryptionError "message")) Right
+
+-- | For handshake patterns where the remote party's static key is
+--   transmitted, this function can be used to retrieve it. This allows
+--   for the creation of public key-based access-control lists.
+remoteStaticKey :: (Cipher c, DH d, Hash h)
+                => NoiseState c d h
+                -> Maybe (PublicKey d)
+remoteStaticKey ns = ns ^. nsHandshakeState . hsOpts . hoRemoteStatic
+
+-- | Returns @True@ if the handshake is complete.
+handshakeComplete :: (Cipher c, DH d, Hash h)
+                  => NoiseState c d h
+                  -> Bool
+handshakeComplete ns = isJust (ns ^. nsSendingCipherState) &&
+                       isJust (ns ^. nsReceivingCipherState)
+
+-- | Retrieves the @h@ value associated with the conversation's
+--   @SymmetricState@. This value is intended to be used for channel
+--   binding. For example, the initiator might cryptographically sign this
+--   value as part of some higher-level authentication scheme.
+sessionId :: (Cipher c, DH d, Hash h)
+          => NoiseState c d h
+          -> Maybe ScrubbedBytes
+sessionId ns = either (const Nothing)
+                      (Just . hashToBytes)
+                      $ ns ^. nsHandshakeState . hsSymmetricState . ssh

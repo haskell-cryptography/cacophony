@@ -5,6 +5,7 @@ import Control.Monad         (forM_)
 import Data.ByteString       (writeFile, readFile)
 import qualified Data.ByteString.Base64 as B64 (encode, decode)
 import Data.ByteString.Char8 (pack)
+import Data.Maybe            (fromMaybe)
 import Data.Monoid           ((<>))
 import Prelude hiding        (writeFile, readFile)
 import System.Console.GetOpt
@@ -12,8 +13,7 @@ import System.Directory      (doesFileExist)
 import System.Environment
 import System.IO             (stderr, hPutStr, hPutStrLn)
 
-import Crypto.Noise.Curve
-import Crypto.Noise.Types
+import Crypto.Noise.DH
 import Data.ByteArray.Extend
 
 import Server
@@ -21,15 +21,15 @@ import Types
 
 data Options =
   Options { optShowHelp :: Bool
-          , optPSK      :: Maybe Plaintext
-          , optPrologue :: Plaintext
+          , optPSK      :: ScrubbedBytes
+          , optPrologue :: ScrubbedBytes
           , optLogFile  :: Maybe FilePath
           }
 
 defaultOptions :: Options
 defaultOptions =
   Options { optShowHelp = False
-          , optPSK      = Nothing
+          , optPSK      = "They Live"
           , optPrologue = ""
           , optLogFile  = Nothing
           }
@@ -40,10 +40,10 @@ options =
     (NoArg (\o -> o { optShowHelp = True }))
     "show help"
   , Option [] ["psk"]
-    (ReqArg (\p o -> o { optPSK = (Just . Plaintext . bsToSB' . pack) p }) "STRING")
-    "pre-shared key (default: off)"
+    (ReqArg (\p o -> o { optPSK = (convert . pack) p }) "STRING")
+    "pre-shared key (default: \"They Live\")"
   , Option [] ["prologue"]
-    (ReqArg (\p o -> o { optPrologue = (Plaintext . bsToSB' . pack) p }) "STRING")
+    (ReqArg (\p o -> o { optPrologue = (convert . pack) p }) "STRING")
     "prologue (default: empty string)"
   , Option ['l'] []
     (ReqArg (\f o -> o { optLogFile = Just f }) "FILE")
@@ -65,10 +65,10 @@ processOptions (_, []) = do
   hPutStr stderr $ usageInfo usageHeader options
 
 processOptions (Options{..}, port : _) = do
-  local25519 <- processPrivateKey "local_curve25519"
-  remote25519 <- readPublicKey "remote_curve25519.pub"
-  local448 <- processPrivateKey "local_curve448"
-  remote448 <- readPublicKey "remote_curve448.pub"
+  local25519 <- processPrivateKey "server_key_25519"
+  local448 <- processPrivateKey "server_key_448"
+  remote25519 <- readPublicKey "client_key_448.pub"
+  remote448 <- readPublicKey "client_key_448.pub"
 
   startServer ServerOpts { soLogFile     = optLogFile
                          , soPort        = port
@@ -80,26 +80,25 @@ processOptions (Options{..}, port : _) = do
                          , soRemote448   = remote448
                          }
 
-readPrivateKey :: Curve d => FilePath -> IO (KeyPair d)
-readPrivateKey f = (curveBytesToPair . bsToSB') <$> readFile f
+readPrivateKey :: DH d => FilePath -> IO (KeyPair d)
+readPrivateKey f = fromMaybe (error $ "error importing " <> f) . dhBytesToPair . convert <$> readFile f
 
-readPublicKey :: Curve d => FilePath -> IO (PublicKey d)
-readPublicKey f = (curveBytesToPub . bsToSB' . either (error ("error decoding " <> f)) id . B64.decode) <$> readFile f
+readPublicKey :: DH d => FilePath -> IO (PublicKey d)
+readPublicKey f = (fromMaybe (error $ "error importing " <> f) . dhBytesToPub . convert . either (error ("error decoding " <> f)) id . B64.decode) <$> readFile f
 
-genAndWriteKey :: Curve d => FilePath -> IO (KeyPair d)
+genAndWriteKey :: DH d => FilePath -> IO (KeyPair d)
 genAndWriteKey f = do
-  pair@(sec, pub) <- curveGenKey
-  writeFile f $ (sbToBS' . curveSecToBytes) sec
-  writeFile (f <> ".pub") $ (B64.encode . sbToBS' . curvePubToBytes) pub
+  pair@(sec, pub) <- dhGenKey
+  writeFile f $ (convert . dhSecToBytes) sec
+  writeFile (f <> ".pub") $ (B64.encode . convert . dhPubToBytes) pub
   return pair
 
-processPrivateKey :: Curve d => FilePath -> IO (KeyPair d)
+processPrivateKey :: DH d => FilePath -> IO (KeyPair d)
 processPrivateKey f = do
   exists <- doesFileExist f
-  if exists then
-    readPrivateKey f
-  else
-    genAndWriteKey f
+  if exists
+    then readPrivateKey f
+    else genAndWriteKey f
 
 main :: IO ()
 main = do

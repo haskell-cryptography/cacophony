@@ -1,3 +1,9 @@
+# 0.7.0
+
+* Major API overhaul and refactoring
+
+* Added test vector support
+
 # 0.6.0
 
 * Added ability to abort handshakes based on the remote party's public key

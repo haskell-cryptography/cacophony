@@ -8,12 +8,12 @@
 
 module Crypto.Noise.Cipher
   ( -- * Classes
-    Cipher(..),
+    Cipher(..)
     -- * Types
-    AssocData(..)
+  , AssocData
+  , Plaintext
   ) where
 
-import Crypto.Noise.Types
 import Data.ByteArray.Extend
 
 -- | Typeclass for ciphers.
@@ -64,10 +64,10 @@ class Cipher c where
   cipherBytesToText :: ScrubbedBytes -> Ciphertext c
 
 -- | Represents the associated data for AEAD.
-newtype AssocData = AssocData ScrubbedBytes
+type AssocData = ScrubbedBytes
 
-instance Show AssocData where
-  show (AssocData ad) = show . sbToBS' $ ad
+-- | Represents plaintext data that can be encrypted.
+type Plaintext = ScrubbedBytes
 
 instance Show (SymmetricKey a) where
   show _ = "<symmetric key>"

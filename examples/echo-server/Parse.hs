@@ -13,6 +13,11 @@ import Prelude hiding             (take)
 
 import Types
 
+pskByteToBool :: Word8 -> Bool
+pskByteToBool 0 = False
+pskByteToBool 1 = True
+pskByteToBool _ = error "invalid PSK setting"
+
 handshakeByteToType :: Word8 -> HandshakeType
 handshakeByteToType 0  = NoiseNN
 handshakeByteToType 1  = NoiseKN
@@ -34,9 +39,9 @@ cipherByteToType 0 = WrapCipherType CTChaChaPoly1305
 cipherByteToType 1 = WrapCipherType CTAESGCM
 cipherByteToType _ = error "invalid cipher type"
 
-curveByteToType :: Word8 -> SomeCurveType
-curveByteToType 0 = WrapCurveType CTCurve25519
-curveByteToType 1 = WrapCurveType CTCurve448
+curveByteToType :: Word8 -> SomeDHType
+curveByteToType 0 = WrapDHType DTCurve25519
+curveByteToType 1 = WrapDHType DTCurve448
 curveByteToType _ = error "invalid curve type"
 
 hashByteToType :: Word8 -> SomeHashType
@@ -48,12 +53,13 @@ hashByteToType _ = error "invalid hash type"
 
 headerParser :: Parser Header
 headerParser = do
+  psk <- satisfy (< 2)
   hsb <- satisfy (< 13)
   cib <- satisfy (< 2)
   cub <- satisfy (< 2)
   hb  <- satisfy (< 4)
 
-  return (handshakeByteToType hsb, cipherByteToType cib, curveByteToType cub, hashByteToType hb)
+  return (pskByteToBool psk, handshakeByteToType hsb, cipherByteToType cib, curveByteToType cub, hashByteToType hb)
 
 messageParser :: Parser ByteString
 messageParser = do
@@ -66,6 +72,6 @@ parseSocket bufRef sock p = do
   buf <- readIORef bufRef
   result <- parseWith (fromMaybe "" <$> recv sock 2048) p buf
   case result of
-    Fail{} -> return Nothing
-    (Partial _)  -> return Nothing
-    (Done i r)   -> modifyIORef' bufRef (<> i) >> return (Just r)
+    Fail{}      -> return Nothing
+    (Partial _) -> return Nothing
+    (Done i r)  -> modifyIORef' bufRef (<> i) >> return (Just r)

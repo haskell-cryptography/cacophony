@@ -1,37 +1,38 @@
-{-# LANGUAGE OverloadedStrings, TypeFamilies, FlexibleInstances #-}
+{-# LANGUAGE OverloadedStrings, TypeFamilies #-}
 ----------------------------------------------------------------
 -- |
--- Module      : Crypto.Noise.Curve.Curve25519
+-- Module      : Crypto.Noise.DH.Curve25519
 -- Maintainer  : John Galt <jgalt@centromere.net>
 -- Stability   : experimental
 -- Portability : POSIX
 
-module Crypto.Noise.Curve.Curve25519
+module Crypto.Noise.DH.Curve25519
   ( -- * Types
     Curve25519
   ) where
 
-import Crypto.Error          (throwCryptoError)
+import Crypto.Error          (throwCryptoError, maybeCryptoError)
 import Crypto.Random.Entropy (getEntropy)
 import qualified Crypto.PubKey.Curve25519 as C
-import Crypto.Noise.Curve
+import Crypto.Noise.DH
 import Data.ByteArray.Extend
 
 -- | Represents curve25519.
 data Curve25519
 
-instance Curve Curve25519 where
+instance DH Curve25519 where
   newtype PublicKey Curve25519 = PK25519 C.PublicKey
   newtype SecretKey Curve25519 = SK25519 C.SecretKey
 
-  curveName   _    = bsToSB' "25519"
-  curveLength _    = 32
-  curveGenKey      = genKey
-  curveDH          = dh
-  curvePubToBytes  = pubToBytes
-  curveBytesToPub  = bytesToPub
-  curveSecToBytes  = secToBytes
-  curveBytesToPair = bytesToPair
+  dhName   _    = "25519"
+  dhLength _    = 32
+  dhGenKey      = genKey
+  dhPerform     = dh
+  dhPubToBytes  = pubToBytes
+  dhBytesToPub  = bytesToPub
+  dhSecToBytes  = secToBytes
+  dhBytesToPair = bytesToPair
+  dhPubEq       = pubEq
 
 genKey :: IO (KeyPair Curve25519)
 genKey = do
@@ -46,14 +47,18 @@ dh (SK25519 sk) (PK25519 pk) = convert $ C.dh pk sk
 pubToBytes :: PublicKey Curve25519 -> ScrubbedBytes
 pubToBytes (PK25519 pk) = convert pk
 
-bytesToPub :: ScrubbedBytes -> PublicKey Curve25519
-bytesToPub = PK25519 . throwCryptoError . C.publicKey
+bytesToPub :: ScrubbedBytes -> Maybe (PublicKey Curve25519)
+bytesToPub = fmap PK25519 . maybeCryptoError . C.publicKey
 
 secToBytes :: SecretKey Curve25519 -> ScrubbedBytes
 secToBytes (SK25519 sk) = convert sk
 
-bytesToPair :: ScrubbedBytes -> KeyPair Curve25519
-bytesToPair bs = (SK25519 sk, PK25519 pk)
-  where
-    sk = throwCryptoError . C.secretKey $ bs
-    pk = C.toPublic sk
+bytesToPair :: ScrubbedBytes -> Maybe (KeyPair Curve25519)
+bytesToPair bs = do
+  sk <- maybeCryptoError . C.secretKey $ bs
+  return (SK25519 sk, PK25519 (C.toPublic sk))
+
+pubEq :: PublicKey Curve25519
+      -> PublicKey Curve25519
+      -> Bool
+pubEq a b = a == b

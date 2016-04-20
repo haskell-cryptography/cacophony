@@ -1,0 +1,62 @@
+{
+"vectors": [
+{%- for v in vectors %}
+{
+"name": {{ v.name }},
+"pattern": {{ v.pattern }},
+"dh": {{ v.dh }},
+"cipher": {{ v.cipher }},
+"hash": {{ v.hash }},
+{%- if v.fail %}
+"fail": {{ v.fail }},
+{%- endif %}
+"init_prologue": {{ v.init_prologue }},
+{%- if v.init_psk %}
+"init_psk": {{ v.init_psk }},
+{%- endif %}
+{%- if v.init_static %}
+"init_static": {{ v.init_static }},
+{%- endif %}
+{%- if v.init_semiephemeral %}
+"init_semiephemeral": {{ v.init_semiephemeral }},
+{%- endif %}
+{%- if v.init_ephemeral %}
+"init_ephemeral": {{ v.init_ephemeral }},
+{%- endif %}
+{%- if v.init_remote_static %}
+"init_remote_static": {{ v.init_remote_static }},
+{%- endif %}
+{%- if v.init_remote_semiephemeral %}
+"init_remote_semiephemeral": {{ v.init_remote_semiephemeral }},
+{%- endif %}
+"resp_prologue": {{ v.resp_prologue }},
+{%- if v.resp_psk %}
+"resp_psk": {{ v.resp_psk }},
+{%- endif %}
+{%- if v.resp_static %}
+"resp_static": {{ v.resp_static }},
+{%- endif %}
+{%- if v.resp_semiephemeral %}
+"resp_semiephemeral": {{ v.resp_semiephemeral }},
+{%- endif %}
+{%- if v.resp_ephemeral %}
+"resp_ephemeral": {{ v.resp_ephemeral }},
+{%- endif %}
+{%- if v.resp_remote_static %}
+"resp_remote_static": {{ v.resp_remote_static }},
+{%- endif %}
+{%- if v.resp_remote_semiephemeral %}
+"resp_remote_semiephemeral": {{ v.resp_remote_semiephemeral }},
+{%- endif %}
+"messages": [
+{%- for m in v.messages %}
+{
+"payload": {{ m.payload }},
+"ciphertext": {{ m.ciphertext }}
+{% if loop.last %}}{% else %}},{% endif %}
+{%- endfor %}
+]
+{% if loop.last %}}{% else %}},{% endif %}
+{%- endfor %}
+]
+}

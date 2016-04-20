@@ -1,3 +1,4 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 ----------------------------------------------------------------
 -- |
 -- Module      : Data.ByteArray.Extend
@@ -5,47 +6,32 @@
 -- Stability   : experimental
 -- Portability : POSIX
 --
--- This module contains helper functions which can be useful at times.
+-- This module provides a wrapper for the @memory@ package's
+-- ScrubbedBytes data type.
 
 module Data.ByteArray.Extend
   ( -- * Types
-    ScrubbedBytes,
+    ScrubbedBytes
     -- * Functions
-    convert,
-    append,
-    concatSB,
-    bsToSB,
-    bsToSB',
-    sbToBS,
-    sbToBS',
-    sbEq
- ) where
+  , convert
+  , length
+  , replicate
+  , concat
+  , splitAt
+  ) where
 
-import Data.ByteArray (ScrubbedBytes, concat, convert, append, eq)
-import qualified Data.ByteString as BS (ByteString)
-import qualified Data.ByteString.Lazy as BL (ByteString, toStrict, fromStrict)
-import Prelude hiding (concat)
+import Control.DeepSeq       (NFData)
+import Data.ByteArray        (ByteArray, ByteArrayAccess, convert,
+                              length, replicate, concat, splitAt)
+import qualified Data.ByteArray as BA (ScrubbedBytes)
+import Data.ByteString.Char8 (pack)
+import Data.String           (IsString(..))
+import Prelude hiding        (length, replicate, concat, splitAt)
 
--- | Concatenates a list of 'ScrubbedBytes'.
-concatSB :: [ScrubbedBytes] -> ScrubbedBytes
-concatSB = concat
+-- | Represents plaintext data which will be erased when it falls
+--   out of scope.
+newtype ScrubbedBytes = ScrubbedBytes BA.ScrubbedBytes
+                        deriving (Eq, Show, NFData, Monoid, Ord, ByteArrayAccess, ByteArray)
 
--- | Converts a lazy ByteString to ScrubbedBytes.
-bsToSB :: BL.ByteString -> ScrubbedBytes
-bsToSB = convert . BL.toStrict
-
--- | Strict version of 'bsToSB'.
-bsToSB' :: BS.ByteString -> ScrubbedBytes
-bsToSB' = convert
-
--- | Converts ScrubbedBytes to a lazy ByteString.
-sbToBS :: ScrubbedBytes -> BL.ByteString
-sbToBS = BL.fromStrict . convert
-
--- | Strict version of 'sbToBS''.
-sbToBS' :: ScrubbedBytes -> BS.ByteString
-sbToBS' = convert
-
--- | Equality operator for 'ScrubbedBytes'.
-sbEq :: ScrubbedBytes -> ScrubbedBytes -> Bool
-sbEq = eq
+instance IsString ScrubbedBytes where
+  fromString = ScrubbedBytes . convert . pack

@@ -105,6 +105,7 @@ executable echo-server
       attoparsec,
       auto-update,
       base               >=4.8 && <5,
+      base16-bytestring,
       base64-bytestring,
       bytestring,
       cacophony,
@@ -136,6 +137,7 @@ executable echo-client
     build-depends:
       attoparsec,
       base               >=4.8 && <5,
+      base16-bytestring,
       base64-bytestring,
       bytestring,
       cacophony,

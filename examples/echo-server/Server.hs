@@ -4,16 +4,17 @@ module Server
   ( startServer
   ) where
 
-import Control.AutoUpdate (mkAutoUpdate, defaultUpdateSettings, updateAction)
-import Control.Exception  (handle)
-import Control.Monad      (void)
-import Data.Bits          ((.&.), shiftR)
-import Data.ByteString    (ByteString, pack, length)
+import Control.AutoUpdate     (mkAutoUpdate, defaultUpdateSettings, updateAction)
+import Control.Exception      (handle)
+import Control.Monad          (void)
+import Data.Bits              ((.&.), shiftR)
+import Data.ByteString        (ByteString, pack, length)
+import Data.ByteString.Base16 (encode)
 import qualified Data.ByteString.Char8 as C8 (pack)
 import Data.IORef
-import Data.Monoid        ((<>))
+import Data.Monoid            ((<>))
 import Network.Simple.TCP
-import Prelude hiding     (log, length)
+import Prelude hiding         (log, length)
 import System.Timeout
 
 import Crypto.Noise
@@ -118,6 +119,7 @@ startServer opts@ServerOpts{..} = do
             log ip $ "client selected " <> C8.pack (mkProtocolName opts h)
 
             hk <- mkHandshakeKeys (convert . serializeHeader $ h) psk opts curveT
+            log ip $ "private ephemeral: " <> (encode . convert . dhSecToBytes . fst . hkLocalEphemeral) hk
             let ns  = mkNoiseState hk hp ResponderRole cipherT hashT
 
             void . timeout 60000000 $ messageLoop leftoverBufRef sock ns

@@ -3,14 +3,15 @@ module Client
   ( runClient
   ) where
 
-import Control.Lens       ((.~), (&))
-import Data.Bits          ((.&.), shiftR)
-import Data.ByteString    (ByteString, pack, length)
+import Control.Lens           ((.~), (&))
+import Data.Bits              ((.&.), shiftR)
+import Data.ByteString        (ByteString, pack, length)
 import qualified Data.ByteString.Char8 as C8 (pack, unpack)
+import Data.ByteString.Base16 (encode)
 import Data.IORef
-import Data.Monoid        ((<>))
+import Data.Monoid            ((<>))
 import Network.Simple.TCP
-import Prelude hiding     (length)
+import Prelude hiding         (length)
 
 import Crypto.Noise
 import Crypto.Noise.Cipher
@@ -80,6 +81,8 @@ runClient hostname port psk localKey remoteKey =
 
         ns :: NoiseState AESGCM d SHA256
         ns = noiseState ho
+
+    putStrLn $ "private ephemeral: " <> (C8.unpack . encode . convert . dhSecToBytes . fst) lek
 
     send sock hdr
     putStrLn "connection established, begin typing"

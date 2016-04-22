@@ -202,7 +202,7 @@ evalMsgToken opRole (E next) = do
         ss''    = if ss' ^. ssHasPSK then mixKey pk' ss' else ss'
 
     put $ hs & hsSymmetricState .~ ss''
-                    & hsMsgBuffer      %~ (flip mappend . convert) pk'
+             & hsMsgBuffer      %~ (flip mappend . convert) pk'
 
   else do
     let (b, rest) = splitAt (dhLength (Proxy :: Proxy d)) $ hs ^. hsMsgBuffer

@@ -20,6 +20,7 @@ import Crypto.Noise
 import Crypto.Noise.Cipher
 import Crypto.Noise.DH
 import Crypto.Noise.Hash
+import Data.ByteArray.Extend hiding (length)
 
 import Handshakes
 import Log
@@ -27,26 +28,27 @@ import Parse
 import Types
 
 mkHandshakeKeys :: forall d. DH d
-                => Bool
+                => ScrubbedBytes
+                -> Bool
                 -> ServerOpts
                 -> DHType d
                 -> IO (HandshakeKeys d)
-mkHandshakeKeys psk ServerOpts{..} DTCurve25519 = do
+mkHandshakeKeys pro psk ServerOpts{..} DTCurve25519 = do
   lek <- dhGenKey :: IO (KeyPair d)
 
   return
-    HandshakeKeys { hkPrologue       = soPrologue
+    HandshakeKeys { hkPrologue       = pro
                   , hkPSK            = if psk then Just soPSK else Nothing
                   , hkLocalStatic    = soLocal25519
                   , hkLocalEphemeral = lek
                   , hkRemoteStatic   = soRemote25519
                   }
 
-mkHandshakeKeys psk ServerOpts{..} DTCurve448 = do
+mkHandshakeKeys pro psk ServerOpts{..} DTCurve448 = do
   lek <- dhGenKey :: IO (KeyPair d)
 
   return
-    HandshakeKeys { hkPrologue       = soPrologue
+    HandshakeKeys { hkPrologue       = pro
                   , hkPSK            = if psk then Just soPSK else Nothing
                   , hkLocalStatic    = soLocal448
                   , hkLocalEphemeral = lek
@@ -115,7 +117,7 @@ startServer opts@ServerOpts{..} = do
           Just h@(psk, hp, WrapCipherType cipherT, WrapDHType curveT, WrapHashType hashT) -> do
             log ip $ "client selected " <> C8.pack (mkProtocolName opts h)
 
-            hk <- mkHandshakeKeys psk opts curveT
+            hk <- mkHandshakeKeys (convert . serializeHeader $ h) psk opts curveT
             let ns  = mkNoiseState hk hp ResponderRole cipherT hashT
 
             void . timeout 60000000 $ messageLoop leftoverBufRef sock ns

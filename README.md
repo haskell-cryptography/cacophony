@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.org/centromere/cacophony.svg?branch=master)](https://travis-ci.org/centromere/cacophony)
 [![Haskell](http://b.repl.ca/v1/language-haskell-blue.png)](http://www.haskell.org)
 
-This library implements the [Noise](https://github.com/trevp/noise/blob/master/noise.md) protocol.
+This library implements the [Noise](https://github.com/noiseprotocol/noise_spec/blob/master/noise.md) protocol.
 
 ## Basic usage
 
@@ -39,7 +39,7 @@ This library implements the [Noise](https://github.com/trevp/noise/blob/master/n
 
    let dho = defaultHandshakeOpts noiseIK InitiatorRole :: HandshakeOpts Curve25519
         iho = dho & hoPrologue          .~ "prologue"
-                  & hoPreSharedKey      .~ Just "pre-shared-key"
+                  & hoPreSharedKey      .~ Just pre_shared_key
                   & hoLocalStaticKey    .~ Just local_static_key
                   & hoLocalEphemeralKey .~ Just local_ephemeral_key
                   & hoRemoteStaticKey   .~ Just remote_static_key -- communicated out-of-band
@@ -49,7 +49,7 @@ This library implements the [Noise](https://github.com/trevp/noise/blob/master/n
 
    let dho = defaultHandshakeOpts noiseIK ResponderRole :: HandshakeOpts Curve25519
         rho = dho & hoPrologue          .~ "prologue"
-                  & hoPreSharedKey      .~ Just "pre-shared-key"
+                  & hoPreSharedKey      .~ Just pre_shared_key
                   & hoLocalStaticKey    .~ Just local_static_key
                   & hoLocalEphemeralKey .~ Just local_ephemeral_key
    ```
@@ -116,9 +116,14 @@ S -> C: [num message bytes (uint16 big endian)] [message]
 
 where `message` is any raw Noise handshake or message data.
 
+The prologue is set to the 5 header bytes to prevent a MITM attack.
+
 For these example programs, the server chooses the value of the PSK, and the client chooses whether or not
-to use a PSK-enabled handshake. When starting the server, if the PSK is unspecified it defaults to the
-string "They Live".
+to use a PSK-enabled handshake. Both the server and client expect the PSK file to be base64 encoded. One
+way to generate the PSK file is as follows:
+```
+head -c 32 /dev/random | base64 > psk
+```
 
 To include these examples in your build, pass the -fbuild-examples flag to Cabal.
 

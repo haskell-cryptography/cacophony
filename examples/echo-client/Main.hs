@@ -1,10 +1,9 @@
 {-# LANGUAGE RecordWildCards, OverloadedStrings #-}
 module Main where
 
-import Control.Monad         (forM_)
+import Control.Monad         (forM_, (<=<))
 import Data.ByteString       (writeFile, readFile)
-import qualified Data.ByteString.Base64 as B64 (encode, decode)
-import Data.ByteString.Char8 (pack)
+import qualified Data.ByteString.Base64 as B64 (encode, decodeLenient)
 import Data.Maybe            (fromMaybe)
 import Data.Monoid           ((<>))
 import Prelude hiding        (writeFile, readFile)
@@ -22,15 +21,13 @@ import Client
 
 data Options =
   Options { optShowHelp :: Bool
-          , optPSK      :: Maybe ScrubbedBytes
-          , optPrologue :: ScrubbedBytes
+          , optPSK      :: Maybe FilePath
           }
 
 defaultOptions :: Options
 defaultOptions =
   Options { optShowHelp = False
           , optPSK      = Nothing
-          , optPrologue = ""
           }
 
 options :: [OptDescr (Options -> Options)]
@@ -39,11 +36,8 @@ options =
     (NoArg (\o -> o { optShowHelp = True }))
     "show help"
   , Option [] ["psk"]
-    (ReqArg (\p o -> o { optPSK = (Just . convert . pack) p }) "STRING")
-    "pre-shared key (default: off)"
-  , Option [] ["prologue"]
-    (ReqArg (\p o -> o { optPrologue = (convert . pack) p }) "STRING")
-    "prologue (default: empty string)"
+    (ReqArg (\p o -> o { optPSK = Just p }) "FILE")
+    "pre-shared key (base64 encoded file, default: off)"
   ]
 
 parseOptions :: [String] -> Either [String] (Options, [String])
@@ -60,7 +54,8 @@ processOptions (Options{..}, [hostname, port]) = do
   localKey <- processPrivateKey "client_key_25519" :: IO (KeyPair Curve25519)
   _ <- processPrivateKey "client_key_448" :: IO (KeyPair Curve448)
   remoteKey <- readPublicKey "server_key_25519.pub" :: IO (PublicKey Curve25519)
-  runClient hostname port optPrologue optPSK localKey remoteKey
+  psk <- maybe (return Nothing) (return . Just <=< readPSK) optPSK
+  runClient hostname port psk localKey remoteKey
 
 processOptions (_, _) = do
   hPutStrLn stderr "error: a hostname and port must be specified"
@@ -70,7 +65,10 @@ readPrivateKey :: DH d => FilePath -> IO (KeyPair d)
 readPrivateKey f = fromMaybe (error $ "error importing " <> f) . dhBytesToPair . convert <$> readFile f
 
 readPublicKey :: DH d => FilePath -> IO (PublicKey d)
-readPublicKey f = (fromMaybe (error $ "error importing " <> f) . dhBytesToPub . convert . either (error ("error decoding " <> f)) id . B64.decode) <$> readFile f
+readPublicKey f = (fromMaybe (error $ "error importing " <> f) . dhBytesToPub . convert . B64.decodeLenient) <$> readFile f
+
+readPSK :: FilePath -> IO ScrubbedBytes
+readPSK f = convert . B64.decodeLenient <$> readFile f
 
 genAndWriteKey :: DH d => FilePath -> IO (KeyPair d)
 genAndWriteKey f = do

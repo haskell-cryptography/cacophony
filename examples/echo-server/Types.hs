@@ -19,7 +19,6 @@ import Data.ByteArray.Extend
 data ServerOpts =
   ServerOpts { soLogFile     :: Maybe FilePath
              , soPort        :: String
-             , soPrologue    :: ScrubbedBytes
              , soPSK         :: ScrubbedBytes
              , soLocal25519  :: KeyPair Curve25519
              , soRemote25519 :: PublicKey Curve25519

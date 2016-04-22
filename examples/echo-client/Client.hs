@@ -60,12 +60,11 @@ messageLoop bufRef sock = loop
 runClient :: forall d. DH d
           => String
           -> String
-          -> ScrubbedBytes
           -> Maybe ScrubbedBytes
           -> KeyPair d
           -> PublicKey d
           -> IO ()
-runClient hostname port prologue psk localKey remoteKey =
+runClient hostname port psk localKey remoteKey =
   connect hostname port $ \(sock, _) -> do
     leftoverBufRef <- newIORef ""
 
@@ -73,7 +72,7 @@ runClient hostname port prologue psk localKey remoteKey =
 
     let dho = defaultHandshakeOpts noiseIK InitiatorRole
         hdr = maybe "\x00\x09\x01\x00\x00" (const "\x01\x09\x01\x00\x00") psk
-        ho  = dho & hoPrologue       .~ prologue
+        ho  = dho & hoPrologue       .~ convert hdr
                   & hoPreSharedKey   .~ psk
                   & hoLocalStatic    .~ Just localKey
                   & hoLocalEphemeral .~ Just lek

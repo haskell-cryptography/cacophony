@@ -28,6 +28,7 @@ import Crypto.Noise.Internal.CipherState
 import Crypto.Noise.Internal.SymmetricState
 import Crypto.Noise.Internal.Handshake
 import Crypto.Noise.Internal.HandshakePattern
+import Crypto.Noise.Internal.Types
 import Data.ByteArray.Extend
 
 -- | Represents the complete state of a Noise conversation.
@@ -149,7 +150,9 @@ processPatternOp opRole t next = do
 
     hs' <- get
 
-    let (ep, ss) = encryptAndHash (convert input) $ hs' ^. hsSymmetricState
+    let enc = encryptAndHash (convert input) $ hs' ^. hsSymmetricState
+
+    (ep, ss) <- either throwError return enc
 
     put $ hs' & hsMsgBuffer       %~ (flip mappend . convert) ep
               & hsSymmetricState  .~ ss
@@ -163,7 +166,7 @@ processPatternOp opRole t next = do
         dec       = decryptAndHash (cipherBytesToText (convert remaining))
                     $ hs' ^. hsSymmetricState
 
-    (dp, ss) <- maybe (throwError $ HandshakeError "handshake payload failed to decrypt") return dec
+    (dp, ss) <- either (const . throwError . HandshakeError $ "handshake payload failed to decrypt") return dec
 
     put $ hs' & hsMsgBuffer       .~ convert dp
               & hsSymmetricState  .~ ss
@@ -209,7 +212,7 @@ evalMsgToken opRole (E next) = do
         ss''      = if ss ^. ssHasPSK then mixKey reBytes ss' else ss'
         theirKey  = dhBytesToPub reBytes
 
-    theirKey' <- maybe (throwError (HandshakeError "invalid remote ephemeral key")) return theirKey
+    theirKey' <- maybe (throwError . HandshakeError $ "invalid remote ephemeral key") return theirKey
 
     put $ hs & hsOpts . hoRemoteEphemeral .~ Just theirKey'
              & hsSymmetricState           .~ ss''
@@ -222,8 +225,10 @@ evalMsgToken opRole (S next) = do
 
   if opRole == hs ^. hsOpts. hoRole then do
     pk <- dhPubToBytes . snd <$> getLocalStatic hs
-    let ss        = hs ^. hsSymmetricState
-        (ct, ss') = encryptAndHash (convert pk) ss
+    let ss  = hs ^. hsSymmetricState
+        enc = encryptAndHash (convert pk) ss
+
+    (ct, ss') <- either throwError return enc
 
     put $ hs & hsSymmetricState .~ ss'
                     & hsMsgBuffer      %~ (flip mappend . convert) ct
@@ -240,8 +245,8 @@ evalMsgToken opRole (S next) = do
             ss        = hs ^. hsSymmetricState
             dec       = decryptAndHash ct ss
 
-        (pt, ss')     <- maybe (throwError $ HandshakeError "failed to decrypt remote static key") return dec
-        theirKey'     <- maybe (throwError $ HandshakeError "invalid remote static key provided") return $ dhBytesToPub pt
+        (pt, ss')     <- either (const . throwError . HandshakeError $ "failed to decrypt remote static key") return dec
+        theirKey'     <- maybe (throwError . HandshakeError $ "invalid remote static key provided") return $ dhBytesToPub pt
 
         put $ hs & hsOpts . hoRemoteStatic .~ Just theirKey'
                  & hsSymmetricState        .~ ss'

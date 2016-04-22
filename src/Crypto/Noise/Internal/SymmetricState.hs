@@ -17,6 +17,7 @@ import Prelude hiding  (length, replicate)
 import Crypto.Noise.Cipher
 import Crypto.Noise.Hash
 import Crypto.Noise.Internal.CipherState
+import Crypto.Noise.Internal.Types
 import Data.ByteArray.Extend
 
 data SymmetricState c h =
@@ -40,7 +41,7 @@ symmetricState hsn = SymmetricState cs False False ck hsn'
                    then Right $ hash hsn
                    else Left $ hsn `mappend` replicate (hashLen - length hsn) 0
     ck         = hashBytesToCK . sshBytes $ hsn'
-    cs         = CipherState undefined undefined
+    cs         = CipherState undefined undefined 0
 
 mixKey :: (Cipher c, Hash h)
        => ScrubbedBytes
@@ -51,7 +52,7 @@ mixKey d ss = ss & ssCipher .~ cs
                  & ssck     .~ ck
   where
     (ck, k) = hashHKDF (ss ^. ssck) d
-    cs      = CipherState (cipherBytesToSym k) cipherZeroNonce
+    cs      = CipherState (cipherBytesToSym k) cipherZeroNonce 0
 
 mixPSK :: (Cipher c, Hash h)
        => ScrubbedBytes
@@ -72,22 +73,22 @@ mixHash d ss = ss & ssh %~ Right . hash . (`mappend` d) . sshBytes
 encryptAndHash :: (Cipher c, Hash h)
                => Plaintext
                -> SymmetricState c h
-               -> (ScrubbedBytes, SymmetricState c h)
+               -> Either NoiseException (ScrubbedBytes, SymmetricState c h)
 encryptAndHash pt ss
-  | ss ^. ssHasKey = (cipherTextToBytes ct, kss)
-  | otherwise      = (pt, nkss)
+  | ss ^. ssHasKey = either Left (\(ct, cs') -> Right (cipherTextToBytes ct, kss ct cs')) enc
+  | otherwise      = Right (pt, nkss)
   where
-    (ct, cs) = encryptAndIncrement (sshBytes (ss ^. ssh)) pt (ss ^. ssCipher)
-    kss      = mixHash (cipherTextToBytes ct) ss & ssCipher .~ cs
-    nkss     = mixHash pt ss
+    enc       = encryptAndIncrement (sshBytes (ss ^. ssh)) pt (ss ^. ssCipher)
+    kss ct cs = mixHash (cipherTextToBytes ct) ss & ssCipher .~ cs
+    nkss      = mixHash pt ss
 
 decryptAndHash :: (Cipher c, Hash h)
                => Ciphertext c
                -> SymmetricState c h
-               -> Maybe (Plaintext, SymmetricState c h)
+               -> Either NoiseException (Plaintext, SymmetricState c h)
 decryptAndHash ct ss
-  | ss ^. ssHasKey = maybe Nothing (\(pt, cs') -> Just (pt, kss cs')) dec
-  | otherwise      = Just (cipherTextToBytes ct, nkss)
+  | ss ^. ssHasKey = either Left (\(pt, cs') -> Right (pt, kss cs')) dec
+  | otherwise      = Right (cipherTextToBytes ct, nkss)
   where
     dec    = decryptAndIncrement (sshBytes (ss ^. ssh)) ct (ss ^. ssCipher)
     kss cs = mixHash (cipherTextToBytes ct) ss & ssCipher .~ cs
@@ -101,8 +102,8 @@ split ss = (cs1, cs2)
     (cs1k, cs2k) = hashHKDF (ss ^. ssck) (convert empty)
     cs1k' = cipherBytesToSym . hashCKToBytes $ cs1k
     cs2k' = cipherBytesToSym cs2k
-    cs1   = CipherState cs1k' cipherZeroNonce
-    cs2   = CipherState cs2k' cipherZeroNonce
+    cs1   = CipherState cs1k' cipherZeroNonce 0
+    cs2   = CipherState cs2k' cipherZeroNonce 0
 
 sshBytes :: Hash h
          => Either ScrubbedBytes (Digest h)

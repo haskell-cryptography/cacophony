@@ -84,6 +84,7 @@ library
     Crypto.Noise.Internal.Handshake
     Crypto.Noise.Internal.NoiseState
     Crypto.Noise.Internal.SymmetricState
+    Crypto.Noise.Internal.Types
     Data.ByteArray.Extend
   ghc-options:      -Wall -fwarn-tabs
 

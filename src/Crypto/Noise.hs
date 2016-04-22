@@ -47,18 +47,22 @@ import Crypto.Noise.Internal.CipherState
 import Crypto.Noise.Internal.Handshake
 import Crypto.Noise.Internal.NoiseState
 import Crypto.Noise.Internal.SymmetricState
+import Crypto.Noise.Internal.Types
 import Data.ByteArray.Extend
 
 -- | Creates a Noise message with the provided payload. Note that the
---   first payload may or may not be encrypted depending on the chosen
---   handshake parameters. See the protocol document for details.
+--   payload may not be authenticated or encrypted at all points during the
+--   handshake. Please see section 8.4 of the protocol document for details.
+--
+--   To prevent catastrophic key re-use, this function may only be used to
+--   secure 2^64 post-handshake messages.
 writeMessage :: (Cipher c, DH d, Hash h)
              => NoiseState c d h
              -> ScrubbedBytes
              -> Either NoiseException (ByteString, NoiseState c d h)
 writeMessage ns msg = right toByteString $
   maybe (runHandshake msg ns)
-        (Right . (ctToBytes *** updateState) . encryptAndIncrement "" msg)
+        (right (ctToBytes *** updateState) . encryptAndIncrement "" msg)
         (ns ^. nsSendingCipherState)
   where
     ctToBytes    = arr cipherTextToBytes
@@ -68,17 +72,19 @@ writeMessage ns msg = right toByteString $
 -- | Reads a Noise message and returns the embedded payload. If the
 --   handshake fails, a 'HandshakeError' will be returned. After the handshake
 --   is complete, if decryption fails a 'DecryptionError' is returned.
+--
+--   To prevent catastrophic key re-use, this function may only be used to
+--   receive 2^64 post-handshake messages.
 readMessage :: (Cipher c, DH d, Hash h)
             => NoiseState c d h
             -> ByteString
             -> Either NoiseException (ScrubbedBytes, NoiseState c d h)
 readMessage ns ct =
   maybe (runHandshake (convert ct) ns)
-        ((right . second) updateState . validate . (decryptAndIncrement "" . cipherBytesToText . convert) ct)
+        ((right . second) updateState . (decryptAndIncrement "" . cipherBytesToText . convert) ct)
         (ns ^. nsReceivingCipherState)
   where
     updateState = arr $ \cs -> ns & nsReceivingCipherState .~ Just cs
-    validate    = arr $ maybe (Left (DecryptionError "message")) Right
 
 -- | For handshake patterns where the remote party's static key is
 --   transmitted, this function can be used to retrieve it. This allows

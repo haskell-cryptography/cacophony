@@ -154,8 +154,8 @@ processPatternOp opRole t next = do
 
     (ep, ss) <- either throwError return enc
 
-    put $ hs' & hsMsgBuffer       %~ (flip mappend . convert) ep
-              & hsSymmetricState  .~ ss
+    put $ hs' & hsMsgBuffer      %~ (flip mappend . convert) ep
+              & hsSymmetricState .~ ss
   else do
     put $ hs & hsMsgBuffer .~ input
     iterM (evalMsgToken opRole) $ hoistFT (return . runIdentity) t
@@ -168,8 +168,8 @@ processPatternOp opRole t next = do
 
     (dp, ss) <- either (const . throwError . HandshakeError $ "handshake payload failed to decrypt") return dec
 
-    put $ hs' & hsMsgBuffer       .~ convert dp
-              & hsSymmetricState  .~ ss
+    put $ hs' & hsMsgBuffer      .~ convert dp
+              & hsSymmetricState .~ ss
 
   next
 
@@ -231,7 +231,7 @@ evalMsgToken opRole (S next) = do
     (ct, ss') <- either throwError return enc
 
     put $ hs & hsSymmetricState .~ ss'
-                    & hsMsgBuffer      %~ (flip mappend . convert) ct
+             & hsMsgBuffer      %~ (flip mappend . convert) ct
   else
     if isJust (hs ^. hsOpts ^. hoRemoteStatic)
       then throwError . InvalidHandshakeOptions $ "unable to overwrite remote static key"

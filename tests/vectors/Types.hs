@@ -34,6 +34,25 @@ data HandshakeType = NoiseNN
                    | NoiseX
                    deriving Eq
 
+instance FromJSON HandshakeType where
+  parseJSON (String "NN") = pure NoiseNN
+  parseJSON (String "KN") = pure NoiseKN
+  parseJSON (String "NK") = pure NoiseNK
+  parseJSON (String "KK") = pure NoiseKK
+  parseJSON (String "NX") = pure NoiseNX
+  parseJSON (String "KX") = pure NoiseKX
+  parseJSON (String "XN") = pure NoiseXN
+  parseJSON (String "IN") = pure NoiseIN
+  parseJSON (String "XK") = pure NoiseXK
+  parseJSON (String "IK") = pure NoiseIK
+  parseJSON (String "XX") = pure NoiseXX
+  parseJSON (String "IX") = pure NoiseIX
+  parseJSON (String "XR") = pure NoiseXR
+  parseJSON (String "N")  = pure NoiseN
+  parseJSON (String "K")  = pure NoiseK
+  parseJSON (String "X")  = pure NoiseX
+  parseJSON _             = error "invalid pattern name"
+
 data CipherType :: * -> * where
   CTChaChaPoly1305 :: CipherType ChaChaPoly1305
   CTAESGCM         :: CipherType AESGCM
@@ -41,9 +60,14 @@ data CipherType :: * -> * where
 data SomeCipherType where
   WrapCipherType :: forall c. Cipher c => CipherType c -> SomeCipherType
 
+instance FromJSON SomeCipherType where
+  parseJSON (String "ChaChaPoly") = pure . WrapCipherType $ CTChaChaPoly1305
+  parseJSON (String "AESGCM")     = pure . WrapCipherType $ CTAESGCM
+  parseJSON _                     = error "invalid cipher name"
+
 instance ToJSON SomeCipherType where
   toJSON (WrapCipherType CTChaChaPoly1305) = "ChaChaPoly"
-  toJSON (WrapCipherType CTAESGCM) = "AESGCM"
+  toJSON (WrapCipherType CTAESGCM)         = "AESGCM"
 
 instance Cipher c => Show (CipherType c) where
   show CTChaChaPoly1305 = "ChaChaPoly"
@@ -56,13 +80,18 @@ data DHType :: * -> * where
 data SomeDHType where
   WrapDHType :: forall d. DH d => DHType d -> SomeDHType
 
+instance FromJSON SomeDHType where
+  parseJSON (String "25519") = pure . WrapDHType $ DTCurve25519
+  parseJSON (String "448")   = pure . WrapDHType $ DTCurve448
+  parseJSON _                = error "invalid DH name"
+
 instance ToJSON SomeDHType where
   toJSON (WrapDHType DTCurve25519) = "25519"
   toJSON (WrapDHType DTCurve448)   = "448"
 
 instance DH d => Show (DHType d) where
   show DTCurve25519 = "25519"
-  show DTCurve448 = "448"
+  show DTCurve448   = "448"
 
 data HashType :: * -> * where
   HTSHA256  :: HashType SHA256
@@ -92,9 +121,16 @@ hsTypeToPattern NoiseN  = noiseN
 hsTypeToPattern NoiseK  = noiseK
 hsTypeToPattern NoiseX  = noiseX
 
+instance FromJSON SomeHashType where
+  parseJSON (String "SHA256")  = pure . WrapHashType $ HTSHA256
+  parseJSON (String "SHA512")  = pure . WrapHashType $ HTSHA512
+  parseJSON (String "BLAKE2s") = pure . WrapHashType $ HTBLAKE2s
+  parseJSON (String "BLAKE2b") = pure . WrapHashType $ HTBLAKE2b
+  parseJSON _                  = error "invalid hash name"
+
 instance ToJSON SomeHashType where
-  toJSON (WrapHashType HTSHA256) = "SHA256"
-  toJSON (WrapHashType HTSHA512) = "SHA512"
+  toJSON (WrapHashType HTSHA256)  = "SHA256"
+  toJSON (WrapHashType HTSHA512)  = "SHA512"
   toJSON (WrapHashType HTBLAKE2s) = "BLAKE2s"
   toJSON (WrapHashType HTBLAKE2b) = "BLAKE2b"
 

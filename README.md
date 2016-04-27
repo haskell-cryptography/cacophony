@@ -38,20 +38,20 @@ This library implements the [Noise](https://github.com/noiseprotocol/noise_spec/
    local_ephemeral_key <- dhGenKey :: IO (KeyPair Curve25519)
 
    let dho = defaultHandshakeOpts noiseIK InitiatorRole :: HandshakeOpts Curve25519
-        iho = dho & hoPrologue          .~ "prologue"
-                  & hoPreSharedKey      .~ Just pre_shared_key
-                  & hoLocalStaticKey    .~ Just local_static_key
-                  & hoLocalEphemeralKey .~ Just local_ephemeral_key
-                  & hoRemoteStaticKey   .~ Just remote_static_key -- communicated out-of-band
+        iho = dho & hoPrologue       .~ "prologue"
+                  & hoPreSharedKey   .~ Just pre_shared_key
+                  & hoLocalStatic    .~ Just local_static_key
+                  & hoLocalEphemeral .~ Just local_ephemeral_key
+                  & hoRemoteStatic   .~ Just remote_static_key -- communicated out-of-band
 
    -- Responder
    local_ephemeral_key <- dhGenKey :: IO (KeyPair Curve25519)
 
    let dho = defaultHandshakeOpts noiseIK ResponderRole :: HandshakeOpts Curve25519
-        rho = dho & hoPrologue          .~ "prologue"
-                  & hoPreSharedKey      .~ Just pre_shared_key
-                  & hoLocalStaticKey    .~ Just local_static_key
-                  & hoLocalEphemeralKey .~ Just local_ephemeral_key
+        rho = dho & hoPrologue       .~ "prologue"
+                  & hoPreSharedKey   .~ Just pre_shared_key
+                  & hoLocalStatic    .~ Just local_static_key
+                  & hoLocalEphemeral .~ Just local_ephemeral_key
    ```
 
 3. Create the Noise state.

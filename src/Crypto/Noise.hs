@@ -22,6 +22,7 @@ module Crypto.Noise
   , remoteStaticKey
   , handshakeComplete
   , handshakeHash
+  , setSecondaryKey
     -- * Lenses
   , hoPattern
   , hoRole
@@ -105,9 +106,21 @@ handshakeComplete ns = isJust (ns ^. nsSendingCipherState) &&
 --   @SymmetricState@. This value is intended to be used for channel
 --   binding. For example, the initiator might cryptographically sign this
 --   value as part of some higher-level authentication scheme.
+--
+--   See section 9.4 of the protocol for details.
 handshakeHash :: (Cipher c, DH d, Hash h)
               => NoiseState c d h
               -> Maybe ScrubbedBytes
 handshakeHash ns = either (const Nothing)
                           (Just . hashToBytes)
                           $ ns ^. nsHandshakeState . hsSymmetricState . ssh
+
+-- | Sets a secondary symmetric key. This must be 32 bytes in length as
+--   per the spec, but this function will allow keys of any size.
+--
+--   See section 9.5 of the protocol for details.
+setSecondaryKey :: (Cipher c, DH h, Hash h)
+                => NoiseState c d h
+                -> ScrubbedBytes
+                -> NoiseState c d h
+setSecondaryKey ns k = ns & nsHandshakeState . hsSymmetricState . ssk .~ k

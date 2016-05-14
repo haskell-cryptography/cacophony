@@ -26,6 +26,7 @@ data SymmetricState c h =
                  , _ssHasPSK :: Bool
                  , _ssck     :: ChainingKey h
                  , _ssh      :: Either ScrubbedBytes (Digest h)
+                 , _ssk      :: ScrubbedBytes
                  }
 
 $(makeLenses ''SymmetricState)
@@ -33,7 +34,7 @@ $(makeLenses ''SymmetricState)
 symmetricState :: forall c h. (Cipher c, Hash h)
                => ScrubbedBytes
                -> SymmetricState c h
-symmetricState hsn = SymmetricState cs False False ck hsn'
+symmetricState hsn = SymmetricState cs False False ck hsn' (convert empty)
   where
     hashLen    = hashLength (Proxy :: Proxy h)
     shouldHash = length hsn > hashLen
@@ -99,7 +100,7 @@ split :: (Cipher c, Hash h)
       -> (CipherState c, CipherState c)
 split ss = (cs1, cs2)
   where
-    (cs1k, cs2k) = hashHKDF (ss ^. ssck) (convert empty)
+    (cs1k, cs2k) = hashHKDF (ss ^. ssck) (ss ^. ssk)
     cs1k' = cipherBytesToSym . hashCKToBytes $ cs1k
     cs2k' = cipherBytesToSym cs2k
     cs1   = CipherState cs1k' cipherZeroNonce 0

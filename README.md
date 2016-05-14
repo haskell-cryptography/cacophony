@@ -91,7 +91,9 @@ Noise:
 
   * `handshakeHash` -- Retrieves the `h` value associated with the conversation's SymmetricState. This value is
     intended to be used for channel binding. For example, the initiator might cryptographically sign this value
-    as part of some higher-level authentication scheme.
+    as part of some higher-level authentication scheme. See section 9.4 of the protocol for details.
+
+  * `setSecondaryKey` -- Sets a secondary symmetric key as described in section 9.5 of the protocol.
 
 ## Vectors
 

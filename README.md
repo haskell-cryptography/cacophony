@@ -89,9 +89,9 @@ Noise:
 
   * `handshakeComplete` -- Returns `True` if the handshake is complete.
 
-  * `sessionId` -- Retrieves the `h` value associated with the conversation's SymmetricState. This value is intended
-    to be used for channel binding. For example, the initiator might cryptographically sign this value as part of
-    some higher-level authentication scheme.
+  * `handshakeHash` -- Retrieves the `h` value associated with the conversation's SymmetricState. This value is
+    intended to be used for channel binding. For example, the initiator might cryptographically sign this value
+    as part of some higher-level authentication scheme.
 
 ## Vectors
 

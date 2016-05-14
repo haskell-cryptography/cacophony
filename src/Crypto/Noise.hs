@@ -21,7 +21,7 @@ module Crypto.Noise
   , readMessage
   , remoteStaticKey
   , handshakeComplete
-  , sessionId
+  , handshakeHash
     -- * Lenses
   , hoPattern
   , hoRole
@@ -105,9 +105,9 @@ handshakeComplete ns = isJust (ns ^. nsSendingCipherState) &&
 --   @SymmetricState@. This value is intended to be used for channel
 --   binding. For example, the initiator might cryptographically sign this
 --   value as part of some higher-level authentication scheme.
-sessionId :: (Cipher c, DH d, Hash h)
-          => NoiseState c d h
-          -> Maybe ScrubbedBytes
-sessionId ns = either (const Nothing)
-                      (Just . hashToBytes)
-                      $ ns ^. nsHandshakeState . hsSymmetricState . ssh
+handshakeHash :: (Cipher c, DH d, Hash h)
+              => NoiseState c d h
+              -> Maybe ScrubbedBytes
+handshakeHash ns = either (const Nothing)
+                          (Just . hashToBytes)
+                          $ ns ^. nsHandshakeState . hsSymmetricState . ssh

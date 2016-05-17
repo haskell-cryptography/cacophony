@@ -109,6 +109,7 @@ runHandshake msg ns = runExcept $ do
         Left (Request req resp) -> return (req, ns & nsHandshakeSuspension .~ (Handshake . resp))
         Right _ -> do
           hs <- get
+
           let (cs1, cs2) = split (hs ^. hsSymmetricState)
               ns'        = if hs ^. hsOpts . hoRole == InitiatorRole
                              then ns & nsSendingCipherState   .~ Just cs1
@@ -145,33 +146,34 @@ processPatternOp :: (Cipher c, DH d, Hash h)
 processPatternOp opRole t next = do
   hs <- get
   input <- Handshake <$> request $ hs ^. hsMsgBuffer
+  hs' <- get
 
-  if opRole == hs ^. hsOpts . hoRole then do
-    put $ hs & hsMsgBuffer .~ mempty
+  if opRole == hs' ^. hsOpts . hoRole then do
+    put $ hs' & hsMsgBuffer .~ mempty
     iterM (evalMsgToken opRole) $ hoistFT (return . runIdentity) t
 
-    hs' <- get
+    hs'' <- get
 
-    let enc = encryptAndHash (convert input) $ hs' ^. hsSymmetricState
+    let enc = encryptAndHash (convert input) $ hs'' ^. hsSymmetricState
 
     (ep, ss) <- either throwError return enc
 
-    put $ hs' & hsMsgBuffer      %~ (flip mappend . convert) ep
-              & hsSymmetricState .~ ss
+    put $ hs'' & hsMsgBuffer      %~ (flip mappend . convert) ep
+               & hsSymmetricState .~ ss
   else do
-    put $ hs & hsMsgBuffer .~ input
+    put $ hs' & hsMsgBuffer .~ input
     iterM (evalMsgToken opRole) $ hoistFT (return . runIdentity) t
 
-    hs' <- get
+    hs'' <- get
 
-    let remaining = hs' ^. hsMsgBuffer
+    let remaining = hs'' ^. hsMsgBuffer
         dec       = decryptAndHash (cipherBytesToText (convert remaining))
-                    $ hs' ^. hsSymmetricState
+                    $ hs'' ^. hsSymmetricState
 
     (dp, ss) <- either (const . throwError . HandshakeError $ "handshake payload failed to decrypt") return dec
 
-    put $ hs' & hsMsgBuffer      .~ convert dp
-              & hsSymmetricState .~ ss
+    put $ hs'' & hsMsgBuffer      .~ convert dp
+               & hsSymmetricState .~ ss
 
   next
 
@@ -272,13 +274,13 @@ evalMsgToken opRole (Dhes next) = do
   hs <- get
 
   if opRole == hs ^. hsOpts . hoRole then do
-    let ss       = hs ^. hsSymmetricState
+    let ss = hs ^. hsSymmetricState
 
     rpk <- getRemoteStatic hs
 
     ~(sk, _) <- getLocalEphemeral hs
-    let dh       = dhPerform sk rpk
-        ss'      = mixKey dh ss
+    let dh  = dhPerform sk rpk
+        ss' = mixKey dh ss
 
     put $ hs & hsSymmetricState .~ ss'
 
@@ -289,13 +291,13 @@ evalMsgToken opRole (Dhse next) = do
   hs <- get
 
   if opRole == hs ^. hsOpts . hoRole then do
-    let ss       = hs ^. hsSymmetricState
+    let ss = hs ^. hsSymmetricState
 
     ~(sk, _) <- getLocalStatic hs
 
     rpk <- getRemoteEphemeral hs
-    let dh       = dhPerform sk rpk
-        ss'      = mixKey dh ss
+    let dh  = dhPerform sk rpk
+        ss' = mixKey dh ss
 
     put $ hs & hsSymmetricState .~ ss'
 
@@ -305,12 +307,12 @@ evalMsgToken opRole (Dhse next) = do
 evalMsgToken _ (Dhss next) = do
   hs <- get
 
-  let ss       = hs ^. hsSymmetricState
+  let ss = hs ^. hsSymmetricState
 
   ~(sk, _) <- getLocalStatic hs
   rpk      <- getRemoteStatic hs
-  let dh       = dhPerform sk rpk
-      ss'      = mixKey dh ss
+  let dh  = dhPerform sk rpk
+      ss' = mixKey dh ss
 
   put $ hs & hsSymmetricState .~ ss'
 
@@ -323,7 +325,7 @@ evalPreMsgToken :: (Cipher c, DH d, Hash h)
 evalPreMsgToken opRole (E next) = do
   hs <- get
 
-  let ss  = hs ^. hsSymmetricState
+  let ss = hs ^. hsSymmetricState
   pk <- if opRole == hs ^. hsOpts . hoRole
     then snd <$> getLocalSemiEphemeral hs
     else getRemoteSemiEphemeral hs
@@ -337,7 +339,7 @@ evalPreMsgToken opRole (E next) = do
 evalPreMsgToken opRole (S next) = do
   hs <- get
 
-  let ss  = hs ^. hsSymmetricState
+  let ss = hs ^. hsSymmetricState
 
   pk <- if opRole == hs ^. hsOpts . hoRole
     then snd <$> getLocalStatic hs

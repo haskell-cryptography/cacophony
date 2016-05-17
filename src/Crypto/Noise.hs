@@ -108,18 +108,20 @@ handshakeComplete ns = isJust (ns ^. nsSendingCipherState) &&
 --   binding. For example, the initiator might cryptographically sign this
 --   value as part of some higher-level authentication scheme.
 --
+--   The value returned by this function is only meaningful after the
+--   handshake is complete.
+--
 --   See section 9.4 of the protocol for details.
 handshakeHash :: (Cipher c, DH d, Hash h)
               => NoiseState c d h
-              -> Maybe ScrubbedBytes
-handshakeHash ns = either (const Nothing)
-                          (Just . hashToBytes)
-                          $ ns ^. nsHandshakeState . hsSymmetricState . ssh
+              -> ScrubbedBytes
+handshakeHash ns = either id hashToBytes
+                   $ ns ^. nsHandshakeState . hsSymmetricState . ssh
 
 -- | Sets a secondary symmetric key. This must be 32 bytes in length.
 --
 --   See section 9.5 of the protocol for details.
-setSecondaryKey :: (Cipher c, DH h, Hash h)
+setSecondaryKey :: (Cipher c, DH d, Hash h)
                 => NoiseState c d h
                 -> ScrubbedBytes
                 -> NoiseState c d h

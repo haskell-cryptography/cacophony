@@ -87,8 +87,10 @@ verifyVector v@Vector{..} =
     (WrapCipherType c, WrapDHType d, WrapHashType h) ->
       let swap       = not $ vPattern == NoiseN || vPattern == NoiseK || vPattern == NoiseX
           (io, ro)   = mkHandshakeOpts v d
-          (ins, rns) = mkNoiseStates io ro c h in
-      go swap [] ins rns vMessages
+          (ins, rns) = mkNoiseStates io ro c h
+          ins'       = maybe ins (setSecondaryKey ins) viSSK
+          rns'       = maybe rns (setSecondaryKey rns) vrSSK in
+      go swap [] ins' rns' vMessages
 
   where
     stripState = join (***) (either Left (\(r, e, _) -> Right (r, e)))
@@ -134,8 +136,8 @@ verifyVectorFile f = do
 
   allResults <- mapConcurrently (\v -> return (vName v, verifyVector v, vFail v)) $ vfVectors vf
 
-  let didItFail  = all (== True) . fmap ((== (True, True)) . join (***) (either (const False) (uncurry (==))))
-      failures   = filter (\(_, results, mustItFail) -> (didItFail results == mustItFail)) allResults
+  let didItFail = all (== True) . fmap ((== (True, True)) . join (***) (either (const False) (uncurry (==))))
+      failures  = filter (\(_, results, mustItFail) -> (didItFail results == mustItFail)) allResults
 
   if not (null failures) then do
     putStrLn $ f <> ": The following vectors have failed:\n"

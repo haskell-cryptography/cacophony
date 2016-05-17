@@ -58,7 +58,7 @@ responderStatic DTCurve448 = hexToPair "a9b45971180882a79b89a3399544a425ef8136d2
 
 mkKeys :: DH d
        => Plaintext
-       -> Maybe Plaintext
+       -> Maybe ScrubbedBytes
        -> Bool
        -> DHType d
        -> HandshakeKeys d
@@ -91,18 +91,22 @@ genMessages swap = go []
 
 genVector :: [ScrubbedBytes]
           -> HandshakeType
-          -> Maybe Plaintext
+          -> Maybe ScrubbedBytes
+          -> Maybe ScrubbedBytes
           -> SomeCipherType
           -> SomeDHType
           -> SomeHashType
           -> IO Vector
-genVector payloads pat psk cType@(WrapCipherType c) dType@(WrapDHType d) hType@(WrapHashType h) = do
+genVector payloads pat psk ssk cType@(WrapCipherType c) dType@(WrapDHType d) hType@(WrapHashType h) = do
   let ihk  = mkKeys "John Galt" psk True d
       rhk  = mkKeys "John Galt" psk False d
       ins  = mkNoiseState ihk pat InitiatorRole c h
+      ins' = maybe ins (setSecondaryKey ins) ssk
       rns  = mkNoiseState rhk pat ResponderRole c h
+      rns' = maybe rns (setSecondaryKey rns) ssk
       swap = not (pat == NoiseN || pat == NoiseK || pat == NoiseX)
       name = maybe "Noise_" (const "NoisePSK_") psk <>
+             maybe "" (const "SSK_") ssk            <>
              show pat                               <>
              "_"                                    <>
              show d                                 <>
@@ -111,7 +115,7 @@ genVector payloads pat psk cType@(WrapCipherType c) dType@(WrapDHType d) hType@(
              "_"                                    <>
              show h
       allMsgs = (\(payload, ct) -> Message (Just payload) ct)
-                <$> genMessages swap ins rns payloads
+                <$> genMessages swap ins' rns' payloads
 
   return
     Vector { vName            = name
@@ -122,6 +126,7 @@ genVector payloads pat psk cType@(WrapCipherType c) dType@(WrapDHType d) hType@(
            , vFail            = False
            , viPrologue       = hkPrologue ihk
            , viPSK            = hkPSK ihk
+           , viSSK            = ssk
            , viStatic         = dhSecToBytes . fst <$> ins ^. nsHandshakeState . hsOpts . hoLocalStatic
            , viSemiEphemeral  = Nothing
            , viEphemeral      = dhSecToBytes . fst <$> ins ^. nsHandshakeState . hsOpts . hoLocalEphemeral
@@ -129,6 +134,7 @@ genVector payloads pat psk cType@(WrapCipherType c) dType@(WrapDHType d) hType@(
            , virSemiEphemeral = Nothing
            , vrPrologue       = hkPrologue rhk
            , vrPSK            = hkPSK rhk
+           , vrSSK            = ssk
            , vrStatic         = dhSecToBytes . fst <$> rns ^. nsHandshakeState . hsOpts . hoLocalStatic
            , vrSemiEphemeral  = Nothing
            , vrEphemeral      = dhSecToBytes . fst <$> rns ^. nsHandshakeState . hsOpts . hoLocalEphemeral
@@ -142,11 +148,12 @@ genVectorFile :: FilePath
 genVectorFile f = do
   let payloads = ["Ludwig von Mises", "Murray Rothbard", "F. A. Hayek", "Carl Menger", "Jean-Baptiste Say", "Eugen Böhm von Bawerk"]
       patterns = [NoiseNN, NoiseKN, NoiseNK, NoiseKK, NoiseNX, NoiseKX, NoiseXN, NoiseIN, NoiseXK, NoiseIK, NoiseXX, NoiseIX, NoiseN, NoiseK, NoiseX]
-      psks     = [Nothing, Just "This is my Austrian perspective!"]
+      psks     = [Nothing, Just "I don't mean to be subjective..."]
+      ssks     = [Nothing, Just "This is my Austrian perspective!"]
       ciphers  = [WrapCipherType CTChaChaPoly1305, WrapCipherType CTAESGCM]
       dhs      = [WrapDHType DTCurve25519, WrapDHType DTCurve448]
       hashes   = [WrapHashType HTSHA256, WrapHashType HTSHA512, WrapHashType HTBLAKE2s, WrapHashType HTBLAKE2b]
-      vectors  = [genVector payloads p psk c d h | p <- patterns, psk <- psks, c <- ciphers, d <- dhs, h <- hashes]
+      vectors  = [genVector payloads p psk ssk c d h | p <- patterns, psk <- psks, ssk <- ssks, c <- ciphers, d <- dhs, h <- hashes]
 
   vs <- mapConcurrently id vectors
 

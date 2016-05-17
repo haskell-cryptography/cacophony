@@ -40,6 +40,7 @@ import Control.Arrow
 import Control.Lens
 import Data.ByteString (ByteString)
 import Data.Maybe      (isJust)
+import Prelude hiding  (length)
 
 import Crypto.Noise.Cipher
 import Crypto.Noise.DH
@@ -115,12 +116,12 @@ handshakeHash ns = either (const Nothing)
                           (Just . hashToBytes)
                           $ ns ^. nsHandshakeState . hsSymmetricState . ssh
 
--- | Sets a secondary symmetric key. This must be 32 bytes in length as
---   per the spec, but this function will allow keys of any size.
+-- | Sets a secondary symmetric key. This must be 32 bytes in length.
 --
 --   See section 9.5 of the protocol for details.
 setSecondaryKey :: (Cipher c, DH h, Hash h)
                 => NoiseState c d h
                 -> ScrubbedBytes
                 -> NoiseState c d h
-setSecondaryKey ns k = ns & nsHandshakeState . hsSymmetricState . ssk .~ k
+setSecondaryKey ns k | length k == 32 = ns & nsHandshakeState . hsSymmetricState . ssk .~ k
+                     | otherwise      = error "secondary key must be 32 bytes in length"

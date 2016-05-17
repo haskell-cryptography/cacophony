@@ -19,7 +19,7 @@ import Data.ByteString      (ByteString)
 import Data.Maybe           (isJust)
 import Data.Monoid          ((<>))
 import Data.Proxy           (Proxy(..))
-import Prelude hiding       (concat, splitAt)
+import Prelude hiding       (concat, splitAt, length)
 
 import Crypto.Noise.Cipher
 import Crypto.Noise.DH
@@ -79,12 +79,14 @@ invertRole ResponderRole = InitiatorRole
 handshakeState :: forall c d h. (Cipher c, DH d, Hash h)
                => HandshakeOpts d
                -> HandshakeState c d h
-handshakeState ho =
+handshakeState ho | not (validPSK (ho ^. hoPreSharedKey)) = error "pre-shared key must be 32 bytes in length"
+                  | otherwise =
   HandshakeState { _hsSymmetricState = ss''
                  , _hsOpts           = ho
                  , _hsMsgBuffer      = mempty
                  }
   where
+    validPSK = maybe True (\psk -> length psk == 32)
     ss   = symmetricState $ mkHandshakeName (ho ^. hoPattern ^. hpName)
                                             (isJust (ho ^. hoPreSharedKey))
                                             (Proxy :: Proxy (c, d, h))

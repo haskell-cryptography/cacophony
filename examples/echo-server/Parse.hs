@@ -32,7 +32,6 @@ serializeHeader (psk, hp, ct, dt, ht) =
     hpByte NoiseIK = 9
     hpByte NoiseXX = 10
     hpByte NoiseIX = 11
-    hpByte NoiseXR = 12
     ctByte :: SomeCipherType -> Word8
     ctByte (WrapCipherType CTChaChaPoly1305) = 0
     ctByte (WrapCipherType CTAESGCM)         = 1
@@ -63,7 +62,6 @@ handshakeByteToType 8  = NoiseXK
 handshakeByteToType 9  = NoiseIK
 handshakeByteToType 10 = NoiseXX
 handshakeByteToType 11 = NoiseIX
-handshakeByteToType 12 = NoiseXR
 handshakeByteToType _  = error "invalid handshake type"
 
 cipherByteToType :: Word8 -> SomeCipherType

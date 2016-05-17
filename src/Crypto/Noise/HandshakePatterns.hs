@@ -30,7 +30,6 @@ module Crypto.Noise.HandshakePatterns
   , noiseIE
   , noiseXX
   , noiseIX
-  , noiseXR
   , noiseN
   , noiseK
   , noiseX
@@ -339,27 +338,6 @@ noiseIX = HandshakePattern "IX" $ do
     e
     dhee
     dhes
-    s
-    dhse
-
--- | @Noise_XR(s, rs):
---  -> e
---  <- e, dhee
---  -> s, dhse
---  <- s, dhse@
-noiseXR :: HandshakePattern
-noiseXR = HandshakePattern "XR" $ do
-  initiator e
-
-  responder $ do
-    e
-    dhee
-
-  initiator $ do
-    s
-    dhse
-
-  responder $ do
     s
     dhse
 

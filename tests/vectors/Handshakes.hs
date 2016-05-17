@@ -186,14 +186,6 @@ mkNoiseState HandshakeKeys{..} NoiseIX r _ _ = noiseState ho
               & hoLocalStatic    .~ Just hkLocalStatic
               & hoLocalEphemeral .~ Just hkLocalEphemeral
 
-mkNoiseState HandshakeKeys{..} NoiseXR r _ _ = noiseState ho
-  where
-    dho = defaultHandshakeOpts noiseXR r :: HandshakeOpts d
-    ho  = dho & hoPrologue       .~ hkPrologue
-              & hoPreSharedKey   .~ hkPSK
-              & hoLocalStatic    .~ Just hkLocalStatic
-              & hoLocalEphemeral .~ Just hkLocalEphemeral
-
 mkNoiseState HandshakeKeys{..} NoiseN InitiatorRole _ _ = noiseState ho
   where
     dho = defaultHandshakeOpts noiseN InitiatorRole :: HandshakeOpts d

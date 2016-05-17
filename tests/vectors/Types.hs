@@ -28,7 +28,6 @@ data HandshakeType = NoiseNN
                    | NoiseIK
                    | NoiseXX
                    | NoiseIX
-                   | NoiseXR
                    | NoiseN
                    | NoiseK
                    | NoiseX
@@ -47,7 +46,6 @@ instance FromJSON HandshakeType where
   parseJSON (String "IK") = pure NoiseIK
   parseJSON (String "XX") = pure NoiseXX
   parseJSON (String "IX") = pure NoiseIX
-  parseJSON (String "XR") = pure NoiseXR
   parseJSON (String "N")  = pure NoiseN
   parseJSON (String "K")  = pure NoiseK
   parseJSON (String "X")  = pure NoiseX
@@ -116,7 +114,6 @@ hsTypeToPattern NoiseXK = noiseXK
 hsTypeToPattern NoiseIK = noiseIK
 hsTypeToPattern NoiseXX = noiseXX
 hsTypeToPattern NoiseIX = noiseIX
-hsTypeToPattern NoiseXR = noiseXR
 hsTypeToPattern NoiseN  = noiseN
 hsTypeToPattern NoiseK  = noiseK
 hsTypeToPattern NoiseX  = noiseX
@@ -153,7 +150,6 @@ instance Show HandshakeType where
   show NoiseIK = "IK"
   show NoiseXX = "XX"
   show NoiseIX = "IX"
-  show NoiseXR = "XR"
   show NoiseN  = "N"
   show NoiseK  = "K"
   show NoiseX  = "X"

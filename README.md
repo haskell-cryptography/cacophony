@@ -145,4 +145,3 @@ To include these examples in your build, pass the -fbuild-examples flag to Cabal
 | 0x09 |          | IK      |            |       |         |
 | 0x0a |          | XX      |            |       |         |
 | 0x0b |          | IX      |            |       |         |
-| 0x0c |          | XR      |            |       |         |

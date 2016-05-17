@@ -28,7 +28,6 @@ data HandshakeType = NoiseNN
                    | NoiseIK
                    | NoiseXX
                    | NoiseIX
-                   | NoiseXR
                    | NoiseN
                    | NoiseK
                    | NoiseX
@@ -70,7 +69,6 @@ instance Show HandshakeType where
   show NoiseIK = "IK"
   show NoiseXX = "XX"
   show NoiseIX = "IX"
-  show NoiseXR = "XR"
   show NoiseN  = "N"
   show NoiseK  = "K"
   show NoiseX  = "X"

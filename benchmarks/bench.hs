@@ -129,7 +129,6 @@ main = do
                  , (NoiseIK, 2)
                  , (NoiseXX, 3)
                  , (NoiseIX, 2)
-                 , (NoiseXR, 4)
                  , (NoiseN, 1)
                  , (NoiseK, 1)
                  , (NoiseX, 1)

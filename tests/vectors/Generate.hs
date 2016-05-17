@@ -141,7 +141,7 @@ genVectorFile :: FilePath
               -> IO ()
 genVectorFile f = do
   let payloads = ["Ludwig von Mises", "Murray Rothbard", "F. A. Hayek", "Carl Menger", "Jean-Baptiste Say", "Eugen Böhm von Bawerk"]
-      patterns = [NoiseNN, NoiseKN, NoiseNK, NoiseKK, NoiseNX, NoiseKX, NoiseXN, NoiseIN, NoiseXK, NoiseIK, NoiseXX, NoiseIX, NoiseXR, NoiseN, NoiseK, NoiseX]
+      patterns = [NoiseNN, NoiseKN, NoiseNK, NoiseKK, NoiseNX, NoiseKX, NoiseXN, NoiseIN, NoiseXK, NoiseIK, NoiseXX, NoiseIX, NoiseN, NoiseK, NoiseX]
       psks     = [Nothing, Just "This is my Austrian perspective!"]
       ciphers  = [WrapCipherType CTChaChaPoly1305, WrapCipherType CTAESGCM]
       dhs      = [WrapDHType DTCurve25519, WrapDHType DTCurve448]

@@ -38,7 +38,6 @@ data HandshakeType = NoiseNN
                    | NoiseIK
                    | NoiseXX
                    | NoiseIX
-                   | NoiseXR
 
 data CipherType :: * -> * where
   CTChaChaPoly1305 :: CipherType ChaChaPoly1305
@@ -78,7 +77,6 @@ instance Show HandshakeType where
   show NoiseIK = "IK"
   show NoiseXX = "XX"
   show NoiseIX = "IX"
-  show NoiseXR = "XR"
 
 instance Cipher c => Show (CipherType c) where
   show = unpack . convert . cipherName

@@ -58,7 +58,7 @@ import Data.ByteArray.Extend
 --
 --   To prevent catastrophic key re-use, this function may only be used to
 --   secure 2^64 post-handshake messages.
-writeMessage :: (Cipher c, DH d, Hash h)
+writeMessage :: (Cipher c, Hash h)
              => NoiseState c d h
              -> ScrubbedBytes
              -> Either NoiseException (ByteString, NoiseState c d h)
@@ -77,7 +77,7 @@ writeMessage ns msg = right toByteString $
 --
 --   To prevent catastrophic key re-use, this function may only be used to
 --   receive 2^64 post-handshake messages.
-readMessage :: (Cipher c, DH d, Hash h)
+readMessage :: (Cipher c, Hash h)
             => NoiseState c d h
             -> ByteString
             -> Either NoiseException (ScrubbedBytes, NoiseState c d h)
@@ -91,14 +91,12 @@ readMessage ns ct =
 -- | For handshake patterns where the remote party's static key is
 --   transmitted, this function can be used to retrieve it. This allows
 --   for the creation of public key-based access-control lists.
-remoteStaticKey :: (Cipher c, DH d, Hash h)
-                => NoiseState c d h
+remoteStaticKey :: NoiseState c d h
                 -> Maybe (PublicKey d)
 remoteStaticKey ns = ns ^. nsHandshakeState . hsOpts . hoRemoteStatic
 
 -- | Returns @True@ if the handshake is complete.
-handshakeComplete :: (Cipher c, DH d, Hash h)
-                  => NoiseState c d h
+handshakeComplete :: NoiseState c d h
                   -> Bool
 handshakeComplete ns = isJust (ns ^. nsSendingCipherState) &&
                        isJust (ns ^. nsReceivingCipherState)
@@ -112,7 +110,7 @@ handshakeComplete ns = isJust (ns ^. nsSendingCipherState) &&
 --   handshake is complete.
 --
 --   See section 9.4 of the protocol for details.
-handshakeHash :: (Cipher c, DH d, Hash h)
+handshakeHash :: Hash h
               => NoiseState c d h
               -> ScrubbedBytes
 handshakeHash ns = either id hashToBytes

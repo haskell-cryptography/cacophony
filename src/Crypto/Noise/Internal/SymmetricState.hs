@@ -55,7 +55,7 @@ mixKey d ss = ss & ssCipher .~ cs
     (ck, k) = hashHKDF (ss ^. ssck) d
     cs      = CipherState (cipherBytesToSym k) cipherZeroNonce 0
 
-mixPSK :: (Cipher c, Hash h)
+mixPSK :: Hash h
        => ScrubbedBytes
        -> SymmetricState c h
        -> SymmetricState c h
@@ -65,7 +65,7 @@ mixPSK psk ss = ss'' & ssHasPSK .~ True
     ss'       = ss & ssck .~ ck
     ss''      = mixHash tmp ss'
 
-mixHash :: (Cipher c, Hash h)
+mixHash :: Hash h
         => ScrubbedBytes
         -> SymmetricState c h
         -> SymmetricState c h

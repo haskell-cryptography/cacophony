@@ -63,7 +63,7 @@ mkNoiseStates :: (Cipher c, DH d, Hash h)
              -> (NoiseState c d h, NoiseState c d h)
 mkNoiseStates iho rho _ _ = (noiseState iho, noiseState rho)
 
-verifyMessage :: (Cipher c, DH d, Hash h)
+verifyMessage :: (Cipher c, Hash h)
               => NoiseState c d h
               -> NoiseState c d h
               -> Message

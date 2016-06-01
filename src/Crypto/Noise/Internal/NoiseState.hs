@@ -43,8 +43,7 @@ $(makeLenses ''NoiseState)
 
 -- | Returns a default set of handshake options. The prologue is set to an
 --   empty string, PSK-mode is disabled, and all keys are set to 'Nothing'.
-defaultHandshakeOpts :: DH d
-                     => HandshakePattern
+defaultHandshakeOpts :: HandshakePattern
                      -> HandshakeRole
                      -> HandshakeOpts d
 defaultHandshakeOpts hp r =
@@ -94,7 +93,7 @@ handshakeState ho | not (validPSK (ho ^. hoPreSharedKey)) = error "pre-shared ke
     ss'  = mixHash (ho ^. hoPrologue) ss
     ss'' = maybe ss' (`mixPSK` ss') $ ho ^. hoPreSharedKey
 
-runHandshake :: (Cipher c, DH d, Hash h)
+runHandshake :: (Cipher c, Hash h)
              => ScrubbedBytes
              -> NoiseState c d h
              -> Either NoiseException (ScrubbedBytes, NoiseState c d h)
@@ -353,43 +352,37 @@ evalPreMsgToken opRole (S next) = do
 
 evalPreMsgToken _ _ = error "invalid pre-message pattern token"
 
-getLocalStatic :: DH d
-               => HandshakeState c d h
+getLocalStatic :: HandshakeState c d h
                -> Handshake c d h (KeyPair d)
 getLocalStatic hs = maybe (throwError (InvalidHandshakeOptions "local static key not set"))
                           return
                           (hs ^. hsOpts ^. hoLocalStatic)
 
-getLocalSemiEphemeral :: DH d
-                      => HandshakeState c d h
+getLocalSemiEphemeral :: HandshakeState c d h
                       -> Handshake c d h (KeyPair d)
 getLocalSemiEphemeral hs = maybe (throwError (InvalidHandshakeOptions "local semi-ephemeral key not set"))
                                  return
                                  (hs ^. hsOpts ^. hoLocalSemiEphemeral)
 
-getLocalEphemeral :: DH d
-                  => HandshakeState c d h
+getLocalEphemeral :: HandshakeState c d h
                   -> Handshake c d h (KeyPair d)
 getLocalEphemeral hs = maybe (throwError (InvalidHandshakeOptions "local ephemeral key not set"))
                              return
                              (hs ^. hsOpts ^. hoLocalEphemeral)
 
-getRemoteStatic :: DH d
-                => HandshakeState c d h
+getRemoteStatic :: HandshakeState c d h
                 -> Handshake c d h (PublicKey d)
 getRemoteStatic hs = maybe (throwError (InvalidHandshakeOptions "remote static key not set"))
                            return
                            (hs ^. hsOpts ^. hoRemoteStatic)
 
-getRemoteSemiEphemeral :: DH d
-                       => HandshakeState c d h
+getRemoteSemiEphemeral :: HandshakeState c d h
                        -> Handshake c d h (PublicKey d)
 getRemoteSemiEphemeral hs = maybe (throwError (InvalidHandshakeOptions "remote semi-ephemeral key not set"))
                                   return
                                   (hs ^. hsOpts ^. hoRemoteSemiEphemeral)
 
-getRemoteEphemeral :: DH d
-                   => HandshakeState c d h
+getRemoteEphemeral :: HandshakeState c d h
                    -> Handshake c d h (PublicKey d)
 getRemoteEphemeral hs = maybe (throwError (InvalidHandshakeOptions "remote ephemeral key not set"))
                               return

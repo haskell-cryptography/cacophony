@@ -67,7 +67,7 @@ instance ToJSON SomeCipherType where
   toJSON (WrapCipherType CTChaChaPoly1305) = "ChaChaPoly"
   toJSON (WrapCipherType CTAESGCM)         = "AESGCM"
 
-instance Cipher c => Show (CipherType c) where
+instance Show (CipherType c) where
   show CTChaChaPoly1305 = "ChaChaPoly"
   show CTAESGCM = "AESGCM"
 
@@ -87,7 +87,7 @@ instance ToJSON SomeDHType where
   toJSON (WrapDHType DTCurve25519) = "25519"
   toJSON (WrapDHType DTCurve448)   = "448"
 
-instance DH d => Show (DHType d) where
+instance Show (DHType d) where
   show DTCurve25519 = "25519"
   show DTCurve448   = "448"
 
@@ -131,7 +131,7 @@ instance ToJSON SomeHashType where
   toJSON (WrapHashType HTBLAKE2s) = "BLAKE2s"
   toJSON (WrapHashType HTBLAKE2b) = "BLAKE2b"
 
-instance Hash h => Show (HashType h) where
+instance Show (HashType h) where
   show HTSHA256  = "SHA256"
   show HTSHA512  = "SHA512"
   show HTBLAKE2s = "BLAKE2s"

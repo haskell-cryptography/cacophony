@@ -4,6 +4,14 @@
 
 * Added test vector support
 
+* Added secondary symmetric key support
+
+* Added GHC 8.0.2 to unit tests
+
+* Removed Noise\_XR
+
+* General code cleanup and other minor tweaks
+
 # 0.6.0
 
 * Added ability to abort handshakes based on the remote party's public key

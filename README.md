@@ -127,7 +127,7 @@ way to generate the PSK file is as follows:
 head -c 32 /dev/random | base64 > psk
 ```
 
-To include these examples in your build, pass the -fbuild-examples flag to Cabal.
+To include these examples in your build, pass the `-fbuild-examples` flag to Cabal.
 
 ### Byte definitions
 

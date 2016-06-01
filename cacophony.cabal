@@ -10,7 +10,7 @@ bug-reports:   https://github.com/centromere/cacophony/issues
 category:      Cryptography
 build-type:    Simple
 cabal-version: >=1.10
-tested-with:   GHC == 7.10.1, GHC == 7.10.2, GHC == 7.10.3
+tested-with:   GHC == 7.10.3, GHC == 8.0.2
 description:
   This library implements the <https://github.com/trevp/noise/blob/master/noise.md Noise>
   protocol.

@@ -13,26 +13,23 @@ before_cache:
 
 matrix:
   include:
-    - env: CABALVER=1.22 GHCVER=7.10.1
-      compiler: ": #GHC 7.10.1"
-      addons: {apt: {packages: [cabal-install-1.22,ghc-7.10.1,alex-3.1.4,happy-1.19.5], sources: [hvr-ghc]}}
-    - env: CABALVER=1.22 GHCVER=7.10.2
-      compiler: ": #GHC 7.10.2"
-      addons: {apt: {packages: [cabal-install-1.22,ghc-7.10.2,alex-3.1.4,happy-1.19.5], sources: [hvr-ghc]}}
     - env: CABALVER=1.22 GHCVER=7.10.3
       compiler: ": #GHC 7.10.3"
-      addons: {apt: {packages: [cabal-install-1.22,ghc-7.10.3,alex-3.1.4,happy-1.19.5], sources: [hvr-ghc]}}
-    - env: CABALVER=1.22 GHCVER=head
+      addons: {apt: {packages: [cabal-install-1.22,ghc-7.10.3,alex-3.1.7,happy-1.19.5], sources: [hvr-ghc]}}
+    - env: CABALVER=1.24 GHCVER=8.0.2
+      compiler: ": #GHC 8.0.2"
+      addons: {apt: {packages: [cabal-install-1.24,ghc-8.0.2,alex-3.1.7,happy-1.19.5], sources: [hvr-ghc]}}
+    - env: CABALVER=head GHCVER=head
       compiler: ": #GHC head"
-      addons: {apt: {packages: [cabal-install-1.22,ghc-head,alex-3.1.4,happy-1.19.5], sources: [hvr-ghc]}}
+      addons: {apt: {packages: [cabal-install-head,ghc-head,alex-3.1.7,happy-1.19.5], sources: [hvr-ghc]}}
 
   allow_failures:
-   - env: CABALVER=1.22 GHCVER=head
+   - env: CABALVER=head GHCVER=head
 
 before_install:
   - unset CC
   - export HAPPYVER=1.19.5
-  - export ALEXVER=3.1.4
+  - export ALEXVER=3.1.7
   - export PATH=~/.cabal/bin:/opt/ghc/$GHCVER/bin:/opt/cabal/$CABALVER/bin:/opt/happy/$HAPPYVER/bin:/opt/alex/$ALEXVER/bin:$PATH
 
 install:
@@ -71,8 +68,6 @@ install:
       cp -a $HOME/.ghc $HOME/.cabsnap/ghc;
       cp -a $HOME/.cabal/lib $HOME/.cabal/share $HOME/.cabal/bin installplan.txt $HOME/.cabsnap/;
     fi
-
-  - cabal install
 
 script:
   - cabal configure --enable-tests --enable-benchmarks -fbuild-examples -v2  # -v2 provides useful information for debugging

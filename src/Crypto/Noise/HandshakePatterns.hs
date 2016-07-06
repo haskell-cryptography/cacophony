@@ -113,8 +113,8 @@ noiseKK = HandshakePattern "KK" $ do
 noiseNE :: HandshakePattern
 noiseNE = HandshakePattern "NE" $ do
   preResponder $ do
-    s
     e
+    s
 
   initiator $ do
     e
@@ -138,8 +138,8 @@ noiseKE = HandshakePattern "KE" $ do
   preInitiator s
 
   preResponder $ do
-    s
     e
+    s
 
   initiator $ do
     e
@@ -266,8 +266,8 @@ noiseIK = HandshakePattern "IK" $ do
 noiseXE :: HandshakePattern
 noiseXE = HandshakePattern "XE" $ do
   preResponder $ do
-    s
     e
+    s
 
   initiator $ do
     e
@@ -292,8 +292,8 @@ noiseXE = HandshakePattern "XE" $ do
 noiseIE :: HandshakePattern
 noiseIE = HandshakePattern "IE" $ do
   preResponder $ do
-    s
     e
+    s
 
   initiator $ do
     e

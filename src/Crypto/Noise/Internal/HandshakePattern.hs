@@ -10,7 +10,7 @@
 module Crypto.Noise.Internal.HandshakePattern where
 
 import Control.Lens
-import Control.Monad.Trans.Free.Church
+import Control.Monad.Free.Church
 import Control.Monad.Free.TH
 import Data.ByteString (ByteString)
 
@@ -26,10 +26,10 @@ data TokenF next
 $(makeFree ''TokenF)
 
 data HandshakePatternF next
-  = PreInitiator (FT TokenF Identity ()) next
-  | PreResponder (FT TokenF Identity ()) next
-  | Initiator (FT TokenF Identity ()) next
-  | Responder (FT TokenF Identity ()) next
+  = PreInitiator (F TokenF ()) next
+  | PreResponder (F TokenF ()) next
+  | Initiator (F TokenF ()) next
+  | Responder (F TokenF ()) next
   deriving Functor
 
 $(makeFree ''HandshakePatternF)
@@ -38,7 +38,7 @@ $(makeFree ''HandshakePatternF)
 --   Free Monad.
 data HandshakePattern =
   HandshakePattern { _hpName    :: ByteString
-                   , _hpActions :: FT HandshakePatternF Identity ()
+                   , _hpActions :: F HandshakePatternF ()
                    }
 
 $(makeLenses ''HandshakePattern)

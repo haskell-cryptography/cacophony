@@ -13,7 +13,7 @@ import Control.Monad.Coroutine
 import Control.Monad.Coroutine.SuspensionFunctors
 import Control.Monad.Except (MonadError(..), runExcept)
 import Control.Monad.State  (MonadState(..), runStateT, get, put)
-import Control.Monad.Trans.Free.Church
+import Control.Monad.Free.Church
 import Control.Lens
 import Data.ByteString      (ByteString)
 import Data.Maybe           (isJust)
@@ -130,7 +130,7 @@ noiseState ho =
 
   where
     hs        = handshakeState ho :: HandshakeState c d h
-    coroutine = iterM evalPattern $ hoistFT (return . runIdentity) (ho ^. hoPattern . hpActions)
+    coroutine = iterM evalPattern $ ho ^. hoPattern . hpActions
     (suspension, hs'') = case runExcept (runStateT (resume (runHandshake' coroutine)) hs) of
             Left err -> error $ "handshake pattern interpreter threw exception: " <> show err
             Right result -> case result of
@@ -139,7 +139,7 @@ noiseState ho =
 
 processPatternOp :: (Cipher c, DH d, Hash h)
                  => HandshakeRole
-                 -> FT TokenF Identity ()
+                 -> F TokenF ()
                  -> Handshake c d h ()
                  -> Handshake c d h ()
 processPatternOp opRole t next = do
@@ -149,7 +149,7 @@ processPatternOp opRole t next = do
 
   if opRole == hs' ^. hsOpts . hoRole then do
     put $ hs' & hsMsgBuffer .~ mempty
-    iterM (evalMsgToken opRole) $ hoistFT (return . runIdentity) t
+    iterM (evalMsgToken opRole) t
 
     hs'' <- get
 
@@ -161,7 +161,7 @@ processPatternOp opRole t next = do
                & hsSymmetricState .~ ss
   else do
     put $ hs' & hsMsgBuffer .~ input
-    iterM (evalMsgToken opRole) $ hoistFT (return . runIdentity) t
+    iterM (evalMsgToken opRole) t
 
     hs'' <- get
 
@@ -180,11 +180,11 @@ evalPattern :: (Cipher c, DH d, Hash h)
             => HandshakePatternF (Handshake c d h ())
             -> Handshake c d h ()
 evalPattern (PreInitiator t next) = do
-  iterM (evalPreMsgToken InitiatorRole) $ hoistFT (return . runIdentity) t
+  iterM (evalPreMsgToken InitiatorRole) t
   next
 
 evalPattern (PreResponder t next) = do
-  iterM (evalPreMsgToken ResponderRole) $ hoistFT (return . runIdentity) t
+  iterM (evalPreMsgToken ResponderRole) t
   next
 
 evalPattern (Initiator t next) = processPatternOp InitiatorRole t next

@@ -52,7 +52,7 @@ processOptions :: (Options, [String]) -> IO ()
 processOptions (Options{..}, [port, pskFile]) = do
   local25519 <- processPrivateKey "server_key_25519"
   local448 <- processPrivateKey "server_key_448"
-  remote25519 <- readPublicKey "client_key_448.pub"
+  remote25519 <- readPublicKey "client_key_25519.pub"
   remote448 <- readPublicKey "client_key_448.pub"
   psk <- readPSK pskFile
 

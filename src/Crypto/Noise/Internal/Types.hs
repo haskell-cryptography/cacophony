@@ -7,6 +7,8 @@
 
 module Crypto.Noise.Internal.Types where
 
+import Control.Exception.Safe
+
 -- | Represents the various exceptions which can be thrown.
 --
 --   * 'InvalidHandshakeOptions' occurs when a key that is needed is missing, or
@@ -31,3 +33,5 @@ data NoiseException = InvalidHandshakeOptions String
                     | HandshakeError String
                     | MessageLimitReached String
                     deriving Show
+
+instance Exception NoiseException

@@ -3,6 +3,7 @@ module Verify where
 
 import Control.Arrow
 import Control.Concurrent.Async (mapConcurrently)
+import Control.Exception        (SomeException)
 import Control.Monad.State
 import Data.Aeson               (decode)
 import Data.ByteString          (ByteString)
@@ -67,21 +68,19 @@ verifyMessage :: (Cipher c, Hash h)
               => NoiseState c d h
               -> NoiseState c d h
               -> Message
-              -> (Either NoiseException (ByteString, ByteString, NoiseState c d h),
-                  Either NoiseException (ByteString, ByteString, NoiseState c d h))
+              -> (Either SomeException (ByteString, ByteString, NoiseState c d h),
+                  Either SomeException (ByteString, ByteString, NoiseState c d h))
 verifyMessage sendingState receivingState Message{..} = (sendResult, recvResult)
   where
-    payload        = fromMaybe "" mPayload
-    writeMsg       = writeMessage sendingState payload
-    readMsg        = readMessage receivingState mCiphertext
-    convertPayload = either Left (\(p, s) -> Right (convert p, convert payload, s))
-    convertCt      = either Left (\(p, s) -> Right (p, mCiphertext , s))
-    sendResult     = convertCt writeMsg
-    recvResult     = convertPayload readMsg
+    payload            = fromMaybe "" mPayload
+    convertSend (p, s) = (p, mCiphertext, s)
+    convertRecv (c, s) = (convert c, convert payload, s)
+    sendResult         = convertSend <$> writeMessage sendingState payload
+    recvResult         = convertRecv <$> readMessage receivingState mCiphertext
 
 verifyVector :: Vector
-             -> [(Either NoiseException (ByteString, ByteString),
-                  Either NoiseException (ByteString, ByteString))]
+             -> [(Either SomeException (ByteString, ByteString),
+                  Either SomeException (ByteString, ByteString))]
 verifyVector v@Vector{..} =
   case (vCipher, vDH, vHash) of
     (WrapCipherType c, WrapDHType d, WrapHashType h) ->
@@ -112,7 +111,7 @@ verifyVector v@Vector{..} =
 
 printFailure :: Int
              -> Bool
-             -> Either NoiseException (ByteString, ByteString)
+             -> Either SomeException (ByteString, ByteString)
              -> IO ()
 printFailure i payload mr =
   case mr of

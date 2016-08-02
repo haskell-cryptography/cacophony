@@ -9,6 +9,7 @@
 
 module Crypto.Noise.Internal.CipherState where
 
+import Control.Exception.Safe
 import Control.Lens
 
 import Crypto.Noise.Cipher
@@ -22,28 +23,30 @@ data CipherState c =
 
 $(makeLenses ''CipherState)
 
-encryptAndIncrement :: Cipher c
+encryptAndIncrement :: (MonadThrow m, Cipher c)
                     => AssocData
                     -> Plaintext
                     -> CipherState c
-                    -> Either NoiseException (Ciphertext c, CipherState c)
-encryptAndIncrement ad plaintext cs | allow     = Right (ct, newState)
-                                    | otherwise = Left $ MessageLimitReached "encryptAndIncrement"
+                    -> m (Ciphertext c, CipherState c)
+encryptAndIncrement ad plaintext cs
+  | allow     = return (ct, newState)
+  | otherwise = throwM $ MessageLimitReached "encryptAndIncrement"
   where
     ct       = cipherEncrypt (cs ^. csk) (cs ^. csn) ad plaintext
     newState = cs & csn %~ cipherIncNonce
     allow    = cs ^. csCount < 2 ^ (64 :: Integer)
 
-decryptAndIncrement :: Cipher c
+decryptAndIncrement :: (MonadThrow m, Cipher c)
                     => AssocData
                     -> Ciphertext c
                     -> CipherState c
-                    -> Either NoiseException (Plaintext, CipherState c)
-decryptAndIncrement ad ct cs | allow     =
-  maybe (Left $ DecryptionError "decryptAndIncrement")
-        (\x -> Right (x, newState))
-        pt
-                             | otherwise = Left $ MessageLimitReached "decryptAndIncrement"
+                    -> m (Plaintext, CipherState c)
+decryptAndIncrement ad ct cs
+  | allow     =
+    maybe (throwM (DecryptionError "decryptAndIncrement"))
+          (\x -> return (x, newState))
+          pt
+  | otherwise = throwM $ MessageLimitReached "decryptAndIncrement"
   where
     pt       = cipherDecrypt (cs ^. csk) (cs ^. csn) ad ct
     newState = maybe cs (const (cs & csn %~ cipherIncNonce)) pt

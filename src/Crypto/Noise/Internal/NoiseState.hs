@@ -9,9 +9,9 @@
 
 module Crypto.Noise.Internal.NoiseState where
 
+import Control.Monad.Catch.Pure
 import Control.Monad.Coroutine
 import Control.Monad.Coroutine.SuspensionFunctors
-import Control.Monad.Except (MonadError(..), runExcept)
 import Control.Monad.State  (MonadState(..), runStateT, get, put)
 import Control.Monad.Free.Church
 import Control.Lens
@@ -93,15 +93,16 @@ handshakeState ho | not (validPSK (ho ^. hoPreSharedKey)) = error "pre-shared ke
     ss'  = mixHash (ho ^. hoPrologue) ss
     ss'' = maybe ss' (`mixPSK` ss') $ ho ^. hoPreSharedKey
 
-runHandshake :: (Cipher c, Hash h)
+runHandshake :: (MonadThrow m, Cipher c, Hash h)
              => ScrubbedBytes
              -> NoiseState c d h
-             -> Either NoiseException (ScrubbedBytes, NoiseState c d h)
-runHandshake msg ns = runExcept $ do
+             -> m (ScrubbedBytes, NoiseState c d h)
+runHandshake msg ns = reThrow . runCatch $ do
   ((res, ns''), hs') <- runStateT st $ ns ^. nsHandshakeState
   return (res, ns'' & nsHandshakeState .~ hs')
 
   where
+    reThrow = either throwM return
     st = do
       x <- resume . runHandshake' . (ns ^. nsHandshakeSuspension) $ msg
       case x of
@@ -131,7 +132,7 @@ noiseState ho =
   where
     hs        = handshakeState ho :: HandshakeState c d h
     coroutine = iterM evalPattern $ ho ^. hoPattern . hpActions
-    (suspension, hs'') = case runExcept (runStateT (resume (runHandshake' coroutine)) hs) of
+    (suspension, hs'') = case runCatch (runStateT (resume (runHandshake' coroutine)) hs) of
             Left err -> error $ "handshake pattern interpreter threw exception: " <> show err
             Right result -> case result of
               (Left (Request _ resp), hs') -> (Handshake . resp, hs')
@@ -155,7 +156,7 @@ processPatternOp opRole t next = do
 
     let enc = encryptAndHash (convert input) $ hs'' ^. hsSymmetricState
 
-    (ep, ss) <- either throwError return enc
+    (ep, ss) <- either throwM return enc
 
     put $ hs'' & hsMsgBuffer      %~ (flip mappend . convert) ep
                & hsSymmetricState .~ ss
@@ -169,7 +170,7 @@ processPatternOp opRole t next = do
         dec       = decryptAndHash (cipherBytesToText (convert remaining))
                     $ hs'' ^. hsSymmetricState
 
-    (dp, ss) <- either (const . throwError . HandshakeError $ "handshake payload failed to decrypt") return dec
+    (dp, ss) <- either (const . throwM . HandshakeError $ "handshake payload failed to decrypt") return dec
 
     put $ hs'' & hsMsgBuffer      .~ convert dp
                & hsSymmetricState .~ ss
@@ -215,7 +216,7 @@ evalMsgToken opRole (E next) = do
         ss''      = if ss ^. ssHasPSK then mixKey reBytes ss' else ss'
         theirKey  = dhBytesToPub reBytes
 
-    theirKey' <- maybe (throwError . HandshakeError $ "invalid remote ephemeral key") return theirKey
+    theirKey' <- maybe (throwM . HandshakeError $ "invalid remote ephemeral key") return theirKey
 
     put $ hs & hsOpts . hoRemoteEphemeral .~ Just theirKey'
              & hsSymmetricState           .~ ss''
@@ -231,13 +232,13 @@ evalMsgToken opRole (S next) = do
     let ss  = hs ^. hsSymmetricState
         enc = encryptAndHash (convert pk) ss
 
-    (ct, ss') <- either throwError return enc
+    (ct, ss') <- either throwM return enc
 
     put $ hs & hsSymmetricState .~ ss'
              & hsMsgBuffer      %~ (flip mappend . convert) ct
   else
     if isJust (hs ^. hsOpts ^. hoRemoteStatic)
-      then throwError . InvalidHandshakeOptions $ "unable to overwrite remote static key"
+      then throwM . InvalidHandshakeOptions $ "unable to overwrite remote static key"
       else do
         let hasKey    = hs ^. hsSymmetricState . ssHasKey
             len       = dhLength (Proxy :: Proxy d)
@@ -248,8 +249,8 @@ evalMsgToken opRole (S next) = do
             ss        = hs ^. hsSymmetricState
             dec       = decryptAndHash ct ss
 
-        (pt, ss')     <- either (const . throwError . HandshakeError $ "failed to decrypt remote static key") return dec
-        theirKey'     <- maybe (throwError . HandshakeError $ "invalid remote static key provided") return $ dhBytesToPub pt
+        (pt, ss')     <- either (const . throwM . HandshakeError $ "failed to decrypt remote static key") return dec
+        theirKey'     <- maybe (throwM . HandshakeError $ "invalid remote static key provided") return $ dhBytesToPub pt
 
         put $ hs & hsOpts . hoRemoteStatic .~ Just theirKey'
                  & hsSymmetricState        .~ ss'
@@ -354,36 +355,36 @@ evalPreMsgToken _ _ = error "invalid pre-message pattern token"
 
 getLocalStatic :: HandshakeState c d h
                -> Handshake c d h (KeyPair d)
-getLocalStatic hs = maybe (throwError (InvalidHandshakeOptions "local static key not set"))
+getLocalStatic hs = maybe (throwM (InvalidHandshakeOptions "local static key not set"))
                           return
                           (hs ^. hsOpts ^. hoLocalStatic)
 
 getLocalSemiEphemeral :: HandshakeState c d h
                       -> Handshake c d h (KeyPair d)
-getLocalSemiEphemeral hs = maybe (throwError (InvalidHandshakeOptions "local semi-ephemeral key not set"))
+getLocalSemiEphemeral hs = maybe (throwM (InvalidHandshakeOptions "local semi-ephemeral key not set"))
                                  return
                                  (hs ^. hsOpts ^. hoLocalSemiEphemeral)
 
 getLocalEphemeral :: HandshakeState c d h
                   -> Handshake c d h (KeyPair d)
-getLocalEphemeral hs = maybe (throwError (InvalidHandshakeOptions "local ephemeral key not set"))
+getLocalEphemeral hs = maybe (throwM (InvalidHandshakeOptions "local ephemeral key not set"))
                              return
                              (hs ^. hsOpts ^. hoLocalEphemeral)
 
 getRemoteStatic :: HandshakeState c d h
                 -> Handshake c d h (PublicKey d)
-getRemoteStatic hs = maybe (throwError (InvalidHandshakeOptions "remote static key not set"))
+getRemoteStatic hs = maybe (throwM (InvalidHandshakeOptions "remote static key not set"))
                            return
                            (hs ^. hsOpts ^. hoRemoteStatic)
 
 getRemoteSemiEphemeral :: HandshakeState c d h
                        -> Handshake c d h (PublicKey d)
-getRemoteSemiEphemeral hs = maybe (throwError (InvalidHandshakeOptions "remote semi-ephemeral key not set"))
+getRemoteSemiEphemeral hs = maybe (throwM (InvalidHandshakeOptions "remote semi-ephemeral key not set"))
                                   return
                                   (hs ^. hsOpts ^. hoRemoteSemiEphemeral)
 
 getRemoteEphemeral :: HandshakeState c d h
                    -> Handshake c d h (PublicKey d)
-getRemoteEphemeral hs = maybe (throwError (InvalidHandshakeOptions "remote ephemeral key not set"))
+getRemoteEphemeral hs = maybe (throwM (InvalidHandshakeOptions "remote ephemeral key not set"))
                               return
                               (hs ^. hsOpts ^. hoRemoteEphemeral)

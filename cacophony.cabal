@@ -57,11 +57,13 @@ library
     bytestring,
     cryptonite >=0.16,
     deepseq,
+    exceptions >=0.8.3,
     free,
     lens,
     memory,
     monad-coroutine,
     mtl,
+    safe-exceptions,
     transformers
   hs-source-dirs:   src
   default-language: Haskell2010

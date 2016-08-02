@@ -14,7 +14,7 @@ module Crypto.Noise.Internal.Handshake where
 import Control.Lens
 import Control.Monad.Coroutine
 import Control.Monad.Coroutine.SuspensionFunctors
-import Control.Monad.Except (MonadError(..), Except)
+import Control.Monad.Catch.Pure
 import Control.Monad.State  (MonadState(..), StateT)
 import Control.Monad.Trans.Class (MonadTrans(lift))
 
@@ -22,7 +22,6 @@ import Crypto.Noise.Cipher
 import Crypto.Noise.DH
 import Crypto.Noise.Internal.HandshakePattern
 import Crypto.Noise.Internal.SymmetricState
-import Crypto.Noise.Internal.Types
 import Data.ByteArray.Extend
 
 -- | Represents the side of the conversation upon which a party resides.
@@ -54,17 +53,16 @@ data HandshakeState c d h =
 $(makeLenses ''HandshakeState)
 
 newtype Handshake c d h r =
-  Handshake { runHandshake' :: Coroutine (Request ScrubbedBytes ScrubbedBytes) (StateT (HandshakeState c d h) (Except NoiseException)) r
+  Handshake { runHandshake' :: Coroutine (Request ScrubbedBytes ScrubbedBytes) (StateT (HandshakeState c d h) Catch) r
             } deriving ( Functor
                        , Applicative
                        , Monad
-                       , MonadError NoiseException
+                       , MonadThrow
                        , MonadState (HandshakeState c d h)
                        )
 
-instance (Functor f, MonadError e m) => MonadError e (Coroutine f m) where
-  throwError = lift . throwError
-  catchError m _ = m
+instance (Functor f, MonadThrow m) => MonadThrow (Coroutine f m) where
+  throwM = lift . throwM
 
 instance (Functor f, MonadState s m) => MonadState s (Coroutine f m) where
   get = lift get

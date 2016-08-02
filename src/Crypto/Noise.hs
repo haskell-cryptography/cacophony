@@ -37,6 +37,7 @@ module Crypto.Noise
   ) where
 
 import Control.Arrow
+import Control.Exception.Safe
 import Control.Lens
 import Data.ByteString (ByteString)
 import Data.Maybe      (isJust)
@@ -58,18 +59,18 @@ import Data.ByteArray.Extend
 --
 --   To prevent catastrophic key re-use, this function may only be used to
 --   secure 2^64 post-handshake messages.
-writeMessage :: (Cipher c, Hash h)
+writeMessage :: (MonadThrow m, Cipher c, Hash h)
              => NoiseState c d h
              -> ScrubbedBytes
-             -> Either NoiseException (ByteString, NoiseState c d h)
-writeMessage ns msg = right toByteString $
-  maybe (runHandshake msg ns)
-        (right (ctToBytes *** updateState) . encryptAndIncrement "" msg)
-        (ns ^. nsSendingCipherState)
+             -> m (ByteString, NoiseState c d h)
+writeMessage ns msg = maybe
+  (first convertArr <$> runHandshake msg ns)
+  (\cs -> (ctToBytes *** updateState) <$> encryptAndIncrement "" msg cs)
+  (ns ^. nsSendingCipherState)
   where
-    ctToBytes    = arr cipherTextToBytes
+    convertArr   = arr convert
+    ctToBytes    = convertArr . arr cipherTextToBytes
     updateState  = arr $ \cs -> ns & nsSendingCipherState .~ Just cs
-    toByteString = first (arr convert)
 
 -- | Reads a Noise message and returns the embedded payload. If the
 --   handshake fails, a 'HandshakeError' will be returned. After the handshake
@@ -77,15 +78,16 @@ writeMessage ns msg = right toByteString $
 --
 --   To prevent catastrophic key re-use, this function may only be used to
 --   receive 2^64 post-handshake messages.
-readMessage :: (Cipher c, Hash h)
+readMessage :: (MonadThrow m, Cipher c, Hash h)
             => NoiseState c d h
             -> ByteString
-            -> Either NoiseException (ScrubbedBytes, NoiseState c d h)
-readMessage ns ct =
-  maybe (runHandshake (convert ct) ns)
-        ((right . second) updateState . (decryptAndIncrement "" . cipherBytesToText . convert) ct)
-        (ns ^. nsReceivingCipherState)
+            -> m (ScrubbedBytes, NoiseState c d h)
+readMessage ns ct = maybe
+  (runHandshake (convert ct) ns)
+  (\cs -> second updateState <$> decryptAndIncrement "" ct' cs)
+  (ns ^. nsReceivingCipherState)
   where
+    ct'         = cipherBytesToText . convert $ ct
     updateState = arr $ \cs -> ns & nsReceivingCipherState .~ Just cs
 
 -- | For handshake patterns where the remote party's static key is

@@ -9,6 +9,8 @@
 
 module Crypto.Noise.Internal.SymmetricState where
 
+import Control.Arrow
+import Control.Exception.Safe
 import Control.Lens
 import Data.ByteString (empty)
 import Data.Proxy
@@ -17,7 +19,6 @@ import Prelude hiding  (length, replicate)
 import Crypto.Noise.Cipher
 import Crypto.Noise.Hash
 import Crypto.Noise.Internal.CipherState
-import Crypto.Noise.Internal.Types
 import Data.ByteArray.Extend
 
 data SymmetricState c h =
@@ -71,29 +72,29 @@ mixHash :: Hash h
         -> SymmetricState c h
 mixHash d ss = ss & ssh %~ Right . hash . (`mappend` d) . sshBytes
 
-encryptAndHash :: (Cipher c, Hash h)
+encryptAndHash :: (MonadThrow m, Cipher c, Hash h)
                => Plaintext
                -> SymmetricState c h
-               -> Either NoiseException (ScrubbedBytes, SymmetricState c h)
+               -> m (ScrubbedBytes, SymmetricState c h)
 encryptAndHash pt ss
-  | ss ^. ssHasKey = either Left (\(ct, cs') -> Right (cipherTextToBytes ct, kss ct cs')) enc
-  | otherwise      = Right (pt, nkss)
+  | ss ^. ssHasKey = mix . first toBytes <$> enc
+  | otherwise      = return (pt, mixHash pt ss)
   where
-    enc       = encryptAndIncrement (sshBytes (ss ^. ssh)) pt (ss ^. ssCipher)
-    kss ct cs = mixHash (cipherTextToBytes ct) ss & ssCipher .~ cs
-    nkss      = mixHash pt ss
+    enc          = encryptAndIncrement (sshBytes (ss ^. ssh)) pt (ss ^. ssCipher)
+    mix (cb, cs) = (cb, mixHash cb ss & ssCipher .~ cs)
+    toBytes      = arr cipherTextToBytes
 
-decryptAndHash :: (Cipher c, Hash h)
+decryptAndHash :: (MonadThrow m, Cipher c, Hash h)
                => Ciphertext c
                -> SymmetricState c h
-               -> Either NoiseException (Plaintext, SymmetricState c h)
+               -> m (Plaintext, SymmetricState c h)
 decryptAndHash ct ss
-  | ss ^. ssHasKey = either Left (\(pt, cs') -> Right (pt, kss cs')) dec
-  | otherwise      = Right (cipherTextToBytes ct, nkss)
+  | ss ^. ssHasKey = second kss <$> dec
+  | otherwise      = return (ct', mixHash ct' ss)
   where
-    dec    = decryptAndIncrement (sshBytes (ss ^. ssh)) ct (ss ^. ssCipher)
-    kss cs = mixHash (cipherTextToBytes ct) ss & ssCipher .~ cs
-    nkss   = mixHash (cipherTextToBytes ct) ss
+    dec  = decryptAndIncrement (sshBytes (ss ^. ssh)) ct (ss ^. ssCipher)
+    kss  = arr $ \cs -> mixHash ct' ss & ssCipher .~ cs
+    ct'  = cipherTextToBytes ct
 
 split :: (Cipher c, Hash h)
       => SymmetricState c h

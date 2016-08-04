@@ -33,6 +33,7 @@ module Crypto.Noise.HandshakePatterns
   , noiseN
   , noiseK
   , noiseX
+  , noiseXXfallback
   ) where
 
 import Crypto.Noise.Internal.HandshakePattern
@@ -382,3 +383,22 @@ noiseX = HandshakePattern "X" $ do
     dhes
     s
     dhss
+
+-- | @Noise_XXfallback(s, rs, re):
+--  <- e
+--  ...
+--  -> e, dhee, s, dhse
+--  <- s, dhse
+noiseXXfallback :: HandshakePattern
+noiseXXfallback = HandshakePattern "XXfallback" $ do
+  preResponder e
+
+  initiator $ do
+    e
+    dhee
+    s
+    dhse
+
+  responder $ do
+    s
+    dhse

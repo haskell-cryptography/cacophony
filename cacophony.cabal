@@ -1,5 +1,5 @@
 name:          cacophony
-version:       0.7.0
+version:       0.8.0
 synopsis:      A library implementing the Noise protocol.
 license:       PublicDomain
 license-file:  LICENSE

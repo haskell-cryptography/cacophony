@@ -1,3 +1,16 @@
+# 0.8.0
+
+* Exceptions are now provided by the safe-exceptions package
+  (breaking API change)
+
+* Added Noise\_XXfallback pattern
+
+* Minor improvements to handshake pattern definition
+
+* Updated non-standard handshake patterns to conform with rev 30
+
+* Fixed bug which caused echo-server to read wrong public key
+
 # 0.7.0
 
 * Major API overhaul and refactoring

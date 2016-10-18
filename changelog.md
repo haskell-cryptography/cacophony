@@ -1,3 +1,13 @@
+# 0.9.0
+
+* Removed secondary key support (rev 31)
+
+* Renamed dh tokens (rev 31)
+
+* Added Noise-C vectors
+
+* Regenerated test vectors
+
 # 0.8.0
 
 * Exceptions are now provided by the safe-exceptions package

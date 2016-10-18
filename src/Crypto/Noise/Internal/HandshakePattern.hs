@@ -17,10 +17,10 @@ import Data.ByteString (ByteString)
 data TokenF next
   = E next
   | S next
-  | Dhee next
-  | Dhes next
-  | Dhse next
-  | Dhss next
+  | Ee next
+  | Es next
+  | Se next
+  | Ss next
   deriving Functor
 
 $(makeFree ''TokenF)

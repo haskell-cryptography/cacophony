@@ -27,7 +27,7 @@ import Crypto.Noise.Hash
 import Crypto.Noise.Internal.CipherState
 import Crypto.Noise.Internal.SymmetricState
 import Crypto.Noise.Internal.Handshake
-import Crypto.Noise.Internal.HandshakePattern
+import Crypto.Noise.Internal.HandshakePattern hiding (e, s, ee, se, es, ss)
 import Crypto.Noise.Internal.Types
 import Data.ByteArray.Extend
 
@@ -70,10 +70,6 @@ mkHandshakeName hpn psk _ = p <> convert hpn <> "_" <> d <> "_" <> c <> "_" <> h
     c = cipherName (Proxy :: Proxy c)
     d = dhName     (Proxy :: Proxy d)
     h = hashName   (Proxy :: Proxy h)
-
-invertRole :: HandshakeRole -> HandshakeRole
-invertRole InitiatorRole = ResponderRole
-invertRole ResponderRole = InitiatorRole
 
 handshakeState :: forall c d h. (Cipher c, DH d, Hash h)
                => HandshakeOpts d
@@ -258,7 +254,7 @@ evalMsgToken opRole (S next) = do
 
   next
 
-evalMsgToken _ (Dhee next) = do
+evalMsgToken _ (Ee next) = do
   hs <- get
 
   ~(sk, _) <- getLocalEphemeral hs
@@ -270,12 +266,12 @@ evalMsgToken _ (Dhee next) = do
 
   next
 
-evalMsgToken opRole (Dhes next) = do
+evalMsgToken _ (Es next) = do
   hs <- get
 
-  if opRole == hs ^. hsOpts . hoRole then do
-    let ss = hs ^. hsSymmetricState
+  let ss = hs ^. hsSymmetricState
 
+  if hs ^. hsOpts . hoRole == InitiatorRole then do
     rpk <- getRemoteStatic hs
 
     ~(sk, _) <- getLocalEphemeral hs
@@ -284,15 +280,7 @@ evalMsgToken opRole (Dhes next) = do
 
     put $ hs & hsSymmetricState .~ ss'
 
-    next
-  else evalMsgToken (invertRole opRole) $ Dhse next
-
-evalMsgToken opRole (Dhse next) = do
-  hs <- get
-
-  if opRole == hs ^. hsOpts . hoRole then do
-    let ss = hs ^. hsSymmetricState
-
+  else do
     ~(sk, _) <- getLocalStatic hs
 
     rpk <- getRemoteEphemeral hs
@@ -301,10 +289,34 @@ evalMsgToken opRole (Dhse next) = do
 
     put $ hs & hsSymmetricState .~ ss'
 
-    next
-  else evalMsgToken (invertRole opRole) $ Dhes next
+  next
 
-evalMsgToken _ (Dhss next) = do
+evalMsgToken _ (Se next) = do
+  hs <- get
+
+  let ss = hs ^. hsSymmetricState
+
+  if hs ^. hsOpts . hoRole == InitiatorRole then do
+    ~(sk, _) <- getLocalStatic hs
+
+    rpk <- getRemoteEphemeral hs
+    let dh  = dhPerform sk rpk
+        ss' = mixKey dh ss
+
+    put $ hs & hsSymmetricState .~ ss'
+
+  else do
+    rpk <- getRemoteStatic hs
+
+    ~(sk, _) <- getLocalEphemeral hs
+    let dh  = dhPerform sk rpk
+        ss' = mixKey dh ss
+
+    put $ hs & hsSymmetricState .~ ss'
+
+  next
+
+evalMsgToken _ (Ss next) = do
   hs <- get
 
   let ss = hs ^. hsSymmetricState

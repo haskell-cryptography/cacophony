@@ -39,7 +39,6 @@ data Vector =
          , vFail            :: Bool
          , viPrologue       :: ScrubbedBytes
          , viPSK            :: Maybe ScrubbedBytes
-         , viSSK            :: Maybe ScrubbedBytes
          , viStatic         :: Maybe ScrubbedBytes
          , viSemiEphemeral  :: Maybe ScrubbedBytes
          , viEphemeral      :: Maybe ScrubbedBytes
@@ -47,7 +46,6 @@ data Vector =
          , virSemiEphemeral :: Maybe ScrubbedBytes
          , vrPrologue       :: ScrubbedBytes
          , vrPSK            :: Maybe ScrubbedBytes
-         , vrSSK            :: Maybe ScrubbedBytes
          , vrStatic         :: Maybe ScrubbedBytes
          , vrSemiEphemeral  :: Maybe ScrubbedBytes
          , vrEphemeral      :: Maybe ScrubbedBytes
@@ -66,7 +64,6 @@ instance ToJSON Vector where
     , "fail"                      .= vFail
     , "init_prologue"             .= encodeSB viPrologue
     , "init_psk"                  .= (encodeSB <$> viPSK)
-    , "init_ssk"                  .= (encodeSB <$> viSSK)
     , "init_static"               .= (encodeSB <$> viStatic)
     , "init_semiephemeral"        .= (encodeSB <$> viSemiEphemeral)
     , "init_ephemeral"            .= (encodeSB <$> viEphemeral)
@@ -74,7 +71,6 @@ instance ToJSON Vector where
     , "init_remote_semiephemeral" .= (encodeSB <$> virSemiEphemeral)
     , "resp_prologue"             .= encodeSB vrPrologue
     , "resp_psk"                  .= (encodeSB <$> vrPSK)
-    , "resp_ssk"                  .= (encodeSB <$> vrSSK)
     , "resp_static"               .= (encodeSB <$> vrStatic)
     , "resp_semiephemeral"        .= (encodeSB <$> vrSemiEphemeral)
     , "resp_ephemeral"            .= (encodeSB <$> vrEphemeral)
@@ -97,7 +93,6 @@ instance FromJSON Vector where
            <*> o .:? "fail" .!= False
            <*> (decodeSB      <$> o .:  "init_prologue")
            <*> (fmap decodeSB <$> o .:? "init_psk")
-           <*> (fmap decodeSB <$> o .:? "init_ssk")
            <*> (fmap decodeSB <$> o .:? "init_static")
            <*> (fmap decodeSB <$> o .:? "init_semiephemeral")
            <*> (fmap decodeSB <$> o .:? "init_ephemeral")
@@ -105,7 +100,6 @@ instance FromJSON Vector where
            <*> (fmap decodeSB <$> o .:? "init_remote_semiephemeral")
            <*> (decodeSB      <$> o .:  "resp_prologue")
            <*> (fmap decodeSB <$> o .:? "resp_psk")
-           <*> (fmap decodeSB <$> o .:? "resp_ssk")
            <*> (fmap decodeSB <$> o .:? "resp_static")
            <*> (fmap decodeSB <$> o .:? "resp_semiephemeral")
            <*> (fmap decodeSB <$> o .:? "resp_ephemeral")

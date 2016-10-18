@@ -93,8 +93,6 @@ Noise:
     intended to be used for channel binding. For example, the initiator might cryptographically sign this value
     as part of some higher-level authentication scheme. See section 9.4 of the protocol for details.
 
-  * `setSecondaryKey` -- Sets a secondary symmetric key as described in section 9.5 of the protocol.
-
 ## Vectors
 
 Test vectors can be generated and verified using the `vectors` program. It accepts no arguments. When run,

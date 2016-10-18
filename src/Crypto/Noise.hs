@@ -22,7 +22,6 @@ module Crypto.Noise
   , remoteStaticKey
   , handshakeComplete
   , handshakeHash
-  , setSecondaryKey
     -- * Lenses
   , hoPattern
   , hoRole
@@ -117,13 +116,3 @@ handshakeHash :: Hash h
               -> ScrubbedBytes
 handshakeHash ns = either id hashToBytes
                    $ ns ^. nsHandshakeState . hsSymmetricState . ssh
-
--- | Sets a secondary symmetric key. This must be 32 bytes in length.
---
---   See section 9.5 of the protocol for details.
-setSecondaryKey :: (Cipher c, DH d, Hash h)
-                => NoiseState c d h
-                -> ScrubbedBytes
-                -> NoiseState c d h
-setSecondaryKey ns k | length k == 32 = ns & nsHandshakeState . hsSymmetricState . ssk .~ k
-                     | otherwise      = error "secondary key must be 32 bytes in length"

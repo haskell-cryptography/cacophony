@@ -86,10 +86,8 @@ verifyVector v@Vector{..} =
     (WrapCipherType c, WrapDHType d, WrapHashType h) ->
       let swap       = not $ vPattern == NoiseN || vPattern == NoiseK || vPattern == NoiseX
           (io, ro)   = mkHandshakeOpts v d
-          (ins, rns) = mkNoiseStates io ro c h
-          ins'       = maybe ins (setSecondaryKey ins) viSSK
-          rns'       = maybe rns (setSecondaryKey rns) vrSSK in
-      go swap [] ins' rns' vMessages
+          (ins, rns) = mkNoiseStates io ro c h in
+      go swap [] ins rns vMessages
 
   where
     stripState = join (***) (either Left (\(r, e, _) -> Right (r, e)))

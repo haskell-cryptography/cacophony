@@ -66,12 +66,12 @@ This library implements the [Noise](https://github.com/noiseprotocol/noise_spec/
 4. Send and receive messages.
    ```haskell
    -- Initiator
-   let writeResult         = writeMessage ins "They must find it difficult -- those who have taken authority as the truth, rather than truth as the authority."
-        (ciphertext, ins')  = either (error "something terrible happened") id writeResult
+   let writeResult        = writeMessage ins "They must find it difficult -- those who have taken authority as the truth, rather than truth as the authority."
+        (ciphertext, ins') = either (error "something terrible happened") id writeResult
 
    -- Responder
-   let readResult          = readMessage rns ciphertext
-        (plaintext, rns')   = either (error "something terrible happened") id readResult
+   let readResult        = readMessage rns ciphertext
+        (plaintext, rns') = either (error "something terrible happened") id readResult
    ```
 
    **Ensure that you never re-use a noise state to send more than one message.**

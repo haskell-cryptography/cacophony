@@ -108,9 +108,7 @@ instance FromJSON Vector where
 
   parseJSON _          = mzero
 
-data VectorFile =
-  VectorFile { vfVectors  :: [Vector]
-             }
+newtype VectorFile = VectorFile { vfVectors  :: [Vector] }
 
 instance ToJSON VectorFile where
   toJSON VectorFile{..} = object [ "vectors" .= vfVectors ]

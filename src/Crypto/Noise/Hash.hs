@@ -11,7 +11,7 @@ module Crypto.Noise.Hash
     Hash(..)
   ) where
 
-import Data.ByteArray.Extend (ScrubbedBytes)
+import Data.ByteArray (ScrubbedBytes)
 
 -- | Typeclass for hashes.
 class Hash h where

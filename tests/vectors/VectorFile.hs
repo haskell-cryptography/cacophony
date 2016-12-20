@@ -3,12 +3,11 @@ module VectorFile where
 
 import Control.Monad      (mzero)
 import Data.Aeson
+import Data.ByteArray     (ScrubbedBytes, convert)
 import Data.ByteString    (ByteString)
 import qualified Data.ByteString.Base16 as B16
 import Data.Text          (Text)
 import Data.Text.Encoding (encodeUtf8, decodeUtf8)
-
-import Data.ByteArray.Extend
 
 import Types
 

@@ -6,6 +6,7 @@ import Control.Concurrent.Async (mapConcurrently)
 import Control.Exception        (SomeException)
 import Control.Monad.State
 import Data.Aeson               (decode)
+import Data.ByteArray           (convert)
 import Data.ByteString          (ByteString)
 import qualified Data.ByteString.Char8 as BS (putStrLn)
 import Data.ByteString.Base16   (encode)
@@ -21,7 +22,6 @@ import Crypto.Noise.Internal.Handshake
 import Crypto.Noise.Cipher
 import Crypto.Noise.DH
 import Crypto.Noise.Hash
-import Data.ByteArray.Extend
 
 import Types
 import VectorFile

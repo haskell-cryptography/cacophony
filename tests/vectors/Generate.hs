@@ -4,6 +4,7 @@ module Generate where
 import Control.Concurrent.Async (mapConcurrently)
 import Control.Lens             ((^.))
 import Data.Aeson               (encode)
+import Data.ByteArray           (ScrubbedBytes, convert)
 import Data.ByteString          (ByteString)
 import qualified Data.ByteString.Base16 as B16
 import Data.ByteString.Lazy     (writeFile)
@@ -17,7 +18,6 @@ import Crypto.Noise.DH
 import Crypto.Noise.Hash
 import Crypto.Noise.Internal.Handshake
 import Crypto.Noise.Internal.NoiseState
-import Data.ByteArray.Extend
 
 import Handshakes
 import Types

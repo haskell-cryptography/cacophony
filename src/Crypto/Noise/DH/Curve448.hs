@@ -15,7 +15,7 @@ import Crypto.Error          (throwCryptoError, maybeCryptoError)
 import Crypto.Random.Entropy (getEntropy)
 import qualified Crypto.PubKey.Ed448 as C
 import Crypto.Noise.DH
-import Data.ByteArray.Extend
+import Data.ByteArray        (ScrubbedBytes, convert)
 
 -- | Represents curve448.
 data Curve448

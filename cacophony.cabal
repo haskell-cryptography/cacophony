@@ -61,7 +61,7 @@ library
     exceptions >=0.8.3,
     free,
     lens,
-    memory,
+    memory     >=0.14,
     monad-coroutine,
     mtl,
     safe-exceptions,
@@ -88,7 +88,6 @@ library
     Crypto.Noise.Internal.NoiseState
     Crypto.Noise.Internal.SymmetricState
     Crypto.Noise.Internal.Types
-    Data.ByteArray.Extend
   ghc-options:      -Wall -fwarn-tabs
 
   if flag(llvm)
@@ -115,6 +114,7 @@ executable echo-server
       directory,
       fast-logger,
       lens,
+      memory             >=0.14,
       network,
       network-simple,
       unix,
@@ -146,6 +146,7 @@ executable echo-client
       cacophony,
       directory,
       lens,
+      memory             >=0.14,
       network,
       network-simple,
       unix
@@ -195,6 +196,7 @@ test-suite vectors
       directory,
       free,
       lens,
+      memory            >=0.14,
       mtl,
       text
 
@@ -217,13 +219,14 @@ benchmark bench
 
   build-depends:
     async,
-    base >=4.8 && <5,
+    base               >=4.8 && <5,
     base16-bytestring,
     bytestring,
     cacophony,
     criterion,
     deepseq,
-    lens
+    lens,
+    memory             >=0.14
 
   other-modules:
     Handshakes

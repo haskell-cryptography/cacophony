@@ -5,6 +5,7 @@ module Client
 
 import Control.Lens           ((.~), (&))
 import Data.Bits              ((.&.), shiftR)
+import Data.ByteArray         (ScrubbedBytes, convert)
 import Data.ByteString        (ByteString, pack, length)
 import qualified Data.ByteString.Char8 as C8 (pack, unpack)
 import Data.ByteString.Base16 (encode)
@@ -20,7 +21,6 @@ import Crypto.Noise.DH
 import Crypto.Noise.HandshakePatterns (noiseIK)
 import Crypto.Noise.Hash
 import Crypto.Noise.Hash.SHA256
-import Data.ByteArray.Extend hiding (length)
 
 import Parse
 

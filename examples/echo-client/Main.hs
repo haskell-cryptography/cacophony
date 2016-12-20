@@ -2,6 +2,7 @@
 module Main where
 
 import Control.Monad         (forM_, (<=<))
+import Data.ByteArray        (ScrubbedBytes, convert)
 import Data.ByteString       (writeFile, readFile)
 import qualified Data.ByteString.Base64 as B64 (encode, decodeLenient)
 import Data.Maybe            (fromMaybe)
@@ -15,7 +16,6 @@ import System.IO             (stderr, hPutStr, hPutStrLn)
 import Crypto.Noise.DH
 import Crypto.Noise.DH.Curve25519
 import Crypto.Noise.DH.Curve448
-import Data.ByteArray.Extend
 
 import Client
 

@@ -15,6 +15,7 @@ import Control.Monad.Coroutine.SuspensionFunctors
 import Control.Monad.State  (MonadState(..), runStateT, get, put)
 import Control.Monad.Free.Church
 import Control.Lens
+import Data.ByteArray       (ScrubbedBytes, convert, length, splitAt)
 import Data.ByteString      (ByteString)
 import Data.Maybe           (isJust)
 import Data.Monoid          ((<>))
@@ -29,7 +30,6 @@ import Crypto.Noise.Internal.SymmetricState
 import Crypto.Noise.Internal.Handshake
 import Crypto.Noise.Internal.HandshakePattern hiding (e, s, ee, se, es, ss)
 import Crypto.Noise.Internal.Types
-import Data.ByteArray.Extend
 
 -- | Represents the complete state of a Noise conversation.
 data NoiseState c d h =

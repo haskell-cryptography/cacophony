@@ -12,6 +12,7 @@ module Crypto.Noise.Internal.SymmetricState where
 import Control.Arrow
 import Control.Exception.Safe
 import Control.Lens
+import Data.ByteArray  (ScrubbedBytes, convert, length, replicate)
 import Data.ByteString (empty)
 import Data.Proxy
 import Prelude hiding  (length, replicate)
@@ -19,7 +20,6 @@ import Prelude hiding  (length, replicate)
 import Crypto.Noise.Cipher
 import Crypto.Noise.Hash
 import Crypto.Noise.Internal.CipherState
-import Data.ByteArray.Extend
 
 data SymmetricState c h =
   SymmetricState { _ssCipher :: CipherState c

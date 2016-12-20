@@ -16,14 +16,13 @@ import Crypto.Cipher.AES             (AES256)
 import Crypto.Cipher.Types           (AuthTag(..), AEADMode(AEAD_GCM),
                                       cipherInit, aeadInit, aeadSimpleEncrypt,
                                       aeadSimpleDecrypt)
-import Data.ByteArray                (ByteArray)
+import Data.ByteArray                (ByteArray, ScrubbedBytes, convert)
 import qualified Data.ByteArray as B (take, drop, length, replicate, copyAndFreeze)
 import Data.Word                     (Word8)
 import Foreign.Ptr
 import Foreign.Storable
 
 import Crypto.Noise.Cipher
-import Data.ByteArray.Extend
 
 -- | Represents the AES256 cipher with GCM for AEAD.
 data AESGCM

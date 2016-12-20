@@ -77,7 +77,7 @@ This library implements the [Noise](https://github.com/noiseprotocol/noise_spec/
    **Ensure that you never re-use a noise state to send more than one message.**
 
    Decrypted messages are stored internally as `ScrubbedBytes` and will be wiped from memory when they are
-   destroyed. Helper functions for dealing with `ScrubbedBytes` can be found in the `Data.ByteArray.Extend` module.
+   destroyed.
 
 ### Helper functions
 

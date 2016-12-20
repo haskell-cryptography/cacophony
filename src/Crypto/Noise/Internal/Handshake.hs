@@ -15,14 +15,14 @@ import Control.Lens
 import Control.Monad.Coroutine
 import Control.Monad.Coroutine.SuspensionFunctors
 import Control.Monad.Catch.Pure
-import Control.Monad.State  (MonadState(..), StateT)
+import Control.Monad.State       (MonadState(..), StateT)
 import Control.Monad.Trans.Class (MonadTrans(lift))
+import Data.ByteArray            (ScrubbedBytes)
 
 import Crypto.Noise.Cipher
 import Crypto.Noise.DH
 import Crypto.Noise.Internal.HandshakePattern
 import Crypto.Noise.Internal.SymmetricState
-import Data.ByteArray.Extend
 
 -- | Represents the side of the conversation upon which a party resides.
 data HandshakeRole = InitiatorRole | ResponderRole

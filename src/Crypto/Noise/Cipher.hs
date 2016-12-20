@@ -14,7 +14,7 @@ module Crypto.Noise.Cipher
   , Plaintext
   ) where
 
-import Data.ByteArray.Extend
+import Data.ByteArray (ScrubbedBytes)
 
 -- | Typeclass for ciphers.
 class Cipher c where

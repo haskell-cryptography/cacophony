@@ -13,9 +13,9 @@ module Crypto.Noise.Hash.SHA512
 
 import qualified Crypto.Hash     as H
 import qualified Crypto.MAC.HMAC as M
+import Data.ByteArray (ScrubbedBytes, convert)
 
 import Crypto.Noise.Hash
-import Data.ByteArray.Extend
 
 -- | Represents the SHA512 hash.
 data SHA512

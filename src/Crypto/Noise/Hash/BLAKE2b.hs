@@ -13,9 +13,9 @@ module Crypto.Noise.Hash.BLAKE2b
 
 import qualified Crypto.Hash      as H
 import qualified Crypto.MAC.HMAC  as M
+import Data.ByteArray (ScrubbedBytes, convert)
 
 import Crypto.Noise.Hash
-import Data.ByteArray.Extend
 
 -- | Represents the BLAKE2b hash.
 data BLAKE2b

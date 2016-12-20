@@ -38,6 +38,7 @@ module Crypto.Noise
 import Control.Arrow
 import Control.Exception.Safe
 import Control.Lens
+import Data.ByteArray  (ScrubbedBytes, convert)
 import Data.ByteString (ByteString)
 import Data.Maybe      (isJust)
 import Prelude hiding  (length)
@@ -50,7 +51,6 @@ import Crypto.Noise.Internal.Handshake
 import Crypto.Noise.Internal.NoiseState
 import Crypto.Noise.Internal.SymmetricState
 import Crypto.Noise.Internal.Types
-import Data.ByteArray.Extend
 
 -- | Creates a Noise message with the provided payload. Note that the
 --   payload may not be authenticated or encrypted at all points during the

@@ -8,6 +8,8 @@
 
 * Regenerated test vectors
 
+* Now using IsString instance of ScrubbedBytes from memory package
+
 # 0.8.0
 
 * Exceptions are now provided by the safe-exceptions package

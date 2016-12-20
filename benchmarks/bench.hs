@@ -2,6 +2,7 @@
 module Main where
 
 import Criterion.Main
+import Data.ByteArray         (ScrubbedBytes, convert)
 import Data.ByteString        (ByteString)
 import Data.ByteString.Base16 (decode)
 import Data.List              (replicate)
@@ -13,7 +14,6 @@ import Crypto.Noise
 import Crypto.Noise.Cipher
 import Crypto.Noise.DH
 import Crypto.Noise.Hash
-import Data.ByteArray.Extend hiding (replicate)
 
 import Handshakes
 import Types

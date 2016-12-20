@@ -11,14 +11,14 @@ module Crypto.Noise.Cipher.ChaChaPoly1305
     ChaChaPoly1305
   ) where
 
-import Crypto.Error (throwCryptoError)
+import           Crypto.Error   (throwCryptoError)
 import qualified Crypto.Cipher.ChaChaPoly1305 as CCP
-import qualified Crypto.MAC.Poly1305 as P
-import qualified Data.ByteArray as B (take, drop, length)
-import qualified Data.ByteString as BS (replicate)
+import qualified Crypto.MAC.Poly1305          as P
+import           Data.ByteArray (ScrubbedBytes, convert, take, drop, length)
+import qualified Data.ByteString              as BS (replicate)
+import           Prelude hiding (take, drop, length)
 
 import Crypto.Noise.Cipher
-import Data.ByteArray.Extend
 
 -- | Represents the ChaCha cipher with Poly1305 for AEAD.
 data ChaChaPoly1305
@@ -75,13 +75,13 @@ incNonce :: Nonce ChaChaPoly1305 -> Nonce ChaChaPoly1305
 incNonce (NCCP1305 n) = NCCP1305 $ CCP.incrementNonce n
 
 bytesToSym :: ScrubbedBytes -> SymmetricKey ChaChaPoly1305
-bytesToSym = SKCCP1305 . B.take 32
+bytesToSym = SKCCP1305 . take 32
 
 ctToBytes :: Ciphertext ChaChaPoly1305 -> ScrubbedBytes
 ctToBytes (CTCCP1305 (ct, a)) = ct `mappend` convert a
 
 bytesToCt :: ScrubbedBytes -> Ciphertext ChaChaPoly1305
 bytesToCt bytes =
-  CTCCP1305 (B.take (B.length bytes - 16) bytes
-            , P.Auth . convert $ B.drop (B.length bytes - 16) bytes
+  CTCCP1305 (take (length bytes - 16) bytes
+            , P.Auth . convert $ drop (length bytes - 16) bytes
             )

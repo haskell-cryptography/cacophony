@@ -1,6 +1,7 @@
 {-# LANGUAGE RankNTypes, KindSignatures, GADTs #-}
 module Types where
 
+import Data.ByteArray        (convert)
 import Data.ByteString.Char8 (unpack)
 
 import Crypto.Noise.Cipher
@@ -14,7 +15,6 @@ import Crypto.Noise.Hash.SHA256
 import Crypto.Noise.Hash.SHA512
 import Crypto.Noise.Hash.BLAKE2s
 import Crypto.Noise.Hash.BLAKE2b
-import Data.ByteArray.Extend
 
 data HandshakeType = NoiseNN
                    | NoiseKN

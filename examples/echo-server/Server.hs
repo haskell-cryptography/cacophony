@@ -8,6 +8,7 @@ import Control.AutoUpdate     (mkAutoUpdate, defaultUpdateSettings, updateAction
 import Control.Exception      (handle)
 import Control.Monad          (void)
 import Data.Bits              ((.&.), shiftR)
+import Data.ByteArray         (ScrubbedBytes, convert)
 import Data.ByteString        (ByteString, pack, length)
 import Data.ByteString.Base16 (encode)
 import qualified Data.ByteString.Char8 as C8 (pack)
@@ -21,7 +22,6 @@ import Crypto.Noise
 import Crypto.Noise.Cipher
 import Crypto.Noise.DH
 import Crypto.Noise.Hash
-import Data.ByteArray.Extend hiding (length)
 
 import Handshakes
 import Log

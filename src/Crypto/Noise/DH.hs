@@ -13,7 +13,7 @@ module Crypto.Noise.DH
   , KeyPair
   ) where
 
-import Data.ByteArray.Extend (ScrubbedBytes)
+import Data.ByteArray (ScrubbedBytes)
 
 -- | Typeclass for Diffie-Hellman key agreement.
 class DH d where

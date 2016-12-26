@@ -57,7 +57,6 @@ library
     base       >=4.8 && <5,
     bytestring,
     cryptonite >=0.16,
-    deepseq,
     exceptions >=0.8.3,
     free,
     lens,

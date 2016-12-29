@@ -33,7 +33,8 @@ encryptAndIncrement ad plaintext cs
   | otherwise = throwM $ MessageLimitReached "encryptAndIncrement"
   where
     ct       = cipherEncrypt (cs ^. csk) (cs ^. csn) ad plaintext
-    newState = cs & csn %~ cipherIncNonce
+    newState = cs & csn     %~ cipherIncNonce
+                  & csCount %~ (+1)
     allow    = cs ^. csCount < 2 ^ (64 :: Integer) - 1
 
 decryptAndIncrement :: (MonadThrow m, Cipher c)
@@ -49,5 +50,6 @@ decryptAndIncrement ad ct cs
   | otherwise = throwM $ MessageLimitReached "decryptAndIncrement"
   where
     pt       = cipherDecrypt (cs ^. csk) (cs ^. csn) ad ct
-    newState = maybe cs (const (cs & csn %~ cipherIncNonce)) pt
+    newState = cs & csn     %~ cipherIncNonce
+                  & csCount %~ (+1)
     allow    = cs ^. csCount < 2 ^ (64 :: Integer) - 1

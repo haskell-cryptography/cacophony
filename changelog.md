@@ -1,3 +1,13 @@
+# 0.9.1
+
+* Enabled llvm flag support on executables
+
+* Removed deepseq library dependency
+
+* Disallowed reserved nonce (2^64 - 1)
+
+* Fixed problem with CipherState count not incrementing
+
 # 0.9.0
 
 * Removed secondary key support (rev 31)

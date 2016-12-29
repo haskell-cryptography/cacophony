@@ -57,7 +57,7 @@ import Crypto.Noise.Internal.Types
 --   handshake. Please see section 8.4 of the protocol document for details.
 --
 --   To prevent catastrophic key re-use, this function may only be used to
---   secure 2^64 post-handshake messages.
+--   secure 2^64 - 1 post-handshake messages.
 writeMessage :: (MonadThrow m, Cipher c, Hash h)
              => NoiseState c d h
              -> ScrubbedBytes
@@ -76,7 +76,7 @@ writeMessage ns msg = maybe
 --   is complete, if decryption fails a 'DecryptionError' is returned.
 --
 --   To prevent catastrophic key re-use, this function may only be used to
---   receive 2^64 post-handshake messages.
+--   receive 2^64 - 1 post-handshake messages.
 readMessage :: (MonadThrow m, Cipher c, Hash h)
             => NoiseState c d h
             -> ByteString

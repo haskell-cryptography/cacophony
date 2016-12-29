@@ -34,7 +34,7 @@ encryptAndIncrement ad plaintext cs
   where
     ct       = cipherEncrypt (cs ^. csk) (cs ^. csn) ad plaintext
     newState = cs & csn %~ cipherIncNonce
-    allow    = cs ^. csCount < 2 ^ (64 :: Integer)
+    allow    = cs ^. csCount < 2 ^ (64 :: Integer) - 1
 
 decryptAndIncrement :: (MonadThrow m, Cipher c)
                     => AssocData
@@ -50,4 +50,4 @@ decryptAndIncrement ad ct cs
   where
     pt       = cipherDecrypt (cs ^. csk) (cs ^. csn) ad ct
     newState = maybe cs (const (cs & csn %~ cipherIncNonce)) pt
-    allow    = cs ^. csCount < 2 ^ (64 :: Integer)
+    allow    = cs ^. csCount < 2 ^ (64 :: Integer) - 1

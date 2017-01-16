@@ -43,11 +43,11 @@ hkdf (HCKSHA256 ck) d = (HCKSHA256 ck', sk)
     x02   = "\x02"
 
     hmac1 = M.hmac ck d :: M.HMAC H.SHA256
-    temp  = convert . M.hmacGetDigest $ hmac1 :: ScrubbedBytes
+    temp  = convert hmac1 :: ScrubbedBytes
     hmac2 = M.hmac temp x01 :: M.HMAC H.SHA256
     hmac3 = M.hmac temp (convert hmac2 `mappend` x02) :: M.HMAC H.SHA256
-    ck'   = convert . M.hmacGetDigest $ hmac2
-    sk    = convert . M.hmacGetDigest $ hmac3
+    ck'   = convert hmac2
+    sk    = convert hmac3
 
 bytesToCK :: ScrubbedBytes -> ChainingKey SHA256
 bytesToCK = HCKSHA256

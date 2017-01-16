@@ -46,11 +46,11 @@ hkdfS (HCKB2s ck) d = (HCKB2s ck', sk)
     x02   = "\x02"
 
     hmac1 = M.hmac ck d :: M.HMAC H.Blake2s_256
-    temp  = convert . M.hmacGetDigest $ hmac1 :: ScrubbedBytes
+    temp  = convert hmac1 :: ScrubbedBytes
     hmac2 = M.hmac temp x01 :: M.HMAC H.Blake2s_256
     hmac3 = M.hmac temp (convert hmac2 `mappend` x02) :: M.HMAC H.Blake2s_256
-    ck'   = convert . M.hmacGetDigest $ hmac2
-    sk    = convert . M.hmacGetDigest $ hmac3
+    ck'   = convert hmac2
+    sk    = convert hmac3
 
 bytesToCKS :: ScrubbedBytes
             -> ChainingKey BLAKE2s

@@ -133,7 +133,7 @@ main = do
                  , (NoiseK, 1)
                  , (NoiseX, 1)
                  ]
-      psks     = [Nothing, Just ""]
+      psks     = [Nothing, Just "This is my Austrian perspective!"]
       ciphers  = [WrapCipherType CTChaChaPoly1305, WrapCipherType CTAESGCM]
       dhs      = [WrapDHType DTCurve25519, WrapDHType DTCurve448]
       hashes   = [WrapHashType HTSHA256, WrapHashType HTSHA512, WrapHashType HTBLAKE2s, WrapHashType HTBLAKE2b]

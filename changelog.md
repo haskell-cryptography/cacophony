@@ -1,3 +1,7 @@
+# 0.9.2
+
+* Added ability to export raw symmetric keys
+
 # 0.9.1
 
 * Enabled llvm flag support on executables

@@ -38,6 +38,7 @@ instance Cipher AESGCM where
   cipherZeroNonce   = zeroNonce
   cipherIncNonce    = incNonce
   cipherBytesToSym  = bytesToSym
+  cipherSymToBytes  = symToBytes
   cipherTextToBytes = ctToBytes
   cipherBytesToText = bytesToCt
 
@@ -73,6 +74,10 @@ incNonce (NAES n) = NAES $ ivAdd n 1
 bytesToSym :: ScrubbedBytes
            -> SymmetricKey AESGCM
 bytesToSym = SKAES . B.take 32
+
+symToBytes :: SymmetricKey AESGCM
+           -> ScrubbedBytes
+symToBytes (SKAES sk) = sk
 
 ctToBytes :: Ciphertext AESGCM
           -> ScrubbedBytes

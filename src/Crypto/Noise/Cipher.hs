@@ -56,6 +56,9 @@ class Cipher c where
   --   is truncated.
   cipherBytesToSym  :: ScrubbedBytes -> SymmetricKey c
 
+  -- | Exports a symmetric key. Use with care.
+  cipherSymToBytes  :: SymmetricKey c -> ScrubbedBytes
+
   -- | Exports a Ciphertext. The authentication tag follows the
   --   actual ciphertext.
   cipherTextToBytes :: Ciphertext c -> ScrubbedBytes

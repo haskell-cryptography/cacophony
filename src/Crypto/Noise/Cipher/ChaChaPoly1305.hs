@@ -34,6 +34,7 @@ instance Cipher ChaChaPoly1305 where
   cipherZeroNonce   = zeroNonce
   cipherIncNonce    = incNonce
   cipherBytesToSym  = bytesToSym
+  cipherSymToBytes  = symToBytes
   cipherTextToBytes = ctToBytes
   cipherBytesToText = bytesToCt
 
@@ -76,6 +77,9 @@ incNonce (NCCP1305 n) = NCCP1305 $ CCP.incrementNonce n
 
 bytesToSym :: ScrubbedBytes -> SymmetricKey ChaChaPoly1305
 bytesToSym = SKCCP1305 . take 32
+
+symToBytes :: SymmetricKey ChaChaPoly1305 -> ScrubbedBytes
+symToBytes (SKCCP1305 sk) = sk
 
 ctToBytes :: Ciphertext ChaChaPoly1305 -> ScrubbedBytes
 ctToBytes (CTCCP1305 (ct, a)) = ct `mappend` convert a

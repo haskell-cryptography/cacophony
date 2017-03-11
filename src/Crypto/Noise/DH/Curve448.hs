@@ -61,4 +61,4 @@ bytesToPair bs = do
 pubEq :: PublicKey Curve448
       -> PublicKey Curve448
       -> Bool
-pubEq a b = a == b
+pubEq (PK448 a) (PK448 b) = a == b

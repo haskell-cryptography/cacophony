@@ -1,0 +1,200 @@
+name: cacophony
+synopsis: A library implementing the Noise protocol.
+version: 0.9.2
+license: PublicDomain
+license-file: LICENSE
+maintainer: John Galt <jgalt@centromere.net>
+category: Cryptography
+github: centromere/cacophony
+ghc-options: -Wall
+description: |
+  This library implements the <https://github.com/trevp/noise/blob/master/noise.md Noise>
+  protocol.
+extra-source-files:
+  - .travis.yml
+  - README.md
+  - changelog.md
+  - LICENSE
+  - stack.yaml
+  - package.yaml
+  - tests/.hlint
+  - tools/convert_vectors.py
+  - tools/run_benchmarks.sh
+  - tools/vector_template.jinja
+  - vectors/cacophony.txt
+  - vectors/noise-c-basic.txt
+
+flags:
+  hlint:
+    description: Build hlint test
+    default: False
+    manual: False
+
+  vectors:
+    description: Build vector test
+    default: False
+    manual: False
+
+  build-examples:
+    description: Build example executables
+    default: False
+    manual: True
+
+library:
+  source-dirs: src
+  dependencies:
+    - base
+    - bytestring
+    - cryptonite
+    - exceptions
+    - free
+    - lens
+    - memory
+    - monad-coroutine
+    - mtl
+    - safe-exceptions
+    - transformers
+
+  exposed-modules:
+    - Crypto.Noise
+    - Crypto.Noise.Cipher
+    - Crypto.Noise.Cipher.AESGCM
+    - Crypto.Noise.Cipher.ChaChaPoly1305
+    - Crypto.Noise.DH
+    - Crypto.Noise.DH.Curve25519
+    - Crypto.Noise.DH.Curve448
+    - Crypto.Noise.HandshakePatterns
+    - Crypto.Noise.Hash
+    - Crypto.Noise.Hash.BLAKE2b
+    - Crypto.Noise.Hash.BLAKE2s
+    - Crypto.Noise.Hash.SHA256
+    - Crypto.Noise.Hash.SHA512
+    - Crypto.Noise.Internal.CipherState
+    - Crypto.Noise.Internal.HandshakePattern
+    - Crypto.Noise.Internal.Handshake
+    - Crypto.Noise.Internal.NoiseState
+    - Crypto.Noise.Internal.SymmetricState
+    - Crypto.Noise.Internal.Types
+
+executables:
+  echo-server:
+    source-dirs: examples/echo-server
+    main: Main.hs
+    when:
+      - condition: 'flag(build-examples)'
+        then:
+          dependencies:
+            - aeson
+            - attoparsec
+            - auto-update
+            - base
+            - base16-bytestring
+            - base64-bytestring
+            - bytestring
+            - cacophony
+            - directory
+            - fast-logger
+            - lens
+            - memory
+            - network
+            - network-simple
+            - unix
+            - unix-time
+        else:
+          buildable: False
+
+    ghc-options:
+      - -O2
+      - -rtsopts
+      - -threaded
+      - -with-rtsopts=-N
+
+  echo-client:
+    source-dirs: examples/echo-client
+    main: Main.hs
+    when:
+      - condition: 'flag(build-examples)'
+        then:
+          dependencies:
+            - attoparsec
+            - base
+            - base16-bytestring
+            - base64-bytestring
+            - bytestring
+            - cacophony
+            - directory
+            - lens
+            - memory
+            - network
+            - network-simple
+            - unix
+        else:
+          buildable: False
+      
+    ghc-options:
+      - -O2
+      - -rtsopts
+      - -threaded
+      - -with-rtsopts=-N
+
+tests:
+  hlint:
+    main: hlint.hs
+    source-dirs: tests/hlint
+    when:
+      - condition: 'flag(hlint)'
+        then:
+          dependencies:
+            - base
+            - hlint
+        else:
+          buildable: False
+
+    ghc-options:
+      - -O2
+      - -rtsopts
+      - -threaded
+      - -with-rtsopts=-N
+
+  vectors:
+    main: vectors.hs
+    source-dirs: tests/vectors
+    when:
+      - condition: 'flag(vectors)'
+        then:
+          dependencies:
+            - aeson
+            - async
+            - base
+            - base16-bytestring
+            - bytestring
+            - cacophony
+            - directory
+            - free
+            - lens
+            - memory
+            - mtl
+            - text
+        else:
+          buildable: False
+
+    ghc-options:
+      - -O2
+      - -rtsopts
+      - -threaded
+      - -with-rtsopts=-N
+
+benchmarks:
+  bench:
+    main: bench.hs
+    source-dirs: benchmarks
+    dependencies:
+      - async
+      - base
+      - base16-bytestring
+      - bytestring
+      - cacophony
+      - criterion
+      - deepseq
+      - lens
+      - memory

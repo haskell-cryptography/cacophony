@@ -1,11 +1,11 @@
 {-# LANGUAGE TemplateHaskell #-}
 ----------------------------------------------------------------
 -- |
--- Module      : Crypto.Noise.Internal.HandshakePattern
+-- Module      : Crypto.Noise.Internal.Handshake.Pattern
 -- Maintainer  : John Galt <jgalt@centromere.net>
 -- Stability   : experimental
 -- Portability : POSIX
-module Crypto.Noise.Internal.HandshakePattern where
+module Crypto.Noise.Internal.Handshake.Pattern where
 
 import Control.Applicative.Free
 import Control.Lens

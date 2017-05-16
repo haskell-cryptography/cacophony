@@ -51,8 +51,8 @@ mixKey d ss = ss & ssCipher .~ cs
                  & ssHasKey .~ True
                  & ssck     .~ ck
   where
-    (ck, k) = hashHKDF (ss ^. ssck) d
-    cs      = CipherState (cipherBytesToSym k) cipherZeroNonce 0
+    (ck, k) = undefined -- hashHKDF (ss ^. ssck) d 2
+    cs      = CipherState (cipherBytesToSym k) (cipherNonce 0) 0
 
 mixPSK :: Hash h
        => ScrubbedBytes
@@ -60,7 +60,7 @@ mixPSK :: Hash h
        -> SymmetricState c h
 mixPSK psk ss = ss'' & ssHasPSK .~ True
   where
-    (ck, tmp) = hashHKDF (ss ^. ssck) psk
+    (ck, tmp) = undefined -- hashHKDF (ss ^. ssck) psk 2
     ss'       = ss & ssck .~ ck
     ss''      = mixHash tmp ss'
 
@@ -99,11 +99,9 @@ split :: (Cipher c, Hash h)
       -> (CipherState c, CipherState c)
 split ss = (cs1, cs2)
   where
-    (cs1k, cs2k) = hashHKDF (ss ^. ssck) (ss ^. ssk)
-    cs1k' = cipherBytesToSym . hashCKToBytes $ cs1k
-    cs2k' = cipherBytesToSym cs2k
-    cs1   = CipherState cs1k' cipherZeroNonce 0
-    cs2   = CipherState cs2k' cipherZeroNonce 0
+    [cs1k, cs2k, _] = [] :: [ScrubbedBytes] -- hashHKDF (ss ^. ssck) (ss ^. ssk)
+    cs1   = CipherState (cipherBytesToSym cs1k) (cipherNonce 0) 0
+    cs2   = CipherState (cipherBytesToSym cs2k) (cipherNonce 0) 0
 
 sshBytes :: Hash h
          => Either ScrubbedBytes (Digest h)

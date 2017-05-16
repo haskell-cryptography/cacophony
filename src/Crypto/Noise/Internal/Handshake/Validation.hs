@@ -1,17 +1,17 @@
 {-# LANGUAGE TemplateHaskell #-}
 ----------------------------------------------------------------
 -- |
--- Module      : Crypto.Noise.Internal.HandshakeValidation
+-- Module      : Crypto.Noise.Internal.Handshake.Validation
 -- Maintainer  : John Galt <jgalt@centromere.net>
 -- Stability   : experimental
 -- Portability : POSIX
-module Crypto.Noise.Internal.HandshakeValidation where
+module Crypto.Noise.Internal.Handshake.Validation where
 
 import Control.Applicative.Free
 import Control.Lens
 import Control.Monad.State
 
-import Crypto.Noise.Internal.HandshakePattern
+import Crypto.Noise.Internal.Handshake.Pattern
 
 type ErrorPosition = (Int, Int)
 

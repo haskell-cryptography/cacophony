@@ -12,7 +12,9 @@ module Crypto.Noise.Hash.BLAKE2b
 
 import qualified Crypto.Hash      as H
 import qualified Crypto.MAC.HMAC  as M
-import Data.ByteArray (ScrubbedBytes, convert)
+import Data.ByteArray (ScrubbedBytes, convert, empty, snoc)
+import Data.List      (unfoldr)
+import Data.Word      (Word8)
 
 import Crypto.Noise.Hash
 
@@ -20,45 +22,44 @@ import Crypto.Noise.Hash
 data BLAKE2b
 
 instance Hash BLAKE2b where
-  newtype ChainingKey BLAKE2b = HCKB2s ScrubbedBytes
-  newtype Digest      BLAKE2b = HDB2s  (H.Digest H.Blake2b_512)
+  newtype ChainingKey BLAKE2b = HCKB2b ScrubbedBytes
+  newtype Digest      BLAKE2b = HDB2b  (H.Digest H.Blake2b_512)
 
   hashName   _  = "BLAKE2b"
   hashLength _  = 64
-  hash          = hashB
-  hashHKDF      = hkdfB
-  hashBytesToCK = bytesToCKB
-  hashCKToBytes = ckToBytesB
-  hashToBytes   = toBytesB
+  hash          = hash'
+  hashHKDF      = hkdf
+  hashBytesToCK = bytesToCK
+  hashCKToBytes = ckToBytes
+  hashToBytes   = toBytes
 
-hashB :: ScrubbedBytes
-       -> Digest BLAKE2b
-hashB bs = HDB2s $ H.hash bs
+hash' :: ScrubbedBytes
+      -> Digest BLAKE2b
+hash' bs = HDB2b $ H.hash bs
 
-hkdfB :: ChainingKey BLAKE2b
-       -> ScrubbedBytes
-       -> (ChainingKey BLAKE2b, ScrubbedBytes)
-hkdfB (HCKB2s ck) d = (HCKB2s ck', sk)
+hkdf :: ChainingKey BLAKE2b
+     -> ScrubbedBytes
+     -> Word8
+     -> [ScrubbedBytes]
+hkdf (HCKB2b ck) keyMat numOutputs = loop (empty, 1)
   where
-    x01, x02 :: ScrubbedBytes
-    x01   = "\x01"
-    x02   = "\x02"
+    hmac key info = convert (M.hmac key info :: M.HMAC H.Blake2b_512) :: ScrubbedBytes
+    tempKey = hmac ck keyMat
+    loop = unfoldr $ \(c, i) -> let r = hmac tempKey (c `snoc` i) in
+      if i == 0
+        then Nothing
+        else if i <= numOutputs
+          then Just (r, (r, i + 1))
+          else Nothing
 
-    hmac1 = M.hmac ck d :: M.HMAC H.Blake2b_512
-    temp  = convert hmac1 :: ScrubbedBytes
-    hmac2 = M.hmac temp x01 :: M.HMAC H.Blake2b_512
-    hmac3 = M.hmac temp (convert hmac2 `mappend` x02) :: M.HMAC H.Blake2b_512
-    ck'   = convert hmac2
-    sk    = convert hmac3
+bytesToCK :: ScrubbedBytes
+          -> ChainingKey BLAKE2b
+bytesToCK = HCKB2b
 
-bytesToCKB :: ScrubbedBytes
-            -> ChainingKey BLAKE2b
-bytesToCKB = HCKB2s
-
-ckToBytesB :: ChainingKey BLAKE2b
-            -> ScrubbedBytes
-ckToBytesB (HCKB2s ck) = ck
-
-toBytesB :: Digest BLAKE2b
+ckToBytes :: ChainingKey BLAKE2b
           -> ScrubbedBytes
-toBytesB (HDB2s d) = convert d
+ckToBytes (HCKB2b ck) = ck
+
+toBytes :: Digest BLAKE2b
+        -> ScrubbedBytes
+toBytes (HDB2b d) = convert d

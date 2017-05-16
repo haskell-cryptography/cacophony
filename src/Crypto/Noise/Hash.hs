@@ -11,6 +11,7 @@ module Crypto.Noise.Hash
   ) where
 
 import Data.ByteArray (ScrubbedBytes)
+import Data.Word      (Word8)
 
 -- | Typeclass for hashes.
 class Hash h where
@@ -31,7 +32,10 @@ class Hash h where
   hash          :: ScrubbedBytes -> Digest h
 
   -- | Performs HKDF.
-  hashHKDF      :: ChainingKey h -> ScrubbedBytes -> (ChainingKey h, ScrubbedBytes)
+  hashHKDF      :: ChainingKey h
+                -> ScrubbedBytes
+                -> Word8
+                -> [ScrubbedBytes]
 
   -- | Converts a series of bytes to a chaining key.
   hashBytesToCK :: ScrubbedBytes -> ChainingKey h

@@ -13,7 +13,8 @@ module Crypto.Noise.Cipher
   , Plaintext
   ) where
 
-import Data.ByteArray (ScrubbedBytes)
+import Data.ByteArray (ScrubbedBytes, replicate)
+import Prelude hiding (replicate)
 
 -- | Typeclass for ciphers.
 class Cipher c where
@@ -45,8 +46,24 @@ class Cipher c where
                     -> Ciphertext c
                     -> Maybe Plaintext
 
-  -- | Returns a Nonce set to zero.
-  cipherZeroNonce   :: Nonce c
+  -- | Returns a new 32-byte cipher key as a pseudorandom function of @k@.
+  --   Defaults to:
+  --
+  --   @cipherEncrypt k maxNonce "" zeros@
+  --
+  --   where @maxNonce = 2^64 - 1@ and @zeros@ is a sequence of 32 bytes filed
+  --   with zeros.
+  cipherRekey       :: SymmetricKey c
+                    -> SymmetricKey c
+  cipherRekey k = cipherBytesToSym  .
+                  cipherTextToBytes $
+                  cipherEncrypt k maxNonce "" zeros
+    where
+      maxNonce = cipherNonce $ 2 ^ (64 :: Integer) - 1
+      zeros    = replicate 32 0
+
+  -- | Converts an integer to a Nonce.
+  cipherNonce       :: Integer -> Nonce c
 
   -- | Increments a nonce.
   cipherIncNonce    :: Nonce c -> Nonce c

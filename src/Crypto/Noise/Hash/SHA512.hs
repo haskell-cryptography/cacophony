@@ -12,7 +12,9 @@ module Crypto.Noise.Hash.SHA512
 
 import qualified Crypto.Hash     as H
 import qualified Crypto.MAC.HMAC as M
-import Data.ByteArray (ScrubbedBytes, convert)
+import Data.ByteArray (ScrubbedBytes, convert, empty, snoc)
+import Data.List      (unfoldr)
+import Data.Word      (Word8)
 
 import Crypto.Noise.Hash
 
@@ -34,19 +36,20 @@ instance Hash SHA512 where
 hash' :: ScrubbedBytes -> Digest SHA512
 hash' bs = HDSHA512 $ H.hash bs
 
-hkdf :: ChainingKey SHA512 -> ScrubbedBytes -> (ChainingKey SHA512, ScrubbedBytes)
-hkdf (HCKSHA512 ck) d = (HCKSHA512 ck', sk)
+hkdf :: ChainingKey SHA512
+     -> ScrubbedBytes
+     -> Word8
+     -> [ScrubbedBytes]
+hkdf (HCKSHA512 ck) keyMat numOutputs = loop (empty, 1)
   where
-    x01, x02 :: ScrubbedBytes
-    x01   = "\x01"
-    x02   = "\x02"
-
-    hmac1 = M.hmac ck d :: M.HMAC H.SHA512
-    temp  = convert hmac1 :: ScrubbedBytes
-    hmac2 = M.hmac temp x01 :: M.HMAC H.SHA512
-    hmac3 = M.hmac temp (convert hmac2 `mappend` x02) :: M.HMAC H.SHA512
-    ck'   = convert hmac2
-    sk    = convert hmac3
+    hmac key info = convert (M.hmac key info :: M.HMAC H.SHA512) :: ScrubbedBytes
+    tempKey = hmac ck keyMat
+    loop = unfoldr $ \(c, i) -> let r = hmac tempKey (c `snoc` i) in
+      if i == 0
+        then Nothing
+        else if i <= numOutputs
+          then Just (r, (r, i + 1))
+          else Nothing
 
 bytesToCK :: ScrubbedBytes -> ChainingKey SHA512
 bytesToCK = HCKSHA512

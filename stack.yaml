@@ -1,8 +1,6 @@
-resolver: lts-8.11
+resolver: lts-8.14
 packages:
   - '.'
-
 extra-deps: []
 flags: {}
 extra-package-dbs: []
-

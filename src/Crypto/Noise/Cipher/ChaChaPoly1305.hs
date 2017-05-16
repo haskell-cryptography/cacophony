@@ -14,7 +14,6 @@ import           Crypto.Error   (throwCryptoError)
 import qualified Crypto.Cipher.ChaChaPoly1305 as CCP
 import qualified Crypto.MAC.Poly1305          as P
 import           Data.ByteArray (ScrubbedBytes, convert, take, drop, length)
-import qualified Data.ByteString              as BS (replicate)
 import           Prelude hiding (take, drop, length)
 
 import Crypto.Noise.Cipher
@@ -30,7 +29,7 @@ instance Cipher ChaChaPoly1305 where
   cipherName _      = "ChaChaPoly"
   cipherEncrypt     = encrypt
   cipherDecrypt     = decrypt
-  cipherZeroNonce   = zeroNonce
+  cipherNonce       = nonce
   cipherIncNonce    = incNonce
   cipherBytesToSym  = bytesToSym
   cipherSymToBytes  = symToBytes
@@ -65,11 +64,8 @@ decrypt (SKCCP1305 k) (NCCP1305 n) ad (CTCCP1305 (ct, auth)) =
     (out, afterDec) = CCP.decrypt ct afterAAD
     calcAuthTag     = CCP.finalize afterDec
 
-zeroNonce :: Nonce ChaChaPoly1305
-zeroNonce = NCCP1305 . throwCryptoError $ CCP.nonce8 constant iv
-  where
-    constant = BS.replicate 4 0
-    iv       = BS.replicate 8 0
+nonce :: Integer -> Nonce ChaChaPoly1305
+nonce i = NCCP1305 . throwCryptoError . CCP.nonce12 $ (undefined :: ScrubbedBytes)
 
 incNonce :: Nonce ChaChaPoly1305 -> Nonce ChaChaPoly1305
 incNonce (NCCP1305 n) = NCCP1305 $ CCP.incrementNonce n

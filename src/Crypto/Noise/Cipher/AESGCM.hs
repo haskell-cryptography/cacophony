@@ -16,7 +16,7 @@ import Crypto.Cipher.Types           (AuthTag(..), AEADMode(AEAD_GCM),
                                       cipherInit, aeadInit, aeadSimpleEncrypt,
                                       aeadSimpleDecrypt)
 import Data.ByteArray                (ByteArray, ScrubbedBytes, convert)
-import qualified Data.ByteArray as B (take, drop, length, replicate, copyAndFreeze)
+import qualified Data.ByteArray as B (take, drop, length, copyAndFreeze)
 import Data.Word                     (Word8)
 import Foreign.Ptr
 import Foreign.Storable
@@ -34,7 +34,7 @@ instance Cipher AESGCM where
   cipherName _      = "AESGCM"
   cipherEncrypt     = encrypt
   cipherDecrypt     = decrypt
-  cipherZeroNonce   = zeroNonce
+  cipherNonce       = nonce
   cipherIncNonce    = incNonce
   cipherBytesToSym  = bytesToSym
   cipherSymToBytes  = symToBytes
@@ -63,8 +63,9 @@ decrypt (SKAES k) (NAES n) ad (CTAES (authTag, ct)) =
     state = throwCryptoError . cipherInit $ k :: AES256
     aead  = throwCryptoError $ aeadInit AEAD_GCM state n
 
-zeroNonce :: Nonce AESGCM
-zeroNonce = NAES (B.replicate 12 0 :: ScrubbedBytes)
+nonce :: Integer
+      -> Nonce AESGCM
+nonce i = NAES undefined
 
 incNonce :: Nonce AESGCM
          -> Nonce AESGCM

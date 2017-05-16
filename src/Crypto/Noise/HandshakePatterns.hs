@@ -25,7 +25,7 @@ module Crypto.Noise.HandshakePatterns
   , noiseX
   ) where
 
-import Crypto.Noise.Internal.HandshakePattern
+import Crypto.Noise.Internal.Handshake.Pattern
 
 -- | @Noise_NN():
 --  -> e

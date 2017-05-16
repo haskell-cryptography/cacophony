@@ -1,15 +1,15 @@
 ----------------------------------------------------------------
 -- |
--- Module      : Crypto.Noise.Internal.HandshakeInterpreter
+-- Module      : Crypto.Noise.Internal.Handshake.Interpreter
 -- Maintainer  : John Galt <jgalt@centromere.net>
 -- Stability   : experimental
 -- Portability : POSIX
-module Crypto.Noise.Internal.HandshakeInterpreter where
+module Crypto.Noise.Internal.Handshake.Interpreter where
 
 import Control.Applicative.Free
 import Control.Lens
 
-import Crypto.Noise.Internal.HandshakePattern
+import Crypto.Noise.Internal.Handshake.Pattern
 
 interpretToken :: Token a -> IO a
 interpretToken (E  next) = return next

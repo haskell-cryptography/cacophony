@@ -1,11 +1,10 @@
-{-# LANGUAGE OverloadedStrings, TypeFamilies #-}
-----------------------------------------------------------------
+{-# LANGUAGE TypeFamilies #-}
+-------------------------------------------------
 -- |
 -- Module      : Crypto.Noise.Hash.SHA512
 -- Maintainer  : John Galt <jgalt@centromere.net>
 -- Stability   : experimental
 -- Portability : POSIX
-
 module Crypto.Noise.Hash.SHA512
   ( -- * Types
     SHA512

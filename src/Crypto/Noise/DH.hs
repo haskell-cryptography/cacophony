@@ -1,11 +1,10 @@
 {-# LANGUAGE TypeFamilies #-}
-----------------------------------------------------------------
+-------------------------------------------------
 -- |
 -- Module      : Crypto.Noise.DH
 -- Maintainer  : John Galt <jgalt@centromere.net>
 -- Stability   : experimental
 -- Portability : POSIX
-
 module Crypto.Noise.DH
   ( -- * Classes
     DH(..)

@@ -1,10 +1,9 @@
-----------------------------------------------------------------
+-------------------------------------------------
 -- |
 -- Module      : Crypto.Noise.Internal.Types
 -- Maintainer  : John Galt <jgalt@centromere.net>
 -- Stability   : experimental
 -- Portability : POSIX
-
 module Crypto.Noise.Internal.Types where
 
 import Control.Exception.Safe

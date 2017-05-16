@@ -1,12 +1,10 @@
 {-# LANGUAGE TemplateHaskell, ScopedTypeVariables #-}
-{-# OPTIONS_HADDOCK hide #-}
-----------------------------------------------------------------
+-----------------------------------------------------
 -- |
 -- Module      : Crypto.Noise.Internal.SymmetricState
 -- Maintainer  : John Galt <jgalt@centromere.net>
 -- Stability   : experimental
 -- Portability : POSIX
-
 module Crypto.Noise.Internal.SymmetricState where
 
 import Control.Arrow

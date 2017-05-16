@@ -1,11 +1,10 @@
-{-# LANGUAGE OverloadedStrings, TypeFamilies #-}
-----------------------------------------------------------------
+{-# LANGUAGE TypeFamilies #-}
+-------------------------------------------------
 -- |
 -- Module      : Crypto.Noise.DH.Curve448
 -- Maintainer  : John Galt <jgalt@centromere.net>
 -- Stability   : experimental
 -- Portability : POSIX
-
 module Crypto.Noise.DH.Curve448
   ( -- * Types
     Curve448

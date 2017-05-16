@@ -1,11 +1,10 @@
-{-# LANGUAGE OverloadedStrings, TypeFamilies #-}
-----------------------------------------------------------------
+{-# LANGUAGE TypeFamilies #-}
+-------------------------------------------------
 -- |
 -- Module      : Crypto.Noise.Cipher.AESGCM
 -- Maintainer  : John Galt <jgalt@centromere.net>
 -- Stability   : experimental
 -- Portability : POSIX
-
 module Crypto.Noise.Cipher.AESGCM
   ( -- * Types
     AESGCM

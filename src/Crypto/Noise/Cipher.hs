@@ -1,11 +1,10 @@
 {-# LANGUAGE TypeFamilies #-}
-----------------------------------------------------------------
+-------------------------------------------------
 -- |
 -- Module      : Crypto.Noise.Cipher
 -- Maintainer  : John Galt <jgalt@centromere.net>
 -- Stability   : experimental
 -- Portability : POSIX
-
 module Crypto.Noise.Cipher
   ( -- * Classes
     Cipher(..)

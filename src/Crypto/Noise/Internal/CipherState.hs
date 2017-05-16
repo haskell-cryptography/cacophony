@@ -1,12 +1,10 @@
 {-# LANGUAGE TemplateHaskell #-}
-{-# OPTIONS_HADDOCK hide #-}
-----------------------------------------------------------------
+--------------------------------------------------
 -- |
 -- Module      : Crypto.Noise.Internal.CipherState
 -- Maintainer  : John Galt <jgalt@centromere.net>
 -- Stability   : experimental
 -- Portability : POSIX
-
 module Crypto.Noise.Internal.CipherState where
 
 import Control.Exception.Safe

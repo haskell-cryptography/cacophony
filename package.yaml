@@ -1,6 +1,6 @@
 name: cacophony
 synopsis: A library implementing the Noise protocol.
-version: 0.9.2
+version: 0.10.0
 license: PublicDomain
 license-file: LICENSE
 maintainer: John Galt <jgalt@centromere.net>
@@ -62,14 +62,21 @@ library:
     - Crypto.Noise.DH
     - Crypto.Noise.DH.Curve25519
     - Crypto.Noise.DH.Curve448
+    - Crypto.Noise.HandshakePatterns
     - Crypto.Noise.Hash
     - Crypto.Noise.Hash.BLAKE2b
     - Crypto.Noise.Hash.BLAKE2s
     - Crypto.Noise.Hash.SHA256
     - Crypto.Noise.Hash.SHA512
     - Crypto.Noise.Internal.CipherState
+    - Crypto.Noise.Internal.HandshakeInterpreter
+    - Crypto.Noise.Internal.HandshakePattern
+    - Crypto.Noise.Internal.HandshakeValidation
     - Crypto.Noise.Internal.SymmetricState
     - Crypto.Noise.Internal.Types
+
+  default-extensions:
+    - OverloadedStrings
 
 executables:
   echo-server:

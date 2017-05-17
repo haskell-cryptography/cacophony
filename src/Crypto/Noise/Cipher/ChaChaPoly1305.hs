@@ -13,8 +13,9 @@ module Crypto.Noise.Cipher.ChaChaPoly1305
 import           Crypto.Error   (throwCryptoError)
 import qualified Crypto.Cipher.ChaChaPoly1305 as CCP
 import qualified Crypto.MAC.Poly1305          as P
-import           Data.ByteArray (ScrubbedBytes, convert, take, drop, length)
-import           Prelude hiding (take, drop, length)
+import           Data.ByteArray (ScrubbedBytes, Bytes, convert, take, drop,
+                                 length, replicate)
+import           Prelude hiding (drop, length, replicate, take)
 
 import Crypto.Noise.Cipher
 
@@ -29,8 +30,11 @@ instance Cipher ChaChaPoly1305 where
   cipherName _      = "ChaChaPoly"
   cipherEncrypt     = encrypt
   cipherDecrypt     = decrypt
-  cipherNonce       = nonce
+  cipherZeroNonce   = zeroNonce
+  cipherMaxNonce    = maxNonce
   cipherIncNonce    = incNonce
+  cipherNonceEq     = nonceEq
+  cipherNonceCmp    = nonceCmp
   cipherBytesToSym  = bytesToSym
   cipherSymToBytes  = symToBytes
   cipherTextToBytes = ctToBytes
@@ -64,22 +68,46 @@ decrypt (SKCCP1305 k) (NCCP1305 n) ad (CTCCP1305 (ct, auth)) =
     (out, afterDec) = CCP.decrypt ct afterAAD
     calcAuthTag     = CCP.finalize afterDec
 
-nonce :: Integer -> Nonce ChaChaPoly1305
-nonce i = NCCP1305 . throwCryptoError . CCP.nonce12 $ (undefined :: ScrubbedBytes)
+zeroNonce :: Nonce ChaChaPoly1305
+zeroNonce = NCCP1305 . throwCryptoError $ CCP.nonce8 constant iv
+  where
+    constant = replicate 4 0 :: Bytes
+    iv       = replicate 8 0 :: Bytes
 
-incNonce :: Nonce ChaChaPoly1305 -> Nonce ChaChaPoly1305
+maxNonce :: Nonce ChaChaPoly1305
+maxNonce = NCCP1305 . throwCryptoError $ CCP.nonce8 constant iv
+  where
+    constant = replicate 4 0   :: Bytes
+    iv       = replicate 8 255 :: Bytes
+
+incNonce :: Nonce ChaChaPoly1305
+         -> Nonce ChaChaPoly1305
 incNonce (NCCP1305 n) = NCCP1305 $ CCP.incrementNonce n
 
-bytesToSym :: ScrubbedBytes -> SymmetricKey ChaChaPoly1305
+nonceEq :: Nonce ChaChaPoly1305
+        -> Nonce ChaChaPoly1305
+        -> Bool
+nonceEq (NCCP1305 a) (NCCP1305 b) = a == b
+
+nonceCmp :: Nonce ChaChaPoly1305
+         -> Nonce ChaChaPoly1305
+         -> Ordering
+nonceCmp (NCCP1305 a) (NCCP1305 b) = compare a b
+
+bytesToSym :: ScrubbedBytes
+           -> SymmetricKey ChaChaPoly1305
 bytesToSym = SKCCP1305 . take 32
 
-symToBytes :: SymmetricKey ChaChaPoly1305 -> ScrubbedBytes
+symToBytes :: SymmetricKey ChaChaPoly1305
+           -> ScrubbedBytes
 symToBytes (SKCCP1305 sk) = sk
 
-ctToBytes :: Ciphertext ChaChaPoly1305 -> ScrubbedBytes
+ctToBytes :: Ciphertext ChaChaPoly1305
+          -> ScrubbedBytes
 ctToBytes (CTCCP1305 (ct, a)) = ct `mappend` convert a
 
-bytesToCt :: ScrubbedBytes -> Ciphertext ChaChaPoly1305
+bytesToCt :: ScrubbedBytes
+          -> Ciphertext ChaChaPoly1305
 bytesToCt bytes =
   CTCCP1305 (take (length bytes - 16) bytes
             , P.Auth . convert $ drop (length bytes - 16) bytes

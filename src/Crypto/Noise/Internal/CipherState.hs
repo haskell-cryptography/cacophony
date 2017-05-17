@@ -16,7 +16,6 @@ import Crypto.Noise.Internal.Types
 data CipherState c =
   CipherState { _csk     :: SymmetricKey c
               , _csn     :: Nonce c
-              , _csCount :: Integer
               } deriving Show
 
 $(makeLenses ''CipherState)
@@ -27,13 +26,11 @@ encryptAndIncrement :: (MonadThrow m, Cipher c)
                     -> CipherState c
                     -> m (Ciphertext c, CipherState c)
 encryptAndIncrement ad plaintext cs
-  | allow     = return (ct, newState)
-  | otherwise = throwM $ MessageLimitReached "encryptAndIncrement"
+  | validNonce cs = return (ct, newState)
+  | otherwise     = throwM $ MessageLimitReached "encryptAndIncrement"
   where
     ct       = cipherEncrypt (cs ^. csk) (cs ^. csn) ad plaintext
-    newState = cs & csn     %~ cipherIncNonce
-                  & csCount %~ (+1)
-    allow    = cs ^. csCount < 2 ^ (64 :: Integer) - 1
+    newState = cs & csn %~ cipherIncNonce
 
 decryptAndIncrement :: (MonadThrow m, Cipher c)
                     => AssocData
@@ -41,13 +38,16 @@ decryptAndIncrement :: (MonadThrow m, Cipher c)
                     -> CipherState c
                     -> m (Plaintext, CipherState c)
 decryptAndIncrement ad ct cs
-  | allow     =
+  | validNonce cs =
     maybe (throwM (DecryptionError "decryptAndIncrement"))
           (\x -> return (x, newState))
           pt
-  | otherwise = throwM $ MessageLimitReached "decryptAndIncrement"
+  | otherwise     = throwM $ MessageLimitReached "decryptAndIncrement"
   where
     pt       = cipherDecrypt (cs ^. csk) (cs ^. csn) ad ct
-    newState = cs & csn     %~ cipherIncNonce
-                  & csCount %~ (+1)
-    allow    = cs ^. csCount < 2 ^ (64 :: Integer) - 1
+    newState = cs & csn %~ cipherIncNonce
+
+validNonce :: Cipher c
+           => CipherState c
+           -> Bool
+validNonce cs = cs ^. csn < cipherMaxNonce

@@ -41,7 +41,7 @@ symmetricState hsn = SymmetricState cs False False ck hsn' (convert empty)
                    then Right $ hash hsn
                    else Left $ hsn `mappend` replicate (hashLen - length hsn) 0
     ck         = hashBytesToCK . sshBytes $ hsn'
-    cs         = CipherState undefined undefined 0
+    cs         = CipherState undefined undefined
 
 mixKey :: (Cipher c, Hash h)
        => ScrubbedBytes
@@ -52,7 +52,7 @@ mixKey d ss = ss & ssCipher .~ cs
                  & ssck     .~ ck
   where
     (ck, k) = undefined -- hashHKDF (ss ^. ssck) d 2
-    cs      = CipherState (cipherBytesToSym k) (cipherNonce 0) 0
+    cs      = CipherState (cipherBytesToSym k) cipherZeroNonce
 
 mixPSK :: Hash h
        => ScrubbedBytes
@@ -99,9 +99,9 @@ split :: (Cipher c, Hash h)
       -> (CipherState c, CipherState c)
 split ss = (cs1, cs2)
   where
-    [cs1k, cs2k, _] = [] :: [ScrubbedBytes] -- hashHKDF (ss ^. ssck) (ss ^. ssk)
-    cs1   = CipherState (cipherBytesToSym cs1k) (cipherNonce 0) 0
-    cs2   = CipherState (cipherBytesToSym cs2k) (cipherNonce 0) 0
+    [cs1k, cs2k, _] = hashHKDF (ss ^. ssck) (ss ^. ssk) 2
+    cs1   = CipherState (cipherBytesToSym cs1k) cipherZeroNonce
+    cs2   = CipherState (cipherBytesToSym cs2k) cipherZeroNonce
 
 sshBytes :: Hash h
          => Either ScrubbedBytes (Digest h)

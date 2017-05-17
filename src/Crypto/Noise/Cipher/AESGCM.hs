@@ -10,16 +10,17 @@ module Crypto.Noise.Cipher.AESGCM
     AESGCM
   ) where
 
-import Crypto.Error                  (throwCryptoError)
-import Crypto.Cipher.AES             (AES256)
-import Crypto.Cipher.Types           (AuthTag(..), AEADMode(AEAD_GCM),
-                                      cipherInit, aeadInit, aeadSimpleEncrypt,
-                                      aeadSimpleDecrypt)
-import Data.ByteArray                (ByteArray, ScrubbedBytes, convert)
-import qualified Data.ByteArray as B (take, drop, length, copyAndFreeze)
-import Data.Word                     (Word8)
+import Crypto.Error        (throwCryptoError)
+import Crypto.Cipher.AES   (AES256)
+import Crypto.Cipher.Types (AuthTag(..), AEADMode(AEAD_GCM), cipherInit,
+                            aeadInit, aeadSimpleEncrypt, aeadSimpleDecrypt)
+import Data.ByteArray      (ByteArray, Bytes, ScrubbedBytes, convert)
+import Data.ByteArray      (take, drop, length, copyAndFreeze, zero, append,
+                            replicate)
+import Data.Word           (Word8)
 import Foreign.Ptr
 import Foreign.Storable
+import Prelude hiding      (drop, length, replicate, take)
 
 import Crypto.Noise.Cipher
 
@@ -29,13 +30,16 @@ data AESGCM
 instance Cipher AESGCM where
   newtype Ciphertext   AESGCM = CTAES (AuthTag, ScrubbedBytes)
   newtype SymmetricKey AESGCM = SKAES ScrubbedBytes
-  newtype Nonce        AESGCM = NAES  ScrubbedBytes
+  newtype Nonce        AESGCM = NAES  Bytes
 
   cipherName _      = "AESGCM"
   cipherEncrypt     = encrypt
   cipherDecrypt     = decrypt
-  cipherNonce       = nonce
+  cipherZeroNonce   = zeroNonce
+  cipherMaxNonce    = maxNonce
   cipherIncNonce    = incNonce
+  cipherNonceEq     = nonceEq
+  cipherNonceCmp    = nonceCmp
   cipherBytesToSym  = bytesToSym
   cipherSymToBytes  = symToBytes
   cipherTextToBytes = ctToBytes
@@ -63,17 +67,29 @@ decrypt (SKAES k) (NAES n) ad (CTAES (authTag, ct)) =
     state = throwCryptoError . cipherInit $ k :: AES256
     aead  = throwCryptoError $ aeadInit AEAD_GCM state n
 
-nonce :: Integer
-      -> Nonce AESGCM
-nonce i = NAES undefined
+zeroNonce :: Nonce AESGCM
+zeroNonce = NAES . zero $ 12
+
+maxNonce :: Nonce AESGCM
+maxNonce = NAES $ zero 4 `append` replicate 8 255
 
 incNonce :: Nonce AESGCM
          -> Nonce AESGCM
 incNonce (NAES n) = NAES $ ivAdd n 1
 
+nonceEq :: Nonce AESGCM
+        -> Nonce AESGCM
+        -> Bool
+nonceEq (NAES a) (NAES b) = a == b
+
+nonceCmp :: Nonce AESGCM
+         -> Nonce AESGCM
+         -> Ordering
+nonceCmp (NAES a) (NAES b) = compare a b
+
 bytesToSym :: ScrubbedBytes
            -> SymmetricKey AESGCM
-bytesToSym = SKAES . B.take 32
+bytesToSym = SKAES . take 32
 
 symToBytes :: SymmetricKey AESGCM
            -> ScrubbedBytes
@@ -86,18 +102,21 @@ ctToBytes (CTAES (a, ct)) = ct `mappend` convert a
 bytesToCt :: ScrubbedBytes
           -> Ciphertext AESGCM
 bytesToCt bytes =
-  CTAES ( AuthTag . convert $ B.drop (B.length bytes - 16) bytes
-        , B.take (B.length bytes - 16) bytes
+  CTAES ( AuthTag . convert $ drop (length bytes - 16) bytes
+        , take (length bytes - 16) bytes
         )
 
 -- Adapted from cryptonite's Crypto.Cipher.Types.Block module:
 -- https://github.com/haskell-crypto/cryptonite/blob/149bfa601081c27013811498fa507a83f5ce87ea/Crypto/Cipher/Types/Block.hs#L167
-ivAdd :: ByteArray b => b -> Int -> b
+ivAdd :: ByteArray b
+      => b
+      -> Int
+      -> b
 ivAdd b i = copy b
   where copy :: ByteArray bs => bs -> bs
-        copy bs = B.copyAndFreeze bs $ \p -> do
+        copy bs = copyAndFreeze bs $ \p -> do
             let until0 accu = do
-                  r <- loop accu (B.length bs - 1) p
+                  r <- loop accu (length bs - 1) p
                   case r of
                       0 -> return ()
                       _ -> until0 r

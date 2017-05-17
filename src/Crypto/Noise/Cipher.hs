@@ -57,16 +57,22 @@ class Cipher c where
                     -> SymmetricKey c
   cipherRekey k = cipherBytesToSym  .
                   cipherTextToBytes $
-                  cipherEncrypt k maxNonce "" zeros
-    where
-      maxNonce = cipherNonce $ 2 ^ (64 :: Integer) - 1
-      zeros    = replicate 32 0
+                  cipherEncrypt k cipherMaxNonce "" (replicate 32 0)
 
-  -- | Converts an integer to a Nonce.
-  cipherNonce       :: Integer -> Nonce c
+  -- | Returns a Nonce set to zero.
+  cipherZeroNonce   :: Nonce c
+
+  -- | Returns the largest possible Nonce (@2 ^ 64 - 1@).
+  cipherMaxNonce    :: Nonce c
 
   -- | Increments a nonce.
   cipherIncNonce    :: Nonce c -> Nonce c
+
+  -- | Tests if two Nonces are equal.
+  cipherNonceEq     :: Nonce c -> Nonce c -> Bool
+
+  -- | Compares the value of two Nonces.
+  cipherNonceCmp    :: Nonce c -> Nonce c -> Ordering
 
   -- | Imports a symmetric key. If the input is greater than 32 bytes, it
   --   is truncated.
@@ -87,6 +93,12 @@ type AssocData = ScrubbedBytes
 
 -- | Represents plaintext data that can be encrypted.
 type Plaintext = ScrubbedBytes
+
+instance Cipher c => Eq (Nonce c) where
+  (==) = cipherNonceEq
+
+instance Cipher c => Ord (Nonce c) where
+  compare = cipherNonceCmp
 
 instance Show (SymmetricKey a) where
   show _ = "<symmetric key>"

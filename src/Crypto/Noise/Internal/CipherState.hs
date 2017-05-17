@@ -14,38 +14,62 @@ import Crypto.Noise.Cipher
 import Crypto.Noise.Internal.Types
 
 data CipherState c =
-  CipherState { _csk     :: SymmetricKey c
+  CipherState { _csk     :: Maybe (SymmetricKey c)
               , _csn     :: Nonce c
               } deriving Show
 
 $(makeLenses ''CipherState)
 
-encryptAndIncrement :: (MonadThrow m, Cipher c)
-                    => AssocData
-                    -> Plaintext
-                    -> CipherState c
-                    -> m (Ciphertext c, CipherState c)
-encryptAndIncrement ad plaintext cs
-  | validNonce cs = return (ct, newState)
-  | otherwise     = throwM $ MessageLimitReached "encryptAndIncrement"
+-- | Creates a new CipherState with an optional symmetric key and a zero nonce.
+cipherState :: Cipher c
+            => Maybe (SymmetricKey c)
+            -> CipherState c
+cipherState sk = CipherState sk cipherZeroNonce
+
+-- | Encrypts the provided plaintext and increments the nonce. If this
+--   CipherState does not have a key associated with it, the plaintext
+--   will be returned.
+encryptWithAd :: (MonadThrow m, Cipher c)
+              => AssocData
+              -> Plaintext
+              -> CipherState c
+              -> m (Ciphertext c, CipherState c)
+encryptWithAd ad plaintext cs
+  | validNonce cs = return (result, newState)
+  | otherwise     = throwM $ MessageLimitReached "encryptWithAd"
   where
-    ct       = cipherEncrypt (cs ^. csk) (cs ^. csn) ad plaintext
+    result = maybe (cipherBytesToText plaintext)
+                   (\k -> cipherEncrypt k (cs ^. csn) ad plaintext)
+                   $ cs ^. csk
     newState = cs & csn %~ cipherIncNonce
 
-decryptAndIncrement :: (MonadThrow m, Cipher c)
-                    => AssocData
-                    -> Ciphertext c
-                    -> CipherState c
-                    -> m (Plaintext, CipherState c)
-decryptAndIncrement ad ct cs
+-- | Decrypts the provided ciphertext and increments the nonce. If this
+--   CipherState does not have a key associated with it, the ciphertext
+--   will be returned. If the CipherState does have a key and decryption
+--   fails, a @DecryptionError@ will be returned.
+decryptWithAd :: (MonadThrow m, Cipher c)
+              => AssocData
+              -> Ciphertext c
+              -> CipherState c
+              -> m (Plaintext, CipherState c)
+decryptWithAd ad ct cs
   | validNonce cs =
-    maybe (throwM (DecryptionError "decryptAndIncrement"))
+    maybe (throwM (DecryptionError "decryptWithAd"))
           (\x -> return (x, newState))
-          pt
-  | otherwise     = throwM $ MessageLimitReached "decryptAndIncrement"
+          result
+  | otherwise     = throwM $ MessageLimitReached "decryptWithAd"
   where
-    pt       = cipherDecrypt (cs ^. csk) (cs ^. csn) ad ct
+    result   = maybe (Just . cipherTextToBytes $ ct)
+                     (\k -> cipherDecrypt k (cs ^. csn) ad ct)
+                     $ cs ^. csk
     newState = cs & csn %~ cipherIncNonce
+
+-- | Rekeys the CipherState.
+rekey :: Cipher c
+      => SymmetricKey c
+      -> CipherState c
+      -> CipherState c
+rekey sk cs = cs & csk .~ (Just . cipherRekey $ sk)
 
 validNonce :: Cipher c
            => CipherState c

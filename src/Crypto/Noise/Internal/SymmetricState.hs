@@ -7,11 +7,9 @@
 -- Portability : POSIX
 module Crypto.Noise.Internal.SymmetricState where
 
-import Control.Arrow
 import Control.Exception.Safe
 import Control.Lens
-import Data.ByteArray  (ScrubbedBytes, convert, length, replicate)
-import Data.ByteString (empty)
+import Data.ByteArray  (ScrubbedBytes, length, replicate)
 import Data.Proxy
 import Prelude hiding  (length, replicate)
 
@@ -21,88 +19,96 @@ import Crypto.Noise.Internal.CipherState
 
 data SymmetricState c h =
   SymmetricState { _ssCipher :: CipherState c
-                 , _ssHasKey :: Bool
-                 , _ssHasPSK :: Bool
                  , _ssck     :: ChainingKey h
                  , _ssh      :: Either ScrubbedBytes (Digest h)
-                 , _ssk      :: ScrubbedBytes
                  }
 
 $(makeLenses ''SymmetricState)
 
+-- | Creates a new SymmetricState from the given protocol name.
 symmetricState :: forall c h. (Cipher c, Hash h)
                => ScrubbedBytes
                -> SymmetricState c h
-symmetricState hsn = SymmetricState cs False False ck hsn' (convert empty)
+symmetricState protoName = SymmetricState cs ck h
   where
     hashLen    = hashLength (Proxy :: Proxy h)
-    shouldHash = length hsn > hashLen
-    hsn'       = if shouldHash
-                   then Right $ hash hsn
-                   else Left $ hsn `mappend` replicate (hashLen - length hsn) 0
-    ck         = hashBytesToCK . sshBytes $ hsn'
-    cs         = CipherState undefined undefined
+    shouldHash = length protoName > hashLen
+    h         = if shouldHash
+                   then Right $ hash protoName
+                   else Left $ protoName `mappend` replicate (hashLen - length protoName) 0
+    ck         = hashBytesToCK . sshBytes $ h
+    cs         = cipherState Nothing
 
+-- | Mixes keying material in to the SymmetricState.
 mixKey :: (Cipher c, Hash h)
        => ScrubbedBytes
        -> SymmetricState c h
        -> SymmetricState c h
-mixKey d ss = ss & ssCipher .~ cs
-                 & ssHasKey .~ True
-                 & ssck     .~ ck
+mixKey keyMat ss = ss & ssCipher .~ cs
+                      & ssck     .~ hashBytesToCK ck
   where
-    (ck, k) = undefined -- hashHKDF (ss ^. ssck) d 2
-    cs      = CipherState (cipherBytesToSym k) cipherZeroNonce
+    [ck, k] = hashHKDF (ss ^. ssck) keyMat 2
+    -- k is truncated automatically by cipherBytesToSym
+    cs      = cipherState . Just . cipherBytesToSym $ k
 
-mixPSK :: Hash h
-       => ScrubbedBytes
-       -> SymmetricState c h
-       -> SymmetricState c h
-mixPSK psk ss = ss'' & ssHasPSK .~ True
-  where
-    (ck, tmp) = undefined -- hashHKDF (ss ^. ssck) psk 2
-    ss'       = ss & ssck .~ ck
-    ss''      = mixHash tmp ss'
-
+-- | Mixes arbitrary data in to the SymmetricState.
 mixHash :: Hash h
         => ScrubbedBytes
         -> SymmetricState c h
         -> SymmetricState c h
 mixHash d ss = ss & ssh %~ Right . hash . (`mappend` d) . sshBytes
 
+-- | Mixes key material and arbitrary data in to the SymmetricState.
+--   Note that this is not isomorphic to @mixHash . mixKey@.
+mixKeyAndHash :: (Cipher c, Hash h)
+              => ScrubbedBytes
+              -> SymmetricState c h
+              -> SymmetricState c h
+mixKeyAndHash keyMat ss = ss' & ssCipher .~ cs
+                              & ssck     .~ hashBytesToCK ck
+  where
+    [ck, h, k] = hashHKDF (ss ^. ssck) keyMat 3
+    ss'        = mixHash h ss
+    cs         = cipherState . Just . cipherBytesToSym $ k
+
+-- | Encrypts the given Plaintext. Note that this may not actually perform
+--   encryption if a key has not been established yet, in which case the
+--   original plaintext is returned.
 encryptAndHash :: (MonadThrow m, Cipher c, Hash h)
                => Plaintext
                -> SymmetricState c h
-               -> m (ScrubbedBytes, SymmetricState c h)
-encryptAndHash pt ss
-  | ss ^. ssHasKey = mix . first toBytes <$> enc
-  | otherwise      = return (pt, mixHash pt ss)
-  where
-    enc          = encryptAndIncrement (sshBytes (ss ^. ssh)) pt (ss ^. ssCipher)
-    mix (cb, cs) = (cb, mixHash cb ss & ssCipher .~ cs)
-    toBytes      = arr cipherTextToBytes
+               -> m (Ciphertext c, SymmetricState c h)
+encryptAndHash pt ss = do
+  (ct, cs) <- encryptWithAd (sshBytes (ss ^. ssh)) pt (ss ^. ssCipher)
+  let ss' = mixHash (cipherTextToBytes ct) ss
+  return (ct, ss' & ssCipher .~ cs)
 
+-- | Decrypts the given Ciphertext. Note that this may not actually perform
+--   decryption if a key as not been established yet, in which case the
+--   original ciphertext is returned.
 decryptAndHash :: (MonadThrow m, Cipher c, Hash h)
                => Ciphertext c
                -> SymmetricState c h
                -> m (Plaintext, SymmetricState c h)
-decryptAndHash ct ss
-  | ss ^. ssHasKey = second kss <$> dec
-  | otherwise      = return (ct', mixHash ct' ss)
-  where
-    dec  = decryptAndIncrement (sshBytes (ss ^. ssh)) ct (ss ^. ssCipher)
-    kss  = arr $ \cs -> mixHash ct' ss & ssCipher .~ cs
-    ct'  = cipherTextToBytes ct
+decryptAndHash ct ss = do
+  (pt, cs) <- decryptWithAd (sshBytes (ss ^. ssh)) ct (ss ^. ssCipher)
+  let ss' = mixHash (cipherTextToBytes ct) ss
+  return (pt, ss' & ssCipher .~ cs)
 
+-- | Returns a pair of CipherStates for encrypting transport messages. The
+--   first CipherState is for encrypting messages from the Initiator to the
+--   Responder, and the second is for encrypting messages from the Responder
+--   to the Initiator.
 split :: (Cipher c, Hash h)
       => SymmetricState c h
       -> (CipherState c, CipherState c)
-split ss = (cs1, cs2)
+split ss = (c1, c2)
   where
-    [cs1k, cs2k, _] = hashHKDF (ss ^. ssck) (ss ^. ssk) 2
-    cs1   = CipherState (cipherBytesToSym cs1k) cipherZeroNonce
-    cs2   = CipherState (cipherBytesToSym cs2k) cipherZeroNonce
+    [k1, k2] = hashHKDF (ss ^. ssck) mempty 2
+    c1       = cipherState . Just . cipherBytesToSym $ k1
+    c2       = cipherState . Just . cipherBytesToSym $ k2
 
+-- | Utility function to convert the hash state to ScrubbedBytes.
 sshBytes :: Hash h
          => Either ScrubbedBytes (Digest h)
          -> ScrubbedBytes

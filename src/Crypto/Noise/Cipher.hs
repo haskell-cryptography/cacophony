@@ -57,7 +57,7 @@ class Cipher c where
                     -> SymmetricKey c
   cipherRekey k = cipherBytesToSym  .
                   cipherTextToBytes $
-                  cipherEncrypt k cipherMaxNonce "" (replicate 32 0)
+                  cipherEncrypt k cipherMaxNonce mempty (replicate 32 0)
 
   -- | Returns a Nonce set to zero.
   cipherZeroNonce   :: Nonce c

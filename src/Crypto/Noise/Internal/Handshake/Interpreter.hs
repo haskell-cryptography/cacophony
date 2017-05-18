@@ -142,7 +142,7 @@ processMsgPattern opRole mp = do
 
   if opRole == myRole then do
     hsMsgBuffer .= mempty
-    r <- runAp (interpretToken opRole) mp
+    r  <- runAp (interpretToken opRole) mp
     ss <- use hsSymmetricState
     (encPayload, ss') <- encryptAndHash input ss
     hsMsgBuffer      <>= cipherTextToBytes encPayload
@@ -151,21 +151,56 @@ processMsgPattern opRole mp = do
 
   else do
     hsMsgBuffer .= input
-    r <- runAp (interpretToken opRole) mp
+    r         <- runAp (interpretToken opRole) mp
     remaining <- use hsMsgBuffer
-    ss <- use hsSymmetricState
+    ss        <- use hsSymmetricState
     (decPayload, ss') <- decryptAndHash (cipherBytesToText remaining) ss
-    hsMsgBuffer .= decPayload
+    hsMsgBuffer      .= decPayload
     hsSymmetricState .= ss'
     return r
+
+interpretPreToken :: (Cipher c, DH d, Hash h)
+                  => HandshakeRole
+                  -> Token r
+                  -> Handshake c d h r
+interpretPreToken opRole (E next) = do
+  myRole <- use $ hsOpts . hoRole
+  pk <- if opRole == myRole
+    then snd <$> getKeyPair hoLocalEphemeral "local ephemeral"
+    else getPublicKey hoRemoteEphemeral "remote ephemeral"
+
+  hsSymmetricState %= mixHash (dhPubToBytes pk)
+
+  return next
+
+interpretPreToken opRole (S next) = do
+  myRole <- use $ hsOpts . hoRole
+  pk <- if opRole == myRole
+    then snd <$> getKeyPair hoLocalStatic "local static"
+    else getPublicKey hoRemoteStatic "remote static"
+
+  hsSymmetricState %= mixHash (dhPubToBytes pk)
+
+  return next
+
+interpretPreToken _ _ = throwM . HandshakeError $ "invalid pre-message pattern token"
 
 interpretMessage :: (Cipher c, DH d, Hash h)
                  => Message r
                  -> Handshake c d h r
-interpretMessage (PreInitiator _  next) = return next
-interpretMessage (PreResponder _  next) = return next
-interpretMessage (Initiator mp next) = processMsgPattern InitiatorRole mp >> return next
-interpretMessage (Responder mp next) = processMsgPattern ResponderRole mp >> return next
+interpretMessage (PreInitiator mp next) = do
+  runAp (interpretPreToken InitiatorRole) mp
+  return next
+
+interpretMessage (PreResponder mp next) = do
+  runAp (interpretPreToken ResponderRole) mp
+  return next
+
+interpretMessage (Initiator mp next) =
+  processMsgPattern InitiatorRole mp >> return next
+
+interpretMessage (Responder mp next) =
+  processMsgPattern ResponderRole mp >> return next
 
 runHandshakePattern :: (Cipher c, DH d, Hash h)
                     => HandshakePattern

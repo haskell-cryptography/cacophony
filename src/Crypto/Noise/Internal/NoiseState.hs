@@ -22,6 +22,7 @@ import Crypto.Noise.Internal.CipherState
 import Crypto.Noise.Internal.Handshake.Interpreter
 import Crypto.Noise.Internal.Handshake.Pattern
 import Crypto.Noise.Internal.Handshake.State
+import Crypto.Noise.Internal.SymmetricState (split)
 
 -- | Represents the complete state of a Noise conversation.
 data NoiseState c d h =
@@ -49,7 +50,35 @@ noiseState ho hp =
     hs                 = handshakeState ho $ hp ^. hpName
     interpreterResult  = runCatch $ runStateT (resume . runHandshake . runHandshakePattern $ hp) hs
     (suspension, hs'') = case interpreterResult of
-      Left err -> error $ "handshake interpreter threw exception: " <> show err
+      Left err     -> error $ "handshake interpreter threw exception: " <> show err
       Right result -> case result of
         (Left (Request _ resp), hs') -> (Handshake . resp, hs')
         _ -> error "handshake interpreter ended pre-maturely"
+
+-- | Resumes a handshake in progress using the given input data.
+resumeHandshake :: (MonadThrow m, Cipher c, DH d, Hash h)
+                => ScrubbedBytes
+                -> NoiseState c d h
+                -> m (ScrubbedBytes, NoiseState c d h)
+resumeHandshake msg ns = do
+  let interpreterResult = runCatch $ runStateT (resume . runHandshake . (ns ^. nsHandshakeSuspension) $ msg)
+                                               $ ns ^. nsHandshakeState
+  case interpreterResult of
+    -- The interpreter threw an exception. Propagate it up the chain.
+    Left err     -> throwM err
+    -- The interpreter did not throw an exception. Determine if it finished
+    -- running.
+    Right (suspension, hs) -> case suspension of
+      -- The handshake pattern has not finished running. Save the suspension
+      -- and the mutated HandshakeState, and return what was yielded.
+      Left (Request req resp) ->
+        return (req, ns & nsHandshakeSuspension .~ (Handshake . resp) & nsHandshakeState .~ hs)
+      -- The handshake pattern has finished running. Create the CipherStates.
+      Right _ -> do
+        let (cs1, cs2) = split (hs ^. hsSymmetricState)
+            ns'        = if hs ^. hsOpts . hoRole == InitiatorRole
+                           then ns & nsSendingCipherState   .~ Just cs1
+                                   & nsReceivingCipherState .~ Just cs2
+                           else ns & nsSendingCipherState   .~ Just cs2
+                                   & nsReceivingCipherState .~ Just cs1
+        return (hs ^. hsMsgBuffer, ns')

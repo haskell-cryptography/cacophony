@@ -89,7 +89,13 @@ interpretToken opRole (S next) = do
 
   return next
 
-interpretToken _ (Ee next) = return next
+interpretToken _ (Ee next) = do
+  ~(sk, _) <- getKeyPair   hoLocalEphemeral "local ephemeral"
+  rpk      <- getPublicKey hoRemoteEphemeral "remote ephemeral"
+  hsSymmetricState %= mixKey (dhPerform sk rpk)
+
+  return next
+
 interpretToken _ (Es next) = return next
 interpretToken _ (Se next) = return next
 interpretToken _ (Ss next) = return next

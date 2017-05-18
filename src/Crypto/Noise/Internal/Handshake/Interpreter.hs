@@ -12,6 +12,7 @@ import Control.Exception.Safe
 import Control.Lens
 import Control.Monad.Coroutine.SuspensionFunctors
 import Data.ByteArray (splitAt)
+import Data.Maybe     (isJust)
 import Data.Monoid    ((<>))
 import Data.Proxy
 import Prelude hiding (splitAt)
@@ -21,6 +22,7 @@ import Crypto.Noise.DH
 import Crypto.Noise.Hash
 import Crypto.Noise.Internal.Handshake.Pattern hiding (e, s, ee, es, se, ss)
 import Crypto.Noise.Internal.Handshake.State
+import Crypto.Noise.Internal.CipherState
 import Crypto.Noise.Internal.SymmetricState
 import Crypto.Noise.Internal.Types
 
@@ -48,7 +50,45 @@ interpretToken opRole (E next) = do
     hsMsgBuffer                .= remainingBytes
 
   return next
-interpretToken _ (S  next) = return next
+
+interpretToken opRole (S next) = do
+  myRole <- use $ hsOpts . hoRole
+
+  if opRole == myRole then do
+    (_, pk) <- getKeyPair hoLocalStatic "local static"
+    let pkBytes = dhPubToBytes pk
+    hsSymmetricState %= mixHash pkBytes
+    hsMsgBuffer      <>= pkBytes
+
+  else do
+    configuredRemoteStatic <- use $ hsOpts . hoRemoteStatic
+    if isJust configuredRemoteStatic
+      then throwM . InvalidHandshakeOptions $ "unable to overwrite remote static key"
+      else do
+        -- If a SymmetricKey has been established, the static key will be
+        -- encrypted. In that case, the number of bytes to be read off the
+        -- buffer will be the length of the public key plus a 16 byte
+        -- authentication tag.
+        k <- use $ hsSymmetricState . ssCipher . csk
+        let dhLen     = dhLength (Proxy :: Proxy d)
+            lenToRead = if isJust k then dhLen + 16 else dhLen
+
+        buf <- use hsMsgBuffer
+        ss  <- use hsSymmetricState
+        let (b, rest) = splitAt lenToRead buf
+        (pk, ss') <- maybe (throwM . HandshakeError $ "failed to decrypt remote static key")
+                           return
+                           (decryptAndHash (cipherBytesToText b) ss)
+        pk' <- maybe (throwM . HandshakeError $ "invalid static key provided by remote peer")
+                     return
+                     (dhBytesToPub pk)
+
+        hsOpts . hoRemoteStatic .= Just pk'
+        hsSymmetricState        .= ss'
+        hsMsgBuffer             .= rest
+
+  return next
+
 interpretToken _ (Ee next) = return next
 interpretToken _ (Es next) = return next
 interpretToken _ (Se next) = return next

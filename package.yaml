@@ -69,9 +69,9 @@ library:
     - Crypto.Noise.Hash.SHA256
     - Crypto.Noise.Hash.SHA512
     - Crypto.Noise.Internal.CipherState
-    - Crypto.Noise.Internal.Handshake
     - Crypto.Noise.Internal.Handshake.Interpreter
     - Crypto.Noise.Internal.Handshake.Pattern
+    - Crypto.Noise.Internal.Handshake.State
     - Crypto.Noise.Internal.Handshake.Validation
     - Crypto.Noise.Internal.NoiseState
     - Crypto.Noise.Internal.SymmetricState

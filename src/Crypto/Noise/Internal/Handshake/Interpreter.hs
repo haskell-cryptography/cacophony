@@ -90,15 +90,46 @@ interpretToken opRole (S next) = do
   return next
 
 interpretToken _ (Ee next) = do
-  ~(sk, _) <- getKeyPair   hoLocalEphemeral "local ephemeral"
+  ~(sk, _) <- getKeyPair   hoLocalEphemeral  "local ephemeral"
   rpk      <- getPublicKey hoRemoteEphemeral "remote ephemeral"
   hsSymmetricState %= mixKey (dhPerform sk rpk)
 
   return next
 
-interpretToken _ (Es next) = return next
-interpretToken _ (Se next) = return next
-interpretToken _ (Ss next) = return next
+interpretToken _ (Es next) = do
+  myRole <- use $ hsOpts . hoRole
+
+  if myRole == InitiatorRole then do
+    rpk      <- getPublicKey hoRemoteStatic   "remote static"
+    ~(sk, _) <- getKeyPair   hoLocalEphemeral "local ephemeral"
+    hsSymmetricState %= mixKey (dhPerform sk rpk)
+  else do
+    ~(sk, _) <- getKeyPair   hoLocalStatic     "local static"
+    rpk      <- getPublicKey hoRemoteEphemeral "remote ephemeral"
+    hsSymmetricState %= mixKey (dhPerform sk rpk)
+
+  return next
+
+interpretToken _ (Se next) = do
+  myRole <- use $ hsOpts . hoRole
+
+  if myRole == InitiatorRole then do
+    ~(sk, _) <- getKeyPair   hoLocalStatic     "local static"
+    rpk      <- getPublicKey hoRemoteEphemeral "remote ephemeral"
+    hsSymmetricState %= mixKey (dhPerform sk rpk)
+  else do
+    rpk      <- getPublicKey hoRemoteStatic   "remote static"
+    ~(sk, _) <- getKeyPair   hoLocalEphemeral "local ephemeral"
+    hsSymmetricState %= mixKey (dhPerform sk rpk)
+
+  return next
+
+interpretToken _ (Ss next) = do
+  ~(sk, _) <- getKeyPair   hoLocalStatic  "local static"
+  rpk      <- getPublicKey hoRemoteStatic "remote static"
+  hsSymmetricState %= mixKey (dhPerform sk rpk)
+
+  return next
 
 processMsgPattern :: (Cipher c, DH d, Hash h)
                   => HandshakeRole

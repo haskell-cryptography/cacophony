@@ -10,7 +10,6 @@ module Crypto.Noise.Internal.Handshake.Interpreter where
 import Control.Applicative.Free
 import Control.Exception.Safe
 import Control.Lens
---import Control.Monad.Coroutine
 import Control.Monad.Coroutine.SuspensionFunctors
 import Data.ByteArray (splitAt)
 import Data.Monoid    ((<>))

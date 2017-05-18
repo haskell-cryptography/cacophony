@@ -77,6 +77,7 @@ library:
     - Crypto.Noise.Internal.NoiseState
     - Crypto.Noise.Internal.SymmetricState
     - Crypto.Noise.Internal.Types
+    - Crypto.Noise.Validation
 
   default-extensions:
     - OverloadedStrings

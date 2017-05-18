@@ -1,5 +1,5 @@
 {-# LANGUAGE RankNTypes, ScopedTypeVariables #-}
-----------------------------------------------------------------
+------------------------------------------------------------
 -- |
 -- Module      : Crypto.Noise.Internal.Handshake.Interpreter
 -- Maintainer  : John Galt <jgalt@centromere.net>

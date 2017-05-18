@@ -1,5 +1,5 @@
 {-# LANGUAGE TemplateHaskell #-}
-----------------------------------------------------------------
+--------------------------------------------------------
 -- |
 -- Module      : Crypto.Noise.Internal.Handshake.Pattern
 -- Maintainer  : John Galt <jgalt@centromere.net>

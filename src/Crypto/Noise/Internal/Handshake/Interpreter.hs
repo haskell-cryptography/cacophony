@@ -35,7 +35,7 @@ interpretToken opRole (E next) = do
     (_, pk) <- getKeyPair hoLocalEphemeral "local ephemeral"
     let pkBytes = dhPubToBytes pk
     hsSymmetricState %= mixHash pkBytes
-    hsMsgBuffer      %= flip mappend pkBytes
+    hsMsgBuffer      <>= pkBytes
 
   else do
     buf <- use hsMsgBuffer
@@ -68,7 +68,7 @@ processMsgPattern opRole mp = do
     r <- runAp (interpretToken opRole) mp
     ss <- use hsSymmetricState
     (encPayload, ss') <- encryptAndHash input ss
-    hsMsgBuffer      %= (flip mappend . cipherTextToBytes) encPayload
+    hsMsgBuffer      <>= cipherTextToBytes encPayload
     hsSymmetricState .= ss'
     return r
 

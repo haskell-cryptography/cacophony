@@ -64,13 +64,15 @@ decryptWithAd ad ct cs
                      $ cs ^. csk
     newState = cs & csn %~ cipherIncNonce
 
--- | Rekeys the CipherState.
+-- | Rekeys the CipherState. If a key has not been established yet, the
+--   CipherState is returned unmodified.
 rekey :: Cipher c
-      => SymmetricKey c
+      => CipherState c
       -> CipherState c
-      -> CipherState c
-rekey sk cs = cs & csk .~ (Just . cipherRekey $ sk)
+rekey cs = cs & csk %~ (<*>) (pure cipherRekey)
 
+-- | Tests whether the Nonce contained within a CipherState is valid (less
+--   than the maximum allowed).
 validNonce :: Cipher c
            => CipherState c
            -> Bool

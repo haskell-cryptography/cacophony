@@ -56,6 +56,7 @@ library:
     - transformers
 
   exposed-modules:
+    - Crypto.Noise
     - Crypto.Noise.Cipher
     - Crypto.Noise.Cipher.AESGCM
     - Crypto.Noise.Cipher.ChaChaPoly1305

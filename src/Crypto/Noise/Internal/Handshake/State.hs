@@ -23,6 +23,7 @@ import Data.Proxy
 import Crypto.Noise.Cipher
 import Crypto.Noise.DH
 import Crypto.Noise.Hash
+import Crypto.Noise.Internal.Handshake.Pattern hiding (e, s, ee, es, se, ss)
 import Crypto.Noise.Internal.SymmetricState
 
 -- | Represents the side of the conversation upon which a party resides.
@@ -45,15 +46,18 @@ $(makeLenses ''HandshakeOpts)
 data HandshakeState c d h =
   HandshakeState { _hsSymmetricState :: SymmetricState c h
                  , _hsOpts           :: HandshakeOpts d
+                 , _hsPSKMode        :: Bool
                  , _hsMsgBuffer      :: ScrubbedBytes
                  }
 
 $(makeLenses ''HandshakeState)
 
+-- | This data structure is yielded by the coroutine when more data is needed.
+data NoiseStatus = Message ScrubbedBytes | NeedPSK
 
 -- | All HandshakePattern interpreters run within this Monad.
 newtype Handshake c d h r =
-  Handshake { runHandshake :: Coroutine (Request ScrubbedBytes ScrubbedBytes) (StateT (HandshakeState c d h) Catch) r
+  Handshake { runHandshake :: Coroutine (Request NoiseStatus ScrubbedBytes) (StateT (HandshakeState c d h) Catch) r
             } deriving ( Functor
                        , Applicative
                        , Monad
@@ -91,15 +95,16 @@ mkHandshakeName protoName _ =
 --   name (such as "NN" or "IK").
 handshakeState :: forall c d h. (Cipher c, DH d, Hash h)
                => HandshakeOpts d
-               -> ByteString
+               -> HandshakePattern
                -> HandshakeState c d h
-handshakeState ho protoName =
+handshakeState ho hp =
   HandshakeState { _hsSymmetricState = ss'
                  , _hsOpts           = ho
+                 , _hsPSKMode        = hp ^. hpPSKMode
                  , _hsMsgBuffer      = mempty
                  }
   where
-    ss  = symmetricState $ mkHandshakeName protoName
+    ss  = symmetricState $ mkHandshakeName (hp ^. hpName)
                                            (Proxy :: Proxy (c, d, h))
     ss' = mixHash (ho ^. hoPrologue) ss
 

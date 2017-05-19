@@ -23,13 +23,17 @@ data InspectionError
   | InitSecretNotRandom ErrorPosition
   | RespSecretNotRandom ErrorPosition
   | DHInPreMsg          ErrorPosition
+  | PSKInPreMsg         ErrorPosition
+  | PSKWithoutEToken    ErrorPosition
   deriving Show
 
 data Inspection = Inspection
   { _iInitESent    :: Bool
   , _iInitSSent    :: Bool
+  , _iInitPSKSent  :: Bool
   , _iRespESent    :: Bool
   , _iRespSSent    :: Bool
+  , _iRespPSKSent  :: Bool
   , _iInitRandReq  :: Bool
   , _iInitRandDone :: Bool
   , _iRespRandReq  :: Bool
@@ -45,8 +49,10 @@ inspection :: Inspection
 inspection = Inspection
   { _iInitESent    = False
   , _iInitSSent    = False
+  , _iInitPSKSent  = False
   , _iRespESent    = False
   , _iRespSSent    = False
+  , _iRespPSKSent  = False
   , _iInitRandReq  = False
   , _iInitRandDone = False
   , _iRespRandReq  = False
@@ -80,6 +86,25 @@ verifyRandDoneIfReq (Responder _ _) = do
     else return ()
 
 verifyRandDoneIfReq _ = return ()
+
+verifyESentIfPSK :: Message a -> State Inspection ()
+verifyESentIfPSK (Initiator _ _) = do
+  initESent   <- use iInitESent
+  initPSKSent <- use iInitPSKSent
+
+  if initPSKSent && not initESent
+    then addError PSKWithoutEToken
+    else return ()
+
+verifyESentIfPSK (Responder _ _) = do
+  respESent   <- use iRespESent
+  respPSKSent <- use iRespPSKSent
+
+  if respPSKSent && not respESent
+    then addError PSKWithoutEToken
+    else return ()
+
+verifyESentIfPSK _ = return ()
 
 continueToken :: a -> State Inspection a
 continueToken next = iCurTokenPos %= (+ 1) >> return next
@@ -170,6 +195,15 @@ inspectToken m (Ss next) = do
 
   continueToken next
 
+inspectToken m (Psk next) = do
+  case m of
+    PreInitiator _ _ -> addError PSKInPreMsg
+    PreResponder _ _ -> addError PSKInPreMsg
+    Initiator    _ _ -> iInitPSKSent .= True
+    Responder    _ _ -> iRespPSKSent .= True
+
+  continueToken next
+
 inspectMessage :: Message a -> State Inspection a
 inspectMessage m@(PreInitiator mp next) = do
   runAp (inspectToken m) mp
@@ -182,11 +216,13 @@ inspectMessage m@(PreResponder mp next) = do
 inspectMessage m@(Initiator mp next) = do
   runAp (inspectToken m) mp
   verifyRandDoneIfReq m
+  verifyESentIfPSK m
   continueMsg next
 
 inspectMessage m@(Responder mp next) = do
   runAp (inspectToken m) mp
   verifyRandDoneIfReq m
+  verifyESentIfPSK m
   continueMsg next
 
 validateHandshakePattern :: HandshakePattern -> [InspectionError]

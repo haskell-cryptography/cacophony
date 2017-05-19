@@ -26,17 +26,24 @@ import Crypto.Noise.Internal.CipherState
 import Crypto.Noise.Internal.SymmetricState
 import Crypto.Noise.Internal.Types
 
+-- [ E ] -----------------------------------------------------------------------
+
 interpretToken :: forall c d h r. (Cipher c, DH d, Hash h)
                => HandshakeRole
                -> Token r
                -> Handshake c d h r
 interpretToken opRole (E next) = do
-  myRole <- use $ hsOpts . hoRole
+  myRole  <- use $ hsOpts . hoRole
+  pskMode <- use hsPSKMode
 
   if opRole == myRole then do
     (_, pk) <- getKeyPair hoLocalEphemeral "local ephemeral"
     let pkBytes = dhPubToBytes pk
-    hsSymmetricState %= mixHash pkBytes
+
+    if pskMode
+      then hsSymmetricState %= mixKey pkBytes . mixHash pkBytes
+      else hsSymmetricState %= mixHash pkBytes
+
     hsMsgBuffer      <>= pkBytes
 
   else do
@@ -46,19 +53,26 @@ interpretToken opRole (E next) = do
                       return
                       (dhBytesToPub pkBytes)
     hsOpts . hoRemoteEphemeral .= Just theirKey
-    hsSymmetricState           %= mixHash pkBytes
+
+    if pskMode
+      then hsSymmetricState %= mixKey pkBytes . mixHash pkBytes
+      else hsSymmetricState %= mixHash pkBytes
+
     hsMsgBuffer                .= remainingBytes
 
   return next
+
+-- [ S ] -----------------------------------------------------------------------
 
 interpretToken opRole (S next) = do
   myRole <- use $ hsOpts . hoRole
 
   if opRole == myRole then do
+    ss <- use hsSymmetricState
     (_, pk) <- getKeyPair hoLocalStatic "local static"
-    let pkBytes = dhPubToBytes pk
-    hsSymmetricState %= mixHash pkBytes
-    hsMsgBuffer      <>= pkBytes
+    (ct, ss') <- encryptAndHash (dhPubToBytes pk) ss
+    hsSymmetricState .= mixHash (cipherTextToBytes ct) ss'
+    hsMsgBuffer      <>= cipherTextToBytes ct
 
   else do
     configuredRemoteStatic <- use $ hsOpts . hoRemoteStatic
@@ -89,12 +103,16 @@ interpretToken opRole (S next) = do
 
   return next
 
+-- [ EE ] -----------------------------------------------------------------------
+
 interpretToken _ (Ee next) = do
   ~(sk, _) <- getKeyPair   hoLocalEphemeral  "local ephemeral"
   rpk      <- getPublicKey hoRemoteEphemeral "remote ephemeral"
   hsSymmetricState %= mixKey (dhPerform sk rpk)
 
   return next
+
+-- [ ES ] -----------------------------------------------------------------------
 
 interpretToken _ (Es next) = do
   myRole <- use $ hsOpts . hoRole
@@ -110,6 +128,8 @@ interpretToken _ (Es next) = do
 
   return next
 
+-- [ SE ] -----------------------------------------------------------------------
+
 interpretToken _ (Se next) = do
   myRole <- use $ hsOpts . hoRole
 
@@ -124,10 +144,20 @@ interpretToken _ (Se next) = do
 
   return next
 
+-- [ SS ] -----------------------------------------------------------------------
+
 interpretToken _ (Ss next) = do
   ~(sk, _) <- getKeyPair   hoLocalStatic  "local static"
   rpk      <- getPublicKey hoRemoteStatic "remote static"
   hsSymmetricState %= mixKey (dhPerform sk rpk)
+
+  return next
+
+-- [ PSK ] -----------------------------------------------------------------------
+
+interpretToken _ (Psk next) = do
+  input <- Handshake <$> request $ NeedPSK
+  hsSymmetricState %= mixKeyAndHash input
 
   return next
 
@@ -138,7 +168,7 @@ processMsgPattern :: (Cipher c, DH d, Hash h)
 processMsgPattern opRole mp = do
   myRole <- use $ hsOpts . hoRole
   buf    <- use hsMsgBuffer
-  input  <- Handshake <$> request $ buf
+  input  <- Handshake <$> request $ Message buf
 
   if opRole == myRole then do
     hsMsgBuffer .= mempty

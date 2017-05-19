@@ -47,7 +47,7 @@ noiseState ho hp =
              }
 
   where
-    hs                 = handshakeState ho $ hp ^. hpName
+    hs                 = handshakeState ho hp
     interpreterResult  = runCatch $ runStateT (resume . runHandshake . runHandshakePattern $ hp) hs
     (suspension, hs'') = case interpreterResult of
       Left err     -> error $ "handshake interpreter threw exception: " <> show err
@@ -59,7 +59,7 @@ noiseState ho hp =
 resumeHandshake :: (MonadThrow m, Cipher c, DH d, Hash h)
                 => ScrubbedBytes
                 -> NoiseState c d h
-                -> m (ScrubbedBytes, NoiseState c d h)
+                -> m (NoiseStatus, NoiseState c d h)
 resumeHandshake msg ns = do
   let interpreterResult = runCatch $ runStateT (resume . runHandshake . (ns ^. nsHandshakeSuspension) $ msg)
                                                $ ns ^. nsHandshakeState
@@ -81,4 +81,4 @@ resumeHandshake msg ns = do
                                    & nsReceivingCipherState .~ Just cs2
                            else ns & nsSendingCipherState   .~ Just cs2
                                    & nsReceivingCipherState .~ Just cs1
-        return (hs ^. hsMsgBuffer, ns')
+        return (Message (hs ^. hsMsgBuffer), ns')

@@ -8,7 +8,8 @@
 -- Please see the README for usage information.
 module Crypto.Noise
   ( -- * Types
-    HandshakeRole(..)
+    HandshakePattern
+  , HandshakeRole(..)
   , HandshakeOpts
   , NoiseException(..)
   , NoiseState
@@ -22,6 +23,7 @@ module Crypto.Noise
   , handshakeHash
   , rekeySending
   , rekeyReceiving
+  , handshakePattern
     -- * Lenses
   , hoRole
   , hoPrologue
@@ -31,17 +33,17 @@ module Crypto.Noise
   , hoRemoteEphemeral
   ) where
 
-import Control.Arrow   (arr, first, second, (***))
+import Control.Arrow   (arr, (***))
 import Control.Exception.Safe
 import Control.Lens
-import Data.ByteArray  (ScrubbedBytes, convert)
-import Data.ByteString (ByteString)
+import Data.ByteArray  (ScrubbedBytes)
 import Data.Maybe      (isJust)
 
 import Crypto.Noise.Cipher
 import Crypto.Noise.DH
 import Crypto.Noise.Hash
 import Crypto.Noise.Internal.CipherState
+import Crypto.Noise.Internal.Handshake.Pattern
 import Crypto.Noise.Internal.Handshake.State
 import Crypto.Noise.Internal.NoiseState
 import Crypto.Noise.Internal.SymmetricState
@@ -56,14 +58,13 @@ import Crypto.Noise.Internal.Types
 writeMessage :: (MonadThrow m, Cipher c, DH d, Hash h)
              => ScrubbedBytes
              -> NoiseState c d h
-             -> m (ByteString, NoiseState c d h)
+             -> m (NoiseStatus, NoiseState c d h)
 writeMessage msg ns = maybe
-  (first convertArr <$> resumeHandshake msg ns)
-  (\cs -> (ctToBytes *** updateState) <$> encryptWithAd mempty msg cs)
+  (resumeHandshake msg ns)
+  (\cs -> (ctToMsg *** updateState) <$> encryptWithAd mempty msg cs)
   (ns ^. nsSendingCipherState)
   where
-    convertArr  = arr convert
-    ctToBytes   = convertArr . arr cipherTextToBytes
+    ctToMsg     = arr $ Message . cipherTextToBytes
     updateState = arr $ \cs -> ns & nsSendingCipherState .~ Just cs
 
 -- | Reads a Noise message and returns the embedded payload. If the
@@ -73,15 +74,16 @@ writeMessage msg ns = maybe
 --   To prevent catastrophic key re-use, this function may only be used to
 --   receive 2^64 - 1 post-handshake messages.
 readMessage :: (MonadThrow m, Cipher c, DH d, Hash h)
-            => ByteString
+            => ScrubbedBytes
             -> NoiseState c d h
-            -> m (ScrubbedBytes, NoiseState c d h)
+            -> m (NoiseStatus, NoiseState c d h)
 readMessage ct ns = maybe
-  (resumeHandshake (convert ct) ns)
-  (\cs -> second updateState <$> decryptWithAd mempty ct' cs)
+  (resumeHandshake ct ns)
+  (\cs -> (ctToMsg *** updateState) <$> decryptWithAd mempty ct' cs)
   (ns ^. nsReceivingCipherState)
   where
-    ct'         = cipherBytesToText . convert $ ct
+    ct'         = cipherBytesToText ct
+    ctToMsg     = arr Message
     updateState = arr $ \cs -> ns & nsReceivingCipherState .~ Just cs
 
 -- | For handshake patterns where the remote party's static key is

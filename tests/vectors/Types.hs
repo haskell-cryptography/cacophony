@@ -3,6 +3,7 @@ module Types where
 
 import Data.Aeson
 
+import Crypto.Noise
 import Crypto.Noise.Cipher
 import Crypto.Noise.Cipher.ChaChaPoly1305
 import Crypto.Noise.Cipher.AESGCM

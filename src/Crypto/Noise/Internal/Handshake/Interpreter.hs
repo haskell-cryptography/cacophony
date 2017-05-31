@@ -156,7 +156,7 @@ interpretToken _ (Ss next) = do
 -- [ PSK ] -----------------------------------------------------------------------
 
 interpretToken _ (Psk next) = do
-  input <- Handshake <$> request $ NeedPSK
+  input <- Handshake <$> request $ ResultNeedPSK
   hsSymmetricState %= mixKeyAndHash input
 
   return next
@@ -168,7 +168,7 @@ processMsgPattern :: (Cipher c, DH d, Hash h)
 processMsgPattern opRole mp = do
   myRole <- use $ hsOpts . hoRole
   buf    <- use hsMsgBuffer
-  input  <- Handshake <$> request $ Message buf
+  input  <- Handshake <$> request $ ResultMessage buf
 
   if opRole == myRole then do
     hsMsgBuffer .= mempty

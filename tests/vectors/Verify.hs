@@ -18,10 +18,10 @@ import Prelude hiding           (readFile)
 import System.Exit              (exitFailure)
 
 import Crypto.Noise
-import Crypto.Noise.Internal.Handshake
 import Crypto.Noise.Cipher
 import Crypto.Noise.DH
 import Crypto.Noise.Hash
+import Crypto.Noise.Internal.Handshake.State
 
 import Types
 import VectorFile
@@ -32,37 +32,30 @@ mkHandshakeOpts :: DH d
                 -> (HandshakeOpts d, HandshakeOpts d)
 mkHandshakeOpts Vector{..} _ = (i, r)
   where
-    i = HandshakeOpts { _hoPattern             = hsTypeToPattern vPattern
-                      , _hoRole                = InitiatorRole
+    i = HandshakeOpts { _hoRole                = InitiatorRole
                       , _hoPrologue            = viPrologue
-                      , _hoPreSharedKey        = viPSK
-                      , _hoLocalStatic         = viStatic         >>= dhBytesToPair
-                      , _hoLocalSemiEphemeral  = viSemiEphemeral  >>= dhBytesToPair
-                      , _hoLocalEphemeral      = viEphemeral      >>= dhBytesToPair
-                      , _hoRemoteStatic        = virStatic        >>= dhBytesToPub
-                      , _hoRemoteSemiEphemeral = virSemiEphemeral >>= dhBytesToPub
+                      , _hoLocalStatic         = viStatic    >>= dhBytesToPair
+                      , _hoLocalEphemeral      = viEphemeral >>= dhBytesToPair
+                      , _hoRemoteStatic        = virStatic   >>= dhBytesToPub
                       , _hoRemoteEphemeral     = Nothing
                       }
 
-    r = HandshakeOpts { _hoPattern             = hsTypeToPattern vPattern
-                      , _hoRole                = ResponderRole
+    r = HandshakeOpts { _hoRole                = ResponderRole
                       , _hoPrologue            = vrPrologue
-                      , _hoPreSharedKey        = vrPSK
-                      , _hoLocalStatic         = vrStatic         >>= dhBytesToPair
-                      , _hoLocalSemiEphemeral  = vrSemiEphemeral  >>= dhBytesToPair
-                      , _hoLocalEphemeral      = vrEphemeral      >>= dhBytesToPair
-                      , _hoRemoteStatic        = vrrStatic        >>= dhBytesToPub
-                      , _hoRemoteSemiEphemeral = vrrSemiEphemeral >>= dhBytesToPub
+                      , _hoLocalStatic         = vrStatic    >>= dhBytesToPair
+                      , _hoLocalEphemeral      = vrEphemeral >>= dhBytesToPair
+                      , _hoRemoteStatic        = vrrStatic   >>= dhBytesToPub
                       , _hoRemoteEphemeral     = Nothing
                       }
 
 mkNoiseStates :: (Cipher c, DH d, Hash h)
              => HandshakeOpts d
              -> HandshakeOpts d
+             -> HandshakePattern
              -> CipherType c
              -> HashType h
              -> (NoiseState c d h, NoiseState c d h)
-mkNoiseStates iho rho _ _ = (noiseState iho, noiseState rho)
+mkNoiseStates iho rho hp _ _ = (noiseState iho hp, noiseState rho hp)
 
 verifyMessage :: (Cipher c, Hash h)
               => NoiseState c d h

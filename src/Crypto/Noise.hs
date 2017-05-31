@@ -13,6 +13,7 @@ module Crypto.Noise
   , HandshakeOpts
   , NoiseException(..)
   , NoiseState
+  , NoiseResult(..)
     -- * Functions
   , defaultHandshakeOpts
   , noiseState
@@ -58,13 +59,13 @@ import Crypto.Noise.Internal.Types
 writeMessage :: (MonadThrow m, Cipher c, DH d, Hash h)
              => ScrubbedBytes
              -> NoiseState c d h
-             -> m (NoiseStatus, NoiseState c d h)
+             -> m (NoiseResult, NoiseState c d h)
 writeMessage msg ns = maybe
   (resumeHandshake msg ns)
   (\cs -> (ctToMsg *** updateState) <$> encryptWithAd mempty msg cs)
   (ns ^. nsSendingCipherState)
   where
-    ctToMsg     = arr $ Message . cipherTextToBytes
+    ctToMsg     = arr $ ResultMessage . cipherTextToBytes
     updateState = arr $ \cs -> ns & nsSendingCipherState .~ Just cs
 
 -- | Reads a Noise message and returns the embedded payload. If the
@@ -76,14 +77,14 @@ writeMessage msg ns = maybe
 readMessage :: (MonadThrow m, Cipher c, DH d, Hash h)
             => ScrubbedBytes
             -> NoiseState c d h
-            -> m (NoiseStatus, NoiseState c d h)
+            -> m (NoiseResult, NoiseState c d h)
 readMessage ct ns = maybe
   (resumeHandshake ct ns)
   (\cs -> (ctToMsg *** updateState) <$> decryptWithAd mempty ct' cs)
   (ns ^. nsReceivingCipherState)
   where
     ct'         = cipherBytesToText ct
-    ctToMsg     = arr Message
+    ctToMsg     = arr ResultMessage
     updateState = arr $ \cs -> ns & nsReceivingCipherState .~ Just cs
 
 -- | For handshake patterns where the remote party's static key is

@@ -30,27 +30,23 @@ instance FromJSON Message where
   parseJSON _          = mzero
 
 data Vector =
-  Vector { vName            :: String
-         , vPattern         :: HandshakeType
-         , vCipher          :: SomeCipherType
-         , vDH              :: SomeDHType
-         , vHash            :: SomeHashType
-         , vFail            :: Bool
-         , viPrologue       :: ScrubbedBytes
-         , viPSK            :: Maybe ScrubbedBytes
-         , viStatic         :: Maybe ScrubbedBytes
-         , viSemiEphemeral  :: Maybe ScrubbedBytes
-         , viEphemeral      :: Maybe ScrubbedBytes
-         , virStatic        :: Maybe ScrubbedBytes
-         , virSemiEphemeral :: Maybe ScrubbedBytes
-         , vrPrologue       :: ScrubbedBytes
-         , vrPSK            :: Maybe ScrubbedBytes
-         , vrStatic         :: Maybe ScrubbedBytes
-         , vrSemiEphemeral  :: Maybe ScrubbedBytes
-         , vrEphemeral      :: Maybe ScrubbedBytes
-         , vrrStatic        :: Maybe ScrubbedBytes
-         , vrrSemiEphemeral :: Maybe ScrubbedBytes
-         , vMessages        :: [Message]
+  Vector { vName       :: String
+         , vPattern    :: HandshakeType
+         , vCipher     :: SomeCipherType
+         , vDH         :: SomeDHType
+         , vHash       :: SomeHashType
+         , vFail       :: Bool
+         , viPrologue  :: ScrubbedBytes
+         , viPSK       :: Maybe ScrubbedBytes
+         , viStatic    :: Maybe ScrubbedBytes
+         , viEphemeral :: Maybe ScrubbedBytes
+         , virStatic   :: Maybe ScrubbedBytes
+         , vrPrologue  :: ScrubbedBytes
+         , vrPSK       :: Maybe ScrubbedBytes
+         , vrStatic    :: Maybe ScrubbedBytes
+         , vrEphemeral :: Maybe ScrubbedBytes
+         , vrrStatic   :: Maybe ScrubbedBytes
+         , vMessages   :: [Message]
          }
 
 instance ToJSON Vector where
@@ -64,17 +60,13 @@ instance ToJSON Vector where
     , "init_prologue"             .= encodeSB viPrologue
     , "init_psk"                  .= (encodeSB <$> viPSK)
     , "init_static"               .= (encodeSB <$> viStatic)
-    , "init_semiephemeral"        .= (encodeSB <$> viSemiEphemeral)
     , "init_ephemeral"            .= (encodeSB <$> viEphemeral)
     , "init_remote_static"        .= (encodeSB <$> virStatic)
-    , "init_remote_semiephemeral" .= (encodeSB <$> virSemiEphemeral)
     , "resp_prologue"             .= encodeSB vrPrologue
     , "resp_psk"                  .= (encodeSB <$> vrPSK)
     , "resp_static"               .= (encodeSB <$> vrStatic)
-    , "resp_semiephemeral"        .= (encodeSB <$> vrSemiEphemeral)
     , "resp_ephemeral"            .= (encodeSB <$> vrEphemeral)
     , "resp_remote_static"        .= (encodeSB <$> vrrStatic)
-    , "resp_remote_semiephemeral" .= (encodeSB <$> vrrSemiEphemeral)
     , "messages"                  .= vMessages
     ]
 
@@ -93,17 +85,13 @@ instance FromJSON Vector where
            <*> (decodeSB      <$> o .:  "init_prologue")
            <*> (fmap decodeSB <$> o .:? "init_psk")
            <*> (fmap decodeSB <$> o .:? "init_static")
-           <*> (fmap decodeSB <$> o .:? "init_semiephemeral")
            <*> (fmap decodeSB <$> o .:? "init_ephemeral")
            <*> (fmap decodeSB <$> o .:? "init_remote_static")
-           <*> (fmap decodeSB <$> o .:? "init_remote_semiephemeral")
            <*> (decodeSB      <$> o .:  "resp_prologue")
            <*> (fmap decodeSB <$> o .:? "resp_psk")
            <*> (fmap decodeSB <$> o .:? "resp_static")
-           <*> (fmap decodeSB <$> o .:? "resp_semiephemeral")
            <*> (fmap decodeSB <$> o .:? "resp_ephemeral")
            <*> (fmap decodeSB <$> o .:? "resp_remote_static")
-           <*> (fmap decodeSB <$> o .:? "resp_remote_semiephemeral")
            <*> o .: "messages"
 
   parseJSON _          = mzero

@@ -59,7 +59,7 @@ noiseState ho hp =
 resumeHandshake :: (MonadThrow m, Cipher c, DH d, Hash h)
                 => ScrubbedBytes
                 -> NoiseState c d h
-                -> m (NoiseStatus, NoiseState c d h)
+                -> m (NoiseResult, NoiseState c d h)
 resumeHandshake msg ns = do
   let interpreterResult = runCatch $ runStateT (resume . runHandshake . (ns ^. nsHandshakeSuspension) $ msg)
                                                $ ns ^. nsHandshakeState
@@ -81,4 +81,4 @@ resumeHandshake msg ns = do
                                    & nsReceivingCipherState .~ Just cs2
                            else ns & nsSendingCipherState   .~ Just cs2
                                    & nsReceivingCipherState .~ Just cs1
-        return (Message (hs ^. hsMsgBuffer), ns')
+        return (ResultMessage (hs ^. hsMsgBuffer), ns')

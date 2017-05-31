@@ -123,17 +123,13 @@ genVector payloads pat psk cType@(WrapCipherType c) dType@(WrapDHType d) hType@(
            , viPrologue       = hkPrologue ihk
            , viPSK            = hkPSK ihk
            , viStatic         = dhSecToBytes . fst <$> ins ^. nsHandshakeState . hsOpts . hoLocalStatic
-           , viSemiEphemeral  = Nothing
            , viEphemeral      = dhSecToBytes . fst <$> ins ^. nsHandshakeState . hsOpts . hoLocalEphemeral
            , virStatic        = dhPubToBytes       <$> ins ^. nsHandshakeState . hsOpts . hoRemoteStatic
-           , virSemiEphemeral = Nothing
            , vrPrologue       = hkPrologue rhk
            , vrPSK            = hkPSK rhk
            , vrStatic         = dhSecToBytes . fst <$> rns ^. nsHandshakeState . hsOpts . hoLocalStatic
-           , vrSemiEphemeral  = Nothing
            , vrEphemeral      = dhSecToBytes . fst <$> rns ^. nsHandshakeState . hsOpts . hoLocalEphemeral
            , vrrStatic        = dhPubToBytes       <$> rns ^. nsHandshakeState . hsOpts . hoRemoteStatic
-           , vrrSemiEphemeral = Nothing
            , vMessages        = allMsgs
            }
 

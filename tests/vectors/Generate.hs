@@ -55,6 +55,15 @@ responderStatic :: DH d
 responderStatic DTCurve25519 = hexToPair "4a3acbfdb163dec651dfa3194dece676d437029c62a408b4c5ea9114246e4893"
 responderStatic DTCurve448 = hexToPair "a9b45971180882a79b89a3399544a425ef8136d278efa443ed67d3ff9d36e883bc330c6295bbf6ed73ff6fd10cbed767ad05ce03ebd27c7c"-}
 
+allHandshakes :: [HandshakeName]
+allHandshakes = do
+  pattern <- [minBound .. maxBound]
+  cipher  <- [minBound .. maxBound]
+  curve   <- [minBound .. maxBound]
+  hash    <- [minBound .. maxBound]
+
+  return $ HandshakeName pattern cipher curve hash
+
 genVectorFile :: FilePath
               -> IO ()
 genVectorFile f = do
@@ -65,7 +74,6 @@ genVectorFile f = do
                  , "Jean-Baptiste Say"
                  , "Eugen Böhm von Bawerk"
                  ]
-      patterns = []
       psk      = "This is my Austrian perspective!"
       vectors  = []
 

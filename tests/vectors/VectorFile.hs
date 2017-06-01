@@ -168,14 +168,6 @@ instance FromJSON Message where
 
   parseJSON _          = mzero
 
-allHandshakes :: [HandshakeName]
-allHandshakes = do
-  pattern <- [minBound .. maxBound]
-  cipher  <- [minBound .. maxBound]
-  curve   <- [minBound .. maxBound]
-  hash    <- [minBound .. maxBound]
-  return $ HandshakeName pattern cipher curve hash
-
 {-data Vector =
   Vector { vName       :: String
          , vPattern    :: PatternName

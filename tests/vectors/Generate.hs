@@ -16,14 +16,13 @@ import Crypto.Noise
 import Crypto.Noise.Cipher
 import Crypto.Noise.DH
 import Crypto.Noise.Hash
-import Crypto.Noise.Internal.Handshake
 import Crypto.Noise.Internal.NoiseState
 
-import Handshakes
-import Types
+--import Handshakes
+--import Types
 import VectorFile
 
-hexToPlaintext :: ByteString
+{-hexToPlaintext :: ByteString
                -> ScrubbedBytes
 hexToPlaintext = convert . fst . B16.decode
 
@@ -54,96 +53,23 @@ responderStatic :: DH d
                 => DHType d
                 -> KeyPair d
 responderStatic DTCurve25519 = hexToPair "4a3acbfdb163dec651dfa3194dece676d437029c62a408b4c5ea9114246e4893"
-responderStatic DTCurve448 = hexToPair "a9b45971180882a79b89a3399544a425ef8136d278efa443ed67d3ff9d36e883bc330c6295bbf6ed73ff6fd10cbed767ad05ce03ebd27c7c"
-
-mkKeys :: DH d
-       => Plaintext
-       -> Maybe ScrubbedBytes
-       -> Bool
-       -> DHType d
-       -> HandshakeKeys d
-mkKeys pro psk i d =
-  HandshakeKeys { hkPrologue       = pro
-                , hkPSK            = psk
-                , hkLocalStatic    = if i then initiatorStatic d else responderStatic d
-                , hkLocalEphemeral = if i then initiatorEphemeral d else responderEphemeral d
-                , hkRemoteStatic   = if i then (snd . responderStatic) d else (snd . initiatorStatic) d
-                }
-
-genMessages :: (Cipher c, DH d, Hash h)
-            => Bool
-            -> NoiseState c d h
-            -> NoiseState c d h
-            -> [ScrubbedBytes]
-            -> [(ScrubbedBytes, ByteString)]
-genMessages swap = go []
-  where
-    go acc _ _ [] = acc
-    go acc sendingState receivingState (payload : rest) =
-      let writeResult          = writeMessage sendingState payload
-          (ct, sendingState')  = either (error "write failed") id writeResult
-          (_, receivingState') = either (error "read failed")
-                                        id
-                                        $ readMessage receivingState ct in
-      if swap
-        then go (acc <> [(payload, ct)]) receivingState' sendingState' rest
-        else go (acc <> [(payload, ct)]) sendingState' receivingState' rest
-
-genVector :: [ScrubbedBytes]
-          -> HandshakeType
-          -> Maybe ScrubbedBytes
-          -> SomeCipherType
-          -> SomeDHType
-          -> SomeHashType
-          -> IO Vector
-genVector payloads pat psk cType@(WrapCipherType c) dType@(WrapDHType d) hType@(WrapHashType h) = do
-  let ihk  = mkKeys "John Galt" psk True d
-      rhk  = mkKeys "John Galt" psk False d
-      ins  = mkNoiseState ihk pat InitiatorRole c h
-      rns  = mkNoiseState rhk pat ResponderRole c h
-      swap = not (pat == NoiseN || pat == NoiseK || pat == NoiseX)
-      name = maybe "Noise_" (const "NoisePSK_") psk <>
-             show pat                               <>
-             "_"                                    <>
-             show d                                 <>
-             "_"                                    <>
-             show c                                 <>
-             "_"                                    <>
-             show h
-      allMsgs = (\(payload, ct) -> Message (Just payload) ct)
-                <$> genMessages swap ins rns payloads
-
-  return
-    Vector { vName            = name
-           , vPattern         = pat
-           , vCipher          = cType
-           , vDH              = dType
-           , vHash            = hType
-           , vFail            = False
-           , viPrologue       = hkPrologue ihk
-           , viPSK            = hkPSK ihk
-           , viStatic         = dhSecToBytes . fst <$> ins ^. nsHandshakeState . hsOpts . hoLocalStatic
-           , viEphemeral      = dhSecToBytes . fst <$> ins ^. nsHandshakeState . hsOpts . hoLocalEphemeral
-           , virStatic        = dhPubToBytes       <$> ins ^. nsHandshakeState . hsOpts . hoRemoteStatic
-           , vrPrologue       = hkPrologue rhk
-           , vrPSK            = hkPSK rhk
-           , vrStatic         = dhSecToBytes . fst <$> rns ^. nsHandshakeState . hsOpts . hoLocalStatic
-           , vrEphemeral      = dhSecToBytes . fst <$> rns ^. nsHandshakeState . hsOpts . hoLocalEphemeral
-           , vrrStatic        = dhPubToBytes       <$> rns ^. nsHandshakeState . hsOpts . hoRemoteStatic
-           , vMessages        = allMsgs
-           }
+responderStatic DTCurve448 = hexToPair "a9b45971180882a79b89a3399544a425ef8136d278efa443ed67d3ff9d36e883bc330c6295bbf6ed73ff6fd10cbed767ad05ce03ebd27c7c"-}
 
 genVectorFile :: FilePath
               -> IO ()
 genVectorFile f = do
-  let payloads = ["Ludwig von Mises", "Murray Rothbard", "F. A. Hayek", "Carl Menger", "Jean-Baptiste Say", "Eugen Böhm von Bawerk"]
-      patterns = [NoiseNN, NoiseKN, NoiseNK, NoiseKK, NoiseNX, NoiseKX, NoiseXN, NoiseIN, NoiseXK, NoiseIK, NoiseXX, NoiseIX, NoiseN, NoiseK, NoiseX]
-      psks     = [Nothing, Just "This is my Austrian perspective!"]
-      ciphers  = [WrapCipherType CTChaChaPoly1305, WrapCipherType CTAESGCM]
-      dhs      = [WrapDHType DTCurve25519, WrapDHType DTCurve448]
-      hashes   = [WrapHashType HTSHA256, WrapHashType HTSHA512, WrapHashType HTBLAKE2s, WrapHashType HTBLAKE2b]
-      vectors  = [genVector payloads p psk c d h | p <- patterns, psk <- psks, c <- ciphers, d <- dhs, h <- hashes]
+  let payloads = [ "Ludwig von Mises"
+                 , "Murray Rothbard"
+                 , "F. A. Hayek"
+                 , "Carl Menger"
+                 , "Jean-Baptiste Say"
+                 , "Eugen Böhm von Bawerk"
+                 ]
+      patterns = []
+      psk      = "This is my Austrian perspective!"
+      vectors  = []
 
   vs <- mapConcurrently id vectors
 
-  writeFile f . encode . VectorFile $ vs
+  --writeFile f . encode . VectorFile $ vs
+  return ()

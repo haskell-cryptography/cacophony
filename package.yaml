@@ -171,6 +171,7 @@ tests:
           dependencies:
             - aeson
             - async
+            - attoparsec
             - base
             - base16-bytestring
             - bytestring

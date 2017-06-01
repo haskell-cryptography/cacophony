@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, RecordWildCards #-}
+{-# LANGUAGE RecordWildCards #-}
 module VectorFile where
 
 import Control.Monad      (mzero)
@@ -7,71 +7,72 @@ import Data.Attoparsec.ByteString.Char8
 import Data.ByteArray     (ScrubbedBytes, convert)
 import Data.ByteString    (ByteString)
 import qualified Data.ByteString.Base16 as B16
+import Data.Monoid        ((<>))
 import Data.Text          (Text)
 import Data.Text.Encoding (encodeUtf8, decodeUtf8)
 
 data CipherName
   = CipherAESGCM
   | CipherChaChaPoly
-  deriving (Enum, Bounded)
+  deriving (Show, Enum, Bounded)
 
 data CurveName
   = Curve25519
   | Curve448
-  deriving (Enum, Bounded)
+  deriving (Show, Enum, Bounded)
 
 data HashName
   = HashBLAKE2b
   | HashBLAKE2s
   | HashSHA256
   | HashSHA512
-  deriving (Enum, Bounded)
+  deriving (Show, Enum, Bounded)
 
 data PatternName
-  = NoiseNN
-  | NoiseKN
-  | NoiseNK
-  | NoiseKK
-  | NoiseNX
-  | NoiseKX
-  | NoiseXN
-  | NoiseIN
-  | NoiseXK
-  | NoiseIK
-  | NoiseXX
-  | NoiseIX
-  | NoiseN
-  | NoiseK
-  | NoiseX
-  | NoiseNNpsk0
-  | NoiseNNpsk2
-  | NoiseNKpsk0
-  | NoiseNKpsk2
-  | NoiseNXpsk2
-  | NoiseXNpsk3
-  | NoiseXKpsk3
-  | NoiseXXpsk3
-  | NoiseKNpsk0
-  | NoiseKNpsk2
-  | NoiseKKpsk0
-  | NoiseKKpsk2
-  | NoiseKXpsk2
-  | NoiseINpsk1
-  | NoiseINpsk2
-  | NoiseIKpsk1
-  | NoiseIKpsk2
-  | NoiseIXpsk2
-  | NoiseNpsk0
-  | NoiseKpsk0
-  | NoiseXpsk1
-  deriving (Enum, Bounded)
+  = PatternNN
+  | PatternKN
+  | PatternNK
+  | PatternKK
+  | PatternNX
+  | PatternKX
+  | PatternXN
+  | PatternIN
+  | PatternXK
+  | PatternIK
+  | PatternXX
+  | PatternIX
+  | PatternN
+  | PatternK
+  | PatternX
+  | PatternNNpsk0
+  | PatternNNpsk2
+  | PatternNKpsk0
+  | PatternNKpsk2
+  | PatternNXpsk2
+  | PatternXNpsk3
+  | PatternXKpsk3
+  | PatternXXpsk3
+  | PatternKNpsk0
+  | PatternKNpsk2
+  | PatternKKpsk0
+  | PatternKKpsk2
+  | PatternKXpsk2
+  | PatternINpsk1
+  | PatternINpsk2
+  | PatternIKpsk1
+  | PatternIKpsk2
+  | PatternIXpsk2
+  | PatternNpsk0
+  | PatternKpsk0
+  | PatternXpsk1
+  deriving (Show, Enum, Bounded)
 
 data HandshakeName = HandshakeName
   { hsPatternName :: PatternName
   , hsCipherName  :: CipherName
   , hsCurveName   :: CurveName
   , hsHashName    :: HashName
-  }
+  } deriving Show
 
 instance ToJSON HandshakeName where
   toJSON = undefined
@@ -82,31 +83,70 @@ instance FromJSON HandshakeName where
 parseHandshakeName :: Parser HandshakeName
 parseHandshakeName = do
   _ <- string "Noise_"
-  patternS <- anyChar `sepBy1` (char '_')
-  curveS   <- anyChar `sepBy1` (char '_')
-  cipherS  <- anyChar `sepBy1` (char '_')
-  hashS    <- anyChar `sepBy1` endOfInput
 
-  let pattern = case patternS of
-        "NN" -> NoiseNN
-        _    -> fail "unknown pattern"
+  let untilUnderscore = anyChar `manyTill'` (char '_')
+      untilEOI        = anyChar `manyTill'` endOfInput
 
-      curve = case curveS of
-        "25519" -> Curve25519
-        "448"   -> Curve448
-        _       -> fail "unknown curve"
+  patternS <- untilUnderscore
+  curveS   <- untilUnderscore
+  cipherS  <- untilUnderscore
+  hashS    <- untilEOI
 
-      cipher = case cipherS of
-        "AESGCM"     -> CipherAESGCM
-        "ChaChaPoly" -> CipherChaChaPoly
-        _            -> fail "unknown cipher"
+  pattern <- case patternS of
+    "NN" -> return PatternNN
+    "KN" -> return PatternKN
+    "NK" -> return PatternNK
+    "KK" -> return PatternKK
+    "NX" -> return PatternNX
+    "KX" -> return PatternKX
+    "XN" -> return PatternXN
+    "IN" -> return PatternIN
+    "XK" -> return PatternXK
+    "IK" -> return PatternIK
+    "XX" -> return PatternXX
+    "IX" -> return PatternIX
+    "N"  -> return PatternN
+    "K"  -> return PatternK
+    "X"  -> return PatternX
+    "NNpsk0" -> return PatternNNpsk0
+    "NNpsk2" -> return PatternNNpsk2
+    "NKpsk0" -> return PatternNKpsk0
+    "NKpsk2" -> return PatternNKpsk2
+    "NXpsk2" -> return PatternNXpsk2
+    "XNpsk3" -> return PatternXNpsk3
+    "XKpsk3" -> return PatternXKpsk3
+    "XXpsk3" -> return PatternXXpsk3
+    "KNpsk0" -> return PatternKNpsk0
+    "KNpsk2" -> return PatternKNpsk2
+    "KKpsk0" -> return PatternKKpsk0
+    "KKpsk2" -> return PatternKKpsk2
+    "KXpsk2" -> return PatternKXpsk2
+    "INpsk1" -> return PatternINpsk1
+    "INpsk2" -> return PatternINpsk2
+    "IKpsk1" -> return PatternIKpsk1
+    "IKpsk2" -> return PatternIKpsk2
+    "IXpsk2" -> return PatternIXpsk2
+    "Npsk0"  -> return PatternNpsk0
+    "Kpsk0"  -> return PatternKpsk0
+    "Xpsk1"  -> return PatternXpsk1
+    _    -> fail $ "unknown pattern: " <> patternS
 
-      hash = case hashS of
-        "BLAKE2b" -> HashBLAKE2b
-        "BLAKE2s" -> HashBLAKE2s
-        "SHA256"  -> HashSHA256
-        "SHA512"  -> HashSHA512
-        _         -> fail "unknown hash"
+  curve <- case curveS of
+    "25519" -> return Curve25519
+    "448"   -> return Curve448
+    _       -> fail $ "unknown curve: " <> curveS
+
+  cipher <- case cipherS of
+    "AESGCM"     -> return CipherAESGCM
+    "ChaChaPoly" -> return CipherChaChaPoly
+    _            -> fail $ "unknown cipher: " <> cipherS
+
+  hash <- case hashS of
+    "BLAKE2b" -> return HashBLAKE2b
+    "BLAKE2s" -> return HashBLAKE2s
+    "SHA256"  -> return HashSHA256
+    "SHA512"  -> return HashSHA512
+    _         -> fail $ "unknown hash: " <> hashS
 
   return $ HandshakeName pattern cipher curve hash
 

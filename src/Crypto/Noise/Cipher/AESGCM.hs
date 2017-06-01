@@ -106,29 +106,21 @@ bytesToCt bytes =
         , take (length bytes - 16) bytes
         )
 
--- Adapted from cryptonite's Crypto.Cipher.Types.Block module:
--- https://github.com/haskell-crypto/cryptonite/blob/149bfa601081c27013811498fa507a83f5ce87ea/Crypto/Cipher/Types/Block.hs#L167
+-- Adapted from cryptonite's Crypto.Cipher.Types.Block module.
 ivAdd :: ByteArray b
       => b
       -> Int
       -> b
 ivAdd b i = copy b
   where copy :: ByteArray bs => bs -> bs
-        copy bs = copyAndFreeze bs $ \p -> do
-            let until0 accu = do
-                  r <- loop accu (length bs - 1) p
-                  case r of
-                      0 -> return ()
-                      _ -> until0 r
-            until0 i
+        copy bs = copyAndFreeze bs $ loop i (length bs - 1)
 
-        loop :: Int -> Int -> Ptr Word8 -> IO Int
-        loop 0   _   _ = return 0
-        loop acc ofs p = do
-            v <- peek (p `plusPtr` ofs) :: IO Word8
-            let accv    = acc + fromIntegral v
-                (hi,lo) = accv `divMod` 256
-            poke (p `plusPtr` ofs) (fromIntegral lo :: Word8)
-            if ofs == 0
-                then return hi
-                else loop hi (ofs - 1) p
+        loop :: Int -> Int -> Ptr Word8 -> IO ()
+        loop acc ofs p
+            | ofs < 0   = return ()
+            | otherwise = do
+                v <- peek (p `plusPtr` ofs) :: IO Word8
+                let accv    = acc + fromIntegral v
+                    (hi,lo) = accv `divMod` 256
+                poke (p `plusPtr` ofs) (fromIntegral lo :: Word8)
+                loop hi (ofs - 1) p

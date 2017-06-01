@@ -32,9 +32,6 @@ instance FromJSON Message where
 data Vector =
   Vector { vName       :: String
          , vPattern    :: HandshakeType
-         , vCipher     :: SomeCipherType
-         , vDH         :: SomeDHType
-         , vHash       :: SomeHashType
          , vFail       :: Bool
          , viPrologue  :: ScrubbedBytes
          , viPSK       :: Maybe ScrubbedBytes
@@ -53,9 +50,6 @@ instance ToJSON Vector where
   toJSON Vector{..} = object . stripDefaults . noNulls $
     [ "name"                      .= vName
     , "pattern"                   .= show vPattern
-    , "cipher"                    .= vCipher
-    , "dh"                        .= vDH
-    , "hash"                      .= vHash
     , "fail"                      .= vFail
     , "init_prologue"             .= encodeSB viPrologue
     , "init_psk"                  .= (encodeSB <$> viPSK)
@@ -78,9 +72,6 @@ instance FromJSON Vector where
   parseJSON (Object o) =
     Vector <$> o .:  "name"
            <*> o .:  "pattern"
-           <*> o .:  "cipher"
-           <*> o .:  "dh"
-           <*> o .:  "hash"
            <*> o .:? "fail" .!= False
            <*> (decodeSB      <$> o .:  "init_prologue")
            <*> (fmap decodeSB <$> o .:? "init_psk")

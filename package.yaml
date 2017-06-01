@@ -163,7 +163,7 @@ tests:
       - -with-rtsopts=-N
 
   vectors:
-    main: vectors.hs
+    main: Main.hs
     source-dirs: tests/vectors
     when:
       - condition: 'flag(vectors)'

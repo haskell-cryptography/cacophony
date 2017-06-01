@@ -191,6 +191,9 @@ tests:
       - -threaded
       - -with-rtsopts=-N
 
+    default-extensions:
+      - OverloadedStrings
+
 benchmarks:
   bench:
     main: bench.hs

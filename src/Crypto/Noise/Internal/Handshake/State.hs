@@ -72,10 +72,10 @@ defaultHandshakeOpts :: HandshakeRole
 defaultHandshakeOpts r =
   HandshakeOpts { _hoRole                = r
                 , _hoPrologue            = mempty
-                , _hoLocalStatic         = Nothing
                 , _hoLocalEphemeral      = Nothing
-                , _hoRemoteStatic        = Nothing
+                , _hoLocalStatic         = Nothing
                 , _hoRemoteEphemeral     = Nothing
+                , _hoRemoteStatic        = Nothing
                 }
 
 -- | Given a protocol name, returns the full handshake name according to the

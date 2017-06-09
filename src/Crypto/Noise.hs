@@ -28,10 +28,10 @@ module Crypto.Noise
     -- * Lenses
   , hoRole
   , hoPrologue
-  , hoLocalStatic
   , hoLocalEphemeral
-  , hoRemoteStatic
+  , hoLocalStatic
   , hoRemoteEphemeral
+  , hoRemoteStatic
   ) where
 
 import Control.Arrow   (arr, (***))

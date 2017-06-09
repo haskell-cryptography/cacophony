@@ -168,24 +168,23 @@ instance FromJSON Message where
 
   parseJSON _          = mzero
 
-{-data Vector =
-  Vector { vName       :: String
-         , vPattern    :: PatternName
+data Vector =
+  Vector { vPattern    :: HandshakeName
          , vFail       :: Bool
          , viPrologue  :: ScrubbedBytes
          , viPSK       :: Maybe ScrubbedBytes
-         , viStatic    :: Maybe ScrubbedBytes
          , viEphemeral :: Maybe ScrubbedBytes
+         , viStatic    :: Maybe ScrubbedBytes
          , virStatic   :: Maybe ScrubbedBytes
          , vrPrologue  :: ScrubbedBytes
          , vrPSK       :: Maybe ScrubbedBytes
-         , vrStatic    :: Maybe ScrubbedBytes
          , vrEphemeral :: Maybe ScrubbedBytes
-         , vrrStatic   :: Maybe ScrubbedBytes
+         , vrStatic    :: Maybe ScrubbedBytes
+         , vriStatic   :: Maybe ScrubbedBytes
          , vMessages   :: [Message]
          }
 
-instance ToJSON Vector where
+{-instance ToJSON Vector where
   toJSON Vector{..} = object . stripDefaults . noNulls $
     [ "name"                      .= vName
     , "pattern"                   .= vPattern

@@ -3,10 +3,6 @@
 {%- for v in vectors %}
 {
 "name": {{ v.name }},
-"pattern": {{ v.pattern }},
-"dh": {{ v.dh }},
-"cipher": {{ v.cipher }},
-"hash": {{ v.hash }},
 {%- if v.fail %}
 "fail": {{ v.fail }},
 {%- endif %}

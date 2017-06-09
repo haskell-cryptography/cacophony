@@ -1,4 +1,4 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards, RankNTypes, GADTs, KindSignatures #-}
 module VectorFile where
 
 import Control.Monad      (mzero)
@@ -8,25 +8,22 @@ import Data.ByteArray     (ScrubbedBytes, convert)
 import Data.ByteString    (ByteString)
 import qualified Data.ByteString.Base16 as B16
 import Data.Monoid        ((<>))
-import Data.Text          (Text)
+import Data.Text          (Text, pack)
 import Data.Text.Encoding (encodeUtf8, decodeUtf8)
 
-data CipherName
-  = CipherAESGCM
-  | CipherChaChaPoly
-  deriving (Show, Enum, Bounded)
-
-data DHName
-  = Curve25519
-  | Curve448
-  deriving (Show, Enum, Bounded)
-
-data HashName
-  = HashBLAKE2b
-  | HashBLAKE2s
-  | HashSHA256
-  | HashSHA512
-  deriving (Show, Enum, Bounded)
+import Crypto.Noise
+import Crypto.Noise.Cipher
+import Crypto.Noise.Cipher.ChaChaPoly1305
+import Crypto.Noise.Cipher.AESGCM
+import Crypto.Noise.DH
+import Crypto.Noise.DH.Curve25519
+import Crypto.Noise.DH.Curve448
+import Crypto.Noise.HandshakePatterns
+import Crypto.Noise.Hash hiding (hash)
+import Crypto.Noise.Hash.SHA256
+import Crypto.Noise.Hash.SHA512
+import Crypto.Noise.Hash.BLAKE2s
+import Crypto.Noise.Hash.BLAKE2b
 
 data PatternName
   = PatternNN
@@ -65,106 +62,119 @@ data PatternName
   | PatternNpsk0
   | PatternKpsk0
   | PatternXpsk1
-  deriving (Eq, Show, Enum, Bounded)
+  deriving (Eq, Enum, Bounded)
+
+instance Show PatternName where
+  show PatternNN = "NN"
+  show PatternKN = "KN"
+  show PatternNK = "NK"
+  show PatternKK = "KK"
+  show PatternNX = "NX"
+  show PatternKX = "KX"
+  show PatternXN = "XN"
+  show PatternIN = "IN"
+  show PatternXK = "XK"
+  show PatternIK = "IK"
+  show PatternXX = "XX"
+  show PatternIX = "IX"
+  show PatternN  = "N"
+  show PatternK  = "K"
+  show PatternX  = "X"
+  show PatternNNpsk0 = "NNpsk0"
+  show PatternNNpsk2 = "NNpsk2"
+  show PatternNKpsk0 = "NKpsk0"
+  show PatternNKpsk2 = "NKpsk2"
+  show PatternNXpsk2 = "NXpsk2"
+  show PatternXNpsk3 = "XNpsk3"
+  show PatternXKpsk3 = "XKpsk3"
+  show PatternXXpsk3 = "XXpsk3"
+  show PatternKNpsk0 = "KNpsk0"
+  show PatternKNpsk2 = "KNpsk2"
+  show PatternKKpsk0 = "KKpsk0"
+  show PatternKKpsk2 = "KKpsk2"
+  show PatternKXpsk2 = "KXpsk2"
+  show PatternINpsk1 = "INpsk1"
+  show PatternINpsk2 = "INpsk2"
+  show PatternIKpsk1 = "IKpsk1"
+  show PatternIKpsk2 = "IKpsk2"
+  show PatternIXpsk2 = "IXpsk2"
+  show PatternNpsk0  = "Npsk0"
+  show PatternKpsk0  = "Kpsk0"
+  show PatternXpsk1  = "Xpsk1"
 
 data HandshakeName = HandshakeName
   { hsPatternName :: PatternName
-  , hsCipherName  :: CipherName
-  , hsDHName      :: DHName
-  , hsHashName    :: HashName
-  } deriving Show
-
-instance ToJSON HandshakeName where
-  toJSON = undefined
+  , hsCipher      :: SomeCipherType
+  , hsDH          :: SomeDHType
+  , hsHash        :: SomeHashType
+  }
 
 instance FromJSON HandshakeName where
   parseJSON = undefined
 
-parseHandshakeName :: Parser HandshakeName
-parseHandshakeName = do
-  _ <- string "Noise_"
+instance ToJSON HandshakeName where
+  toJSON HandshakeName{..} = String . pack $ "Noise_"
+                          <> show hsPatternName
+                          <> "_"
+                          <> show hsDH
+                          <> "_"
+                          <> show hsCipher
+                          <> "_"
+                          <> show hsHash
 
-  let untilUnderscore = anyChar `manyTill'` (char '_')
-      untilEOI        = anyChar `manyTill'` endOfInput
+data CipherType :: * -> * where
+  ChaChaPoly1305 :: CipherType ChaChaPoly1305
+  AESGCM         :: CipherType AESGCM
 
-  patternS <- untilUnderscore
-  dhS   <- untilUnderscore
-  cipherS  <- untilUnderscore
-  hashS    <- untilEOI
+data SomeCipherType where
+  WrapCipherType :: forall c. Cipher c => CipherType c -> SomeCipherType
 
-  pattern <- case patternS of
-    "NN" -> return PatternNN
-    "KN" -> return PatternKN
-    "NK" -> return PatternNK
-    "KK" -> return PatternKK
-    "NX" -> return PatternNX
-    "KX" -> return PatternKX
-    "XN" -> return PatternXN
-    "IN" -> return PatternIN
-    "XK" -> return PatternXK
-    "IK" -> return PatternIK
-    "XX" -> return PatternXX
-    "IX" -> return PatternIX
-    "N"  -> return PatternN
-    "K"  -> return PatternK
-    "X"  -> return PatternX
-    "NNpsk0" -> return PatternNNpsk0
-    "NNpsk2" -> return PatternNNpsk2
-    "NKpsk0" -> return PatternNKpsk0
-    "NKpsk2" -> return PatternNKpsk2
-    "NXpsk2" -> return PatternNXpsk2
-    "XNpsk3" -> return PatternXNpsk3
-    "XKpsk3" -> return PatternXKpsk3
-    "XXpsk3" -> return PatternXXpsk3
-    "KNpsk0" -> return PatternKNpsk0
-    "KNpsk2" -> return PatternKNpsk2
-    "KKpsk0" -> return PatternKKpsk0
-    "KKpsk2" -> return PatternKKpsk2
-    "KXpsk2" -> return PatternKXpsk2
-    "INpsk1" -> return PatternINpsk1
-    "INpsk2" -> return PatternINpsk2
-    "IKpsk1" -> return PatternIKpsk1
-    "IKpsk2" -> return PatternIKpsk2
-    "IXpsk2" -> return PatternIXpsk2
-    "Npsk0"  -> return PatternNpsk0
-    "Kpsk0"  -> return PatternKpsk0
-    "Xpsk1"  -> return PatternXpsk1
-    _    -> fail $ "unknown pattern: " <> patternS
+instance Show SomeCipherType where
+  show (WrapCipherType ChaChaPoly1305) = "ChaChaPoly"
+  show (WrapCipherType AESGCM)         = "AESGCM"
 
-  dh <- case dhS of
-    "25519" -> return Curve25519
-    "448"   -> return Curve448
-    _       -> fail $ "unknown DH: " <> dhS
 
-  cipher <- case cipherS of
-    "AESGCM"     -> return CipherAESGCM
-    "ChaChaPoly" -> return CipherChaChaPoly
-    _            -> fail $ "unknown cipher: " <> cipherS
+data DHType :: * -> * where
+  Curve25519 :: DHType Curve25519
+  Curve448   :: DHType Curve448
 
-  hash <- case hashS of
-    "BLAKE2b" -> return HashBLAKE2b
-    "BLAKE2s" -> return HashBLAKE2s
-    "SHA256"  -> return HashSHA256
-    "SHA512"  -> return HashSHA512
-    _         -> fail $ "unknown hash: " <> hashS
+data SomeDHType where
+  WrapDHType :: forall d. DH d => DHType d -> SomeDHType
 
-  return $ HandshakeName pattern cipher dh hash
+instance Show SomeDHType where
+  show (WrapDHType Curve25519) = "25519"
+  show (WrapDHType Curve448)   = "448"
+
+data HashType :: * -> * where
+  BLAKE2b :: HashType BLAKE2b
+  BLAKE2s :: HashType BLAKE2s
+  SHA256  :: HashType SHA256
+  SHA512  :: HashType SHA512
+
+data SomeHashType where
+  WrapHashType :: forall h. Hash h => HashType h -> SomeHashType
+
+instance Show SomeHashType where
+  show (WrapHashType BLAKE2b) = "BLAKE2b"
+  show (WrapHashType BLAKE2s) = "BLAKE2s"
+  show (WrapHashType SHA256)  = "SHA256"
+  show (WrapHashType SHA512)  = "SHA512"
 
 data Message =
-  Message { mPayload    :: Maybe ScrubbedBytes
-          , mCiphertext :: ByteString
+  Message { mPayload    :: ScrubbedBytes
+          , mCiphertext :: ScrubbedBytes
           } deriving (Eq, Show)
 
 instance ToJSON Message where
   toJSON Message{..} =
-    object [ "payload"    .= ((decodeUtf8 . B16.encode . convert) <$> mPayload)
-           , "ciphertext" .= (decodeUtf8 . B16.encode) mCiphertext
+    object [ "payload"    .= (decodeUtf8 . B16.encode . convert) mPayload
+           , "ciphertext" .= (decodeUtf8 . B16.encode . convert) mCiphertext
            ]
 
 instance FromJSON Message where
   parseJSON (Object o) =
-    Message <$> (fmap (convert . fst . B16.decode . encodeUtf8) <$> o .:? "payload")
-            <*> ((fst . B16.decode . encodeUtf8) <$> o .: "ciphertext")
+    Message <$> ((convert . fst . B16.decode . encodeUtf8) <$> o .: "payload")
+            <*> ((convert . fst . B16.decode . encodeUtf8) <$> o .: "ciphertext")
 
   parseJSON _          = mzero
 
@@ -231,6 +241,115 @@ instance ToJSON VectorFile where
 instance FromJSON VectorFile where
   parseJSON (Object o) = VectorFile <$> o .: "vectors"
   parseJSON _          = mzero
+
+parseHandshakeName :: Parser HandshakeName
+parseHandshakeName = do
+  _ <- string "Noise_"
+
+  let untilUnderscore = anyChar `manyTill'` (char '_')
+      untilEOI        = anyChar `manyTill'` endOfInput
+
+  patternS <- untilUnderscore
+  dhS      <- untilUnderscore
+  cipherS  <- untilUnderscore
+  hashS    <- untilEOI
+
+  pattern <- case patternS of
+    "NN" -> return PatternNN
+    "KN" -> return PatternKN
+    "NK" -> return PatternNK
+    "KK" -> return PatternKK
+    "NX" -> return PatternNX
+    "KX" -> return PatternKX
+    "XN" -> return PatternXN
+    "IN" -> return PatternIN
+    "XK" -> return PatternXK
+    "IK" -> return PatternIK
+    "XX" -> return PatternXX
+    "IX" -> return PatternIX
+    "N"  -> return PatternN
+    "K"  -> return PatternK
+    "X"  -> return PatternX
+    "NNpsk0" -> return PatternNNpsk0
+    "NNpsk2" -> return PatternNNpsk2
+    "NKpsk0" -> return PatternNKpsk0
+    "NKpsk2" -> return PatternNKpsk2
+    "NXpsk2" -> return PatternNXpsk2
+    "XNpsk3" -> return PatternXNpsk3
+    "XKpsk3" -> return PatternXKpsk3
+    "XXpsk3" -> return PatternXXpsk3
+    "KNpsk0" -> return PatternKNpsk0
+    "KNpsk2" -> return PatternKNpsk2
+    "KKpsk0" -> return PatternKKpsk0
+    "KKpsk2" -> return PatternKKpsk2
+    "KXpsk2" -> return PatternKXpsk2
+    "INpsk1" -> return PatternINpsk1
+    "INpsk2" -> return PatternINpsk2
+    "IKpsk1" -> return PatternIKpsk1
+    "IKpsk2" -> return PatternIKpsk2
+    "IXpsk2" -> return PatternIXpsk2
+    "Npsk0"  -> return PatternNpsk0
+    "Kpsk0"  -> return PatternKpsk0
+    "Xpsk1"  -> return PatternXpsk1
+    _    -> fail $ "unknown pattern: " <> patternS
+
+  dh <- case dhS of
+    "25519" -> return . WrapDHType $ Curve25519
+    "448"   -> return . WrapDHType $ Curve448
+    _       -> fail $ "unknown DH: " <> dhS
+
+  cipher <- case cipherS of
+    "AESGCM"     -> return . WrapCipherType $ AESGCM
+    "ChaChaPoly" -> return . WrapCipherType $ ChaChaPoly1305
+    _            -> fail $ "unknown cipher: " <> cipherS
+
+  hash <- case hashS of
+    "BLAKE2b" -> return . WrapHashType $ BLAKE2b
+    "BLAKE2s" -> return . WrapHashType $ BLAKE2s
+    "SHA256"  -> return . WrapHashType $ SHA256
+    "SHA512"  -> return . WrapHashType $ SHA512
+    _         -> fail $ "unknown hash: " <> hashS
+
+  return $ HandshakeName pattern cipher dh hash
+
+patternToHandshake :: PatternName
+                   -> HandshakePattern
+patternToHandshake PatternNN = noiseNN
+patternToHandshake PatternKN = noiseKN
+patternToHandshake PatternNK = noiseNK
+patternToHandshake PatternKK = noiseKK
+patternToHandshake PatternNX = noiseNX
+patternToHandshake PatternKX = noiseKX
+patternToHandshake PatternXN = noiseXN
+patternToHandshake PatternIN = noiseIN
+patternToHandshake PatternXK = noiseXK
+patternToHandshake PatternIK = noiseIK
+patternToHandshake PatternXX = noiseXX
+patternToHandshake PatternIX = noiseIX
+patternToHandshake PatternN  = noiseN
+patternToHandshake PatternK  = noiseK
+patternToHandshake PatternX  = noiseX
+patternToHandshake PatternNNpsk0 = noiseNNpsk0
+patternToHandshake PatternNNpsk2 = noiseNNpsk2
+patternToHandshake PatternNKpsk0 = noiseNKpsk0
+patternToHandshake PatternNKpsk2 = noiseNKpsk2
+patternToHandshake PatternNXpsk2 = noiseNXpsk2
+patternToHandshake PatternXNpsk3 = noiseXNpsk3
+patternToHandshake PatternXKpsk3 = noiseXKpsk3
+patternToHandshake PatternXXpsk3 = noiseXXpsk3
+patternToHandshake PatternKNpsk0 = noiseKNpsk0
+patternToHandshake PatternKNpsk2 = noiseKNpsk2
+patternToHandshake PatternKKpsk0 = noiseKKpsk0
+patternToHandshake PatternKKpsk2 = noiseKKpsk2
+patternToHandshake PatternKXpsk2 = noiseKXpsk2
+patternToHandshake PatternINpsk1 = noiseINpsk1
+patternToHandshake PatternINpsk2 = noiseINpsk2
+patternToHandshake PatternIKpsk1 = noiseIKpsk1
+patternToHandshake PatternIKpsk2 = noiseIKpsk2
+patternToHandshake PatternIXpsk2 = noiseIXpsk2
+patternToHandshake PatternNpsk0  = noiseNpsk0
+patternToHandshake PatternKpsk0  = noiseKpsk0
+patternToHandshake PatternXpsk1  = noiseXpsk1
 
 encodeSB :: ScrubbedBytes
          -> Text

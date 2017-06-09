@@ -50,7 +50,7 @@ class DH d where
   -- | Tests @PublicKey@s for equality.
   dhPubEq :: PublicKey d -> PublicKey d -> Bool
 
--- | Represents a private/public key pair for a given @Curve@.
+-- | Represents a private/public key pair for a given 'DH'.
 type KeyPair d = (SecretKey d, PublicKey d)
 
 instance DH d => Eq (PublicKey d) where

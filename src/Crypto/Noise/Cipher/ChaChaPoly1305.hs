@@ -10,12 +10,13 @@ module Crypto.Noise.Cipher.ChaChaPoly1305
     ChaChaPoly1305
   ) where
 
-import           Crypto.Error   (throwCryptoError)
+import           Crypto.Error    (throwCryptoError)
 import qualified Crypto.Cipher.ChaChaPoly1305 as CCP
 import qualified Crypto.MAC.Poly1305          as P
-import           Data.ByteArray (ScrubbedBytes, Bytes, convert, take, drop,
-                                 length, replicate)
-import           Prelude hiding (drop, length, replicate, take)
+import           Data.ByteArray  (ScrubbedBytes, Bytes, convert, take, drop,
+                                  length, replicate, constEq)
+import           Data.ByteString (ByteString, reverse)
+import           Prelude hiding  (drop, length, replicate, take, reverse)
 
 import Crypto.Noise.Cipher
 
@@ -87,12 +88,16 @@ incNonce (NCCP1305 n) = NCCP1305 $ CCP.incrementNonce n
 nonceEq :: Nonce ChaChaPoly1305
         -> Nonce ChaChaPoly1305
         -> Bool
-nonceEq (NCCP1305 a) (NCCP1305 b) = a == b
+nonceEq (NCCP1305 a) (NCCP1305 b) = constEq a b
 
+-- | Since nonces in this cipher are little endian, they must be reversed prior
+--   to comparison. A ByteString was chosen because it uses memcmp under the
+--   hood.
 nonceCmp :: Nonce ChaChaPoly1305
          -> Nonce ChaChaPoly1305
          -> Ordering
-nonceCmp (NCCP1305 a) (NCCP1305 b) = compare a b
+nonceCmp (NCCP1305 a) (NCCP1305 b) = compare (reverse (convert a :: ByteString))
+                                             (reverse (convert b :: ByteString))
 
 bytesToSym :: ScrubbedBytes
            -> SymmetricKey ChaChaPoly1305

@@ -71,7 +71,7 @@ interpretToken opRole (S next) = do
     ss <- use hsSymmetricState
     (_, pk) <- getKeyPair hoLocalStatic "local static"
     (ct, ss') <- encryptAndHash (dhPubToBytes pk) ss
-    hsSymmetricState .= mixHash (cipherTextToBytes ct) ss'
+    hsSymmetricState .= ss'
     hsMsgBuffer      <>= cipherTextToBytes ct
 
   else do

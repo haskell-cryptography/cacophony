@@ -28,7 +28,7 @@ import Crypto.Noise.Internal.SymmetricState
 
 -- | Represents the side of the conversation upon which a party resides.
 data HandshakeRole = InitiatorRole | ResponderRole
-                     deriving Eq
+                     deriving (Show, Eq)
 
 -- | Represents the various options which define a handshake.
 data HandshakeOpts d =

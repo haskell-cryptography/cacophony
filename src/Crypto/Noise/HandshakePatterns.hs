@@ -203,66 +203,66 @@ noiseX = handshakePattern "X" $
 
 -- | @Noise_NNpsk0():
 --  -> psk, e
---  <- e, ee
+--  <- e, ee@
 noiseNNpsk0 :: HandshakePattern
 noiseNNpsk0 = handshakePattern "NNpsk0" $
   initiator (psk *> e) *>
   responder (e *> ee)
 
--- | Noise_NNpsk2():
+-- | @Noise_NNpsk2():
 --  -> e
---  <- e, ee, psk
+--  <- e, ee, psk@
 noiseNNpsk2 :: HandshakePattern
 noiseNNpsk2 = handshakePattern "NNpsk2" $
   initiator e *>
   responder (e *> ee *> psk)
 
--- | Noise_NKpsk0(rs):
+-- | @Noise_NKpsk0(rs):
 --  <- s
 --  ...
 --  -> psk, e, es
---  <- e, ee
+--  <- e, ee@
 noiseNKpsk0 :: HandshakePattern
 noiseNKpsk0 = handshakePattern "NKpsk0" $
   preResponder s *>
   initiator (psk *> e *> es) *>
   responder (e *> ee)
 
--- | Noise_NKpsk2(rs):
+-- | @Noise_NKpsk2(rs):
 --  <- s
 --  ...
 --  -> e, es
---  <- e, ee, psk
+--  <- e, ee, psk@
 noiseNKpsk2 :: HandshakePattern
 noiseNKpsk2 = handshakePattern "NKpsk2" $
   preResponder s *>
   initiator (e *> es) *>
   responder (e *> ee *> psk)
 
--- | Noise_NXpsk2(rs):
+-- | @Noise_NXpsk2(rs):
 --  -> e
---  <- e, ee, s, es, psk
+--  <- e, ee, s, es, psk@
 noiseNXpsk2 :: HandshakePattern
 noiseNXpsk2 = handshakePattern "NXpsk2" $
   initiator e *>
   responder (e *> ee *> s *> es *> psk)
 
--- | Noise_XNpsk3(s):
+-- | @Noise_XNpsk3(s):
 --  -> e
 --  <- e, ee
---  -> s, se, psk
+--  -> s, se, psk@
 noiseXNpsk3 :: HandshakePattern
 noiseXNpsk3 = handshakePattern "XNpsk3" $
   initiator e *>
   responder (e *> ee) *>
   initiator (s *> se *> psk)
 
--- | Noise_XKpsk3(s, rs):
+-- | @Noise_XKpsk3(s, rs):
 --  <- s
 --  ...
 --  -> e, es
 --  <- e, ee
---  -> s, se, psk
+--  -> s, se, psk@
 noiseXKpsk3 :: HandshakePattern
 noiseXKpsk3 = handshakePattern "XKpsk3" $
   preResponder s *>
@@ -270,44 +270,44 @@ noiseXKpsk3 = handshakePattern "XKpsk3" $
   responder (e *> ee) *>
   initiator (s *> se *> psk)
 
--- | Noise_XXpsk3(s, rs):
+-- | @Noise_XXpsk3(s, rs):
 --  -> e
 --  <- e, ee, s, es
---  -> s, se, psk
+--  -> s, se, psk@
 noiseXXpsk3 :: HandshakePattern
 noiseXXpsk3 = handshakePattern "XXpsk3" $
   initiator e *>
   responder (e *> ee *> s *> es) *>
   initiator (s *> se *> psk)
 
--- | Noise_KNpsk0(s):
+-- | @Noise_KNpsk0(s):
 --  -> s
 --  ...
 --  -> psk, e
---  <- e, ee, se
+--  <- e, ee, se@
 noiseKNpsk0 :: HandshakePattern
 noiseKNpsk0 = handshakePattern "KNpsk0" $
   preInitiator s *>
   initiator (psk *> e) *>
   responder (e *> ee *> se)
 
--- | Noise_KNpsk2(s):
+-- | @Noise_KNpsk2(s):
 --  -> s
 --  ...
 --  -> e
---  <- e, ee, se, psk
+--  <- e, ee, se, psk@
 noiseKNpsk2 :: HandshakePattern
 noiseKNpsk2 = handshakePattern "KNpsk2" $
   preInitiator s *>
   initiator e *>
   responder (e *> ee *> se *> psk)
 
--- | Noise_KKpsk0(s, rs):
+-- | @Noise_KKpsk0(s, rs):
 --  -> s
 --  <- s
 --  ...
 --  -> psk, e, es, ss
---  <- e, ee, se
+--  <- e, ee, se@
 noiseKKpsk0 :: HandshakePattern
 noiseKKpsk0 = handshakePattern "KKpsk0" $
   preInitiator s *>
@@ -315,12 +315,12 @@ noiseKKpsk0 = handshakePattern "KKpsk0" $
   initiator (psk *> e *> es *> ss) *>
   responder (e *> ee *> se)
 
--- | Noise_KKpsk2(s, rs):
+-- | @Noise_KKpsk2(s, rs):
 --  -> s
 --  <- s
 --  ...
 --  -> e, es, ss
---  <- e, ee, se, psk
+--  <- e, ee, se, psk@
 noiseKKpsk2 :: HandshakePattern
 noiseKKpsk2 = handshakePattern "KKpsk2" $
   preInitiator s *>
@@ -328,85 +328,85 @@ noiseKKpsk2 = handshakePattern "KKpsk2" $
   initiator (e *> es *> ss) *>
   responder (e *> ee *> se *> psk)
 
--- | Noise_KXpsk2(s, rs):
+-- | @Noise_KXpsk2(s, rs):
 --  -> s
 --  ...
 --  -> e
---  <- e, ee, se, s, es, psk
+--  <- e, ee, se, s, es, psk@
 noiseKXpsk2 :: HandshakePattern
 noiseKXpsk2 = handshakePattern "KXpsk2" $
   preInitiator s *>
   initiator e *>
   responder (e *> ee *> se *> s *> es *> psk)
 
--- | Noise_INpsk1(s):
+-- | @Noise_INpsk1(s):
 --  -> e, s, psk
---  <- e, ee, se
+--  <- e, ee, se@
 noiseINpsk1 :: HandshakePattern
 noiseINpsk1 = handshakePattern "INpsk1" $
   initiator (e *> s *> psk) *>
   responder (e *> ee *> se)
 
--- | Noise_INpsk2(s):
+-- | @Noise_INpsk2(s):
 --  -> e, s
---  <- e, ee, se, psk
+--  <- e, ee, se, psk@
 noiseINpsk2 :: HandshakePattern
 noiseINpsk2 = handshakePattern "INpsk2" $
   initiator (e *> s) *>
   responder (e *> ee *> se *> psk)
 
--- | Noise_IKpsk1(s, rs):
+-- | @Noise_IKpsk1(s, rs):
 --  <- s
 --  ...
 --  -> e, es, s, ss, psk
---  <- e, ee, se
+--  <- e, ee, se@
 noiseIKpsk1 :: HandshakePattern
 noiseIKpsk1 = handshakePattern "IKpsk1" $
   preResponder s *>
   initiator (e *> es *> s *> ss *> psk) *>
   responder (e *> ee *> se)
 
--- | Noise_IKpsk2(s, rs):
+-- | @Noise_IKpsk2(s, rs):
 --  <- s
 --  ...
 --  -> e, es, s, ss
---  <- e, ee, se, psk
+--  <- e, ee, se, psk@
 noiseIKpsk2 :: HandshakePattern
 noiseIKpsk2 = handshakePattern "IKpsk2" $
   preResponder s *>
   initiator (e *> es *> s *> ss) *>
   responder (e *> ee *> se *> psk)
 
--- | Noise_IXpsk2(s, rs):
+-- | @Noise_IXpsk2(s, rs):
 --  -> e, s
---  <- e, ee, se, s, es, psk
+--  <- e, ee, se, s, es, psk@
 noiseIXpsk2 :: HandshakePattern
 noiseIXpsk2 = handshakePattern "IXpsk2" $
   initiator (e *> s) *>
   responder (e *> ee *> se *> s *> es *> psk)
 
--- | Noise_Npsk0(rs):
+-- | @Noise_Npsk0(rs):
 --  <- s
 --  ...
---  -> psk, e, es
+--  -> psk, e, es@
 noiseNpsk0 :: HandshakePattern
 noiseNpsk0 = handshakePattern "Npsk0" $
   preResponder s *>
   initiator (psk *> e *> es)
 
--- | Noise_Kpsk0(s, rs):
+-- | @Noise_Kpsk0(s, rs):
 --  <- s
 --  ...
---  -> psk, e, es, ss
+--  -> psk, e, es, ss@
 noiseKpsk0 :: HandshakePattern
 noiseKpsk0 = handshakePattern "Kpsk0" $
   preResponder s *>
   initiator (psk *> e *> es *> ss)
 
--- | Noise_Xpsk1(s, rs):
+-- | @Noise_Xpsk1(s, rs):
 --  <- s
 --  ...
---  -> e, es, s, ss, psk
+--  -> e, es, s, ss, psk@
 noiseXpsk1 :: HandshakePattern
 noiseXpsk1 = handshakePattern "Xpsk1" $
   preResponder s *>

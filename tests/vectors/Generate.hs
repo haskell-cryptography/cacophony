@@ -26,29 +26,29 @@ genVector :: HandshakeName
           -> [ScrubbedBytes]
           -> Vector
 genVector pat psk payloads = Vector
- { vPattern    = pat
- , vFail       = False
- , viPrologue  = "John Galt"
- , viPSK       = psk
- , viEphemeral = initiatorEphemeral
- , viStatic    = initiatorStatic
- , virStatic   = responderStatic
- , vrPrologue  = "John Galt"
- , vrPSK       = psk
- , vrEphemeral = responderEphemeral
- , vrStatic    = responderStatic
- , vriStatic   = initiatorStatic
- , vMessages   = []
- }
+  { vName       = pat
+  , vFail       = False
+  , viPrologue  = "John Galt"
+  , viPSK       = psk
+  , viEphemeral = Nothing
+  , viStatic    = Nothing
+  , virStatic   = Nothing
+  , vrPrologue  = "John Galt"
+  , vrPSK       = psk
+  , vrEphemeral = Nothing
+  , vrStatic    = Nothing
+  , vrrStatic   = Nothing
+  , vMessages   = []
+  }
 
 allHandshakes :: [HandshakeName]
 allHandshakes = do
   pattern <- [minBound .. maxBound]
   cipher  <- [minBound .. maxBound]
-  curve   <- [minBound .. maxBound]
+  dh      <- [minBound .. maxBound]
   hash    <- [minBound .. maxBound]
 
-  return $ HandshakeName pattern cipher curve hash
+  return $ HandshakeName pattern cipher dh hash
 
 genVectorFile :: FilePath
               -> IO ()

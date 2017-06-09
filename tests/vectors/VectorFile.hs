@@ -16,7 +16,7 @@ data CipherName
   | CipherChaChaPoly
   deriving (Show, Enum, Bounded)
 
-data CurveName
+data DHName
   = Curve25519
   | Curve448
   deriving (Show, Enum, Bounded)
@@ -65,12 +65,12 @@ data PatternName
   | PatternNpsk0
   | PatternKpsk0
   | PatternXpsk1
-  deriving (Show, Enum, Bounded)
+  deriving (Eq, Show, Enum, Bounded)
 
 data HandshakeName = HandshakeName
   { hsPatternName :: PatternName
   , hsCipherName  :: CipherName
-  , hsCurveName   :: CurveName
+  , hsDHName      :: DHName
   , hsHashName    :: HashName
   } deriving Show
 
@@ -88,7 +88,7 @@ parseHandshakeName = do
       untilEOI        = anyChar `manyTill'` endOfInput
 
   patternS <- untilUnderscore
-  curveS   <- untilUnderscore
+  dhS   <- untilUnderscore
   cipherS  <- untilUnderscore
   hashS    <- untilEOI
 
@@ -131,10 +131,10 @@ parseHandshakeName = do
     "Xpsk1"  -> return PatternXpsk1
     _    -> fail $ "unknown pattern: " <> patternS
 
-  curve <- case curveS of
+  dh <- case dhS of
     "25519" -> return Curve25519
     "448"   -> return Curve448
-    _       -> fail $ "unknown curve: " <> curveS
+    _       -> fail $ "unknown DH: " <> dhS
 
   cipher <- case cipherS of
     "AESGCM"     -> return CipherAESGCM
@@ -148,7 +148,7 @@ parseHandshakeName = do
     "SHA512"  -> return HashSHA512
     _         -> fail $ "unknown hash: " <> hashS
 
-  return $ HandshakeName pattern cipher curve hash
+  return $ HandshakeName pattern cipher dh hash
 
 data Message =
   Message { mPayload    :: Maybe ScrubbedBytes
@@ -169,7 +169,7 @@ instance FromJSON Message where
   parseJSON _          = mzero
 
 data Vector =
-  Vector { vPattern    :: HandshakeName
+  Vector { vName       :: HandshakeName
          , vFail       :: Bool
          , viPrologue  :: ScrubbedBytes
          , viPSK       :: Maybe ScrubbedBytes
@@ -180,24 +180,23 @@ data Vector =
          , vrPSK       :: Maybe ScrubbedBytes
          , vrEphemeral :: Maybe ScrubbedBytes
          , vrStatic    :: Maybe ScrubbedBytes
-         , vriStatic   :: Maybe ScrubbedBytes
+         , vrrStatic   :: Maybe ScrubbedBytes
          , vMessages   :: [Message]
          }
 
-{-instance ToJSON Vector where
+instance ToJSON Vector where
   toJSON Vector{..} = object . stripDefaults . noNulls $
     [ "name"                      .= vName
-    , "pattern"                   .= vPattern
     , "fail"                      .= vFail
     , "init_prologue"             .= encodeSB viPrologue
     , "init_psk"                  .= (encodeSB <$> viPSK)
-    , "init_static"               .= (encodeSB <$> viStatic)
     , "init_ephemeral"            .= (encodeSB <$> viEphemeral)
+    , "init_static"               .= (encodeSB <$> viStatic)
     , "init_remote_static"        .= (encodeSB <$> virStatic)
     , "resp_prologue"             .= encodeSB vrPrologue
     , "resp_psk"                  .= (encodeSB <$> vrPSK)
-    , "resp_static"               .= (encodeSB <$> vrStatic)
     , "resp_ephemeral"            .= (encodeSB <$> vrEphemeral)
+    , "resp_static"               .= (encodeSB <$> vrStatic)
     , "resp_remote_static"        .= (encodeSB <$> vrrStatic)
     , "messages"                  .= vMessages
     ]
@@ -209,17 +208,16 @@ data Vector =
 instance FromJSON Vector where
   parseJSON (Object o) =
     Vector <$> o .:  "name"
-           <*> o .:  "pattern"
            <*> o .:? "fail" .!= False
            <*> (decodeSB      <$> o .:  "init_prologue")
            <*> (fmap decodeSB <$> o .:? "init_psk")
-           <*> (fmap decodeSB <$> o .:? "init_static")
            <*> (fmap decodeSB <$> o .:? "init_ephemeral")
+           <*> (fmap decodeSB <$> o .:? "init_static")
            <*> (fmap decodeSB <$> o .:? "init_remote_static")
            <*> (decodeSB      <$> o .:  "resp_prologue")
            <*> (fmap decodeSB <$> o .:? "resp_psk")
-           <*> (fmap decodeSB <$> o .:? "resp_static")
            <*> (fmap decodeSB <$> o .:? "resp_ephemeral")
+           <*> (fmap decodeSB <$> o .:? "resp_static")
            <*> (fmap decodeSB <$> o .:? "resp_remote_static")
            <*> o .: "messages"
 
@@ -232,7 +230,7 @@ instance ToJSON VectorFile where
 
 instance FromJSON VectorFile where
   parseJSON (Object o) = VectorFile <$> o .: "vectors"
-  parseJSON _          = mzero-}
+  parseJSON _          = mzero
 
 encodeSB :: ScrubbedBytes
          -> Text

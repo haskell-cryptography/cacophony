@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, GADTs, RecordWildCards #-}
+{-# LANGUAGE GADTs, RecordWildCards #-}
 module Generate where
 
 import Control.Lens

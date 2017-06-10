@@ -3,9 +3,9 @@ module VectorFile where
 
 import Control.Monad      (mzero)
 import Data.Aeson
+import Data.Aeson.Types   (typeMismatch)
 import Data.Attoparsec.ByteString.Char8
 import Data.ByteArray     (ScrubbedBytes, convert)
-import Data.ByteString    (ByteString)
 import qualified Data.ByteString.Base16 as B16
 import Data.Monoid        ((<>))
 import Data.Text          (Text, pack)
@@ -110,7 +110,9 @@ data HandshakeName = HandshakeName
   }
 
 instance FromJSON HandshakeName where
-  parseJSON = undefined
+  parseJSON (String s) =
+    either (const mzero) pure $ parseOnly parseHandshakeName (encodeUtf8 s)
+  parseJSON bad        = typeMismatch "HandshakeName" bad
 
 instance ToJSON HandshakeName where
   toJSON HandshakeName{..} = String . pack $ "Noise_"
@@ -176,7 +178,7 @@ instance FromJSON Message where
     Message <$> ((convert . fst . B16.decode . encodeUtf8) <$> o .: "payload")
             <*> ((convert . fst . B16.decode . encodeUtf8) <$> o .: "ciphertext")
 
-  parseJSON _          = mzero
+  parseJSON bad        = typeMismatch "Message" bad
 
 data Vector =
   Vector { vName       :: HandshakeName
@@ -231,7 +233,7 @@ instance FromJSON Vector where
            <*> (fmap decodeSB <$> o .:? "resp_remote_static")
            <*> o .: "messages"
 
-  parseJSON _          = mzero
+  parseJSON bad        = typeMismatch "Vector" bad
 
 newtype VectorFile = VectorFile { vfVectors  :: [Vector] }
 
@@ -240,7 +242,7 @@ instance ToJSON VectorFile where
 
 instance FromJSON VectorFile where
   parseJSON (Object o) = VectorFile <$> o .: "vectors"
-  parseJSON _          = mzero
+  parseJSON bad        = typeMismatch "VectorFile" bad
 
 parseHandshakeName :: Parser HandshakeName
 parseHandshakeName = do

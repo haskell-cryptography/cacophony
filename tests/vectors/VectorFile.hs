@@ -109,13 +109,8 @@ data HandshakeName = HandshakeName
   , hsHash        :: SomeHashType
   }
 
-instance FromJSON HandshakeName where
-  parseJSON (String s) =
-    either (const mzero) pure $ parseOnly parseHandshakeName (encodeUtf8 s)
-  parseJSON bad        = typeMismatch "HandshakeName" bad
-
-instance ToJSON HandshakeName where
-  toJSON HandshakeName{..} = String . pack $ "Noise_"
+instance Show HandshakeName where
+  show HandshakeName{..} = "Noise_"
                           <> show hsPatternName
                           <> "_"
                           <> show hsDH
@@ -123,6 +118,14 @@ instance ToJSON HandshakeName where
                           <> show hsCipher
                           <> "_"
                           <> show hsHash
+
+instance FromJSON HandshakeName where
+  parseJSON (String s) =
+    either (const mzero) pure $ parseOnly parseHandshakeName (encodeUtf8 s)
+  parseJSON bad        = typeMismatch "HandshakeName" bad
+
+instance ToJSON HandshakeName where
+  toJSON = String . pack . show
 
 data CipherType :: * -> * where
   ChaChaPoly1305 :: CipherType ChaChaPoly1305
@@ -169,14 +172,14 @@ data Message =
 
 instance ToJSON Message where
   toJSON Message{..} =
-    object [ "payload"    .= (decodeUtf8 . B16.encode . convert) mPayload
-           , "ciphertext" .= (decodeUtf8 . B16.encode . convert) mCiphertext
+    object [ "payload"    .= encodeSB mPayload
+           , "ciphertext" .= encodeSB mCiphertext
            ]
 
 instance FromJSON Message where
   parseJSON (Object o) =
-    Message <$> ((convert . fst . B16.decode . encodeUtf8) <$> o .: "payload")
-            <*> ((convert . fst . B16.decode . encodeUtf8) <$> o .: "ciphertext")
+    Message <$> (decodeSB <$> o .: "payload")
+            <*> (decodeSB <$> o .: "ciphertext")
 
   parseJSON bad        = typeMismatch "Message" bad
 
@@ -194,7 +197,7 @@ data Vector =
          , vrStatic    :: Maybe ScrubbedBytes
          , vrrStatic   :: Maybe ScrubbedBytes
          , vMessages   :: [Message]
-         }
+         } deriving Show
 
 instance ToJSON Vector where
   toJSON Vector{..} = object . stripDefaults . noNulls $

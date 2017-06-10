@@ -22,7 +22,6 @@ extra-source-files:
   - tools/run_benchmarks.sh
   - tools/vector_template.jinja
   - vectors/cacophony.txt
-  - vectors/noise-c-basic.txt
 
 flags:
   hlint:

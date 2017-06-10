@@ -1,10 +1,12 @@
 {-# LANGUAGE GADTs, RecordWildCards #-}
 module Generate where
 
+import Control.Exception        (SomeException)
 import Control.Lens
 import Data.Aeson               (encode)
 import Data.ByteArray           (ScrubbedBytes)
 import Data.ByteString.Lazy     (writeFile)
+import Data.Either              (isLeft)
 import Data.Monoid              ((<>))
 import Prelude hiding           (writeFile)
 
@@ -17,43 +19,46 @@ import Keys
 import VectorFile
 
 genMessage :: (Cipher c, DH d, Hash h)
-           => Bool
-           -> Maybe ScrubbedBytes
-           -> ScrubbedBytes
-           -> NoiseState c d h
-           -> (ScrubbedBytes, NoiseState c d h)
-genMessage write mpsk payload state =
-  (msg, newState)
+           => Bool                -- ^ True if we are writing a message
+           -> Maybe ScrubbedBytes -- ^ If a PSK is called for, this value will be used
+           -> ScrubbedBytes       -- ^ The payload to write/read
+           -> NoiseState c d h    -- ^ The NoiseState to use
+           -> Either SomeException (ScrubbedBytes, NoiseState c d h)
+genMessage write mpsk payload state = do
+  noiseResult <- operation payload state
+  case noiseResult of
+    (ResultMessage m, s) -> pure (m, s)
+    (ResultNeedPSK, s) -> case mpsk of
+      Nothing -> Left . error $ "PSK requested but none has been configured"
+      Just k  -> genMessage write mpsk k s
+
   where
     operation   = if write then writeMessage else readMessage
-    errResult   = operation payload state
-    noiseResult = either (\e -> error $ "message generation failed: " <> show e)
-                         id
-                         errResult
-    (msg, newState) = case noiseResult of
-      (ResultMessage m, s) -> (m, s)
-      (ResultNeedPSK, s) -> case mpsk of
-        Nothing -> error "PSK requested but none has been configured"
-        Just k  -> genMessage write mpsk k s
 
 genMessages :: (Cipher c, DH d, Hash h)
-            => Bool
-            -> NoiseState c d h
-            -> NoiseState c d h
-            -> Maybe ScrubbedBytes
-            -> Maybe ScrubbedBytes
-            -> [ScrubbedBytes]
-            -> [Message]
+            => Bool                -- ^ Set to False for one-way patterns
+            -> NoiseState c d h    -- ^ Initiator NoiseState
+            -> NoiseState c d h    -- ^ Responder NoiseState
+            -> Maybe ScrubbedBytes -- ^ Initiator PSK
+            -> Maybe ScrubbedBytes -- ^ Responder PSK
+            -> [ScrubbedBytes]     -- ^ Payloads
+            -> [Either SomeException Message]
 genMessages swap = go []
   where
     go acc _ _ _ _ [] = acc
     go acc sendingState receivingState mspsk mrpsk (payload : rest) =
-      let (ct, newSendingState)   = genMessage True  mspsk payload sendingState
-          (pt, newReceivingState) = genMessage False mrpsk ct receivingState in
+      let result = do
+            (ct, sendingState')   <- genMessage True  mspsk payload sendingState
+            (pt, receivingState') <- genMessage False mrpsk ct      receivingState
+            pure ((Message pt ct), sendingState', receivingState')
+      in
 
-      if swap
-        then go (acc <> [Message pt ct]) newReceivingState newSendingState mrpsk mspsk rest
-        else go (acc <> [Message pt ct]) newSendingState newReceivingState mspsk mrpsk rest
+      case result of
+        Right (msg, sendingState', receivingState') ->
+          if swap
+            then go (acc <> [Right msg]) receivingState' sendingState' mrpsk mspsk rest
+            else go (acc <> [Right msg]) sendingState' receivingState' mspsk mrpsk rest
+        Left e -> acc <> [Left e]
 
 genNoiseStates :: (Cipher c, DH d, Hash h)
                => CipherType c
@@ -89,16 +94,21 @@ populateVector :: SomeCipherType
                -> SomeHashType
                -> [ScrubbedBytes]
                -> Vector
-               -> Vector
+               -> Either [Either SomeException Message] Vector
 populateVector (WrapCipherType c)
                (WrapDHType d)
                (WrapHashType h)
                payloads
-               v@Vector{..} =
-  v { vMessages = genMessages swap ins rns viPSK vrPSK payloads }
+               v@Vector{..} = do
+  let msgs = genMessages swap ins rns viPSK vrPSK payloads
+  if any isLeft msgs
+    then Left msgs
+    else pure $ v { vMessages = either undefined id <$> msgs
+                  }
   where
     pat        = hsPatternName vName
-    swap       = pat /= PatternN && pat /= PatternK && pat /= PatternX
+    swap       = pat /= PatternN && pat /= PatternK && pat /= PatternX &&
+                 pat /= PatternNpsk0 && pat /= PatternKpsk0 && pat /= PatternXpsk1
     opts       = genOpts d v
     (ins, rns) = genNoiseStates c h pat opts
 
@@ -127,7 +137,9 @@ genVector pat payloads = finalVector
     d = hsDH     pat
     h = hsHash   pat
 
-    finalVector = populateVector c d h payloads . setKeys $ emptyVector
+    finalVector = either (error "failed to generate messages!")
+                         id
+                         (populateVector c d h payloads . setKeys $ emptyVector)
 
 allHandshakes :: [HandshakeName]
 allHandshakes = do

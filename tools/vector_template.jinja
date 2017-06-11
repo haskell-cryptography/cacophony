@@ -10,9 +10,6 @@
 {%- if v.init_psk %}
 "init_psk": {{ v.init_psk }},
 {%- endif %}
-{%- if v.init_ssk %}
-"init_ssk": {{ v.init_ssk }},
-{%- endif %}
 {%- if v.init_static %}
 "init_static": {{ v.init_static }},
 {%- endif %}
@@ -32,9 +29,6 @@
 {%- if v.resp_psk %}
 "resp_psk": {{ v.resp_psk }},
 {%- endif %}
-{%- if v.resp_ssk %}
-"resp_ssk": {{ v.resp_ssk }},
-{%- endif %}
 {%- if v.resp_static %}
 "resp_static": {{ v.resp_static }},
 {%- endif %}
@@ -49,6 +43,9 @@
 {%- endif %}
 {%- if v.resp_remote_semiephemeral %}
 "resp_remote_semiephemeral": {{ v.resp_remote_semiephemeral }},
+{%- endif %}
+{%- if v.handshake_hash %}
+"handshake_hash": {{ v.handshake_hash }},
 {%- endif %}
 "messages": [
 {%- for m in v.messages %}

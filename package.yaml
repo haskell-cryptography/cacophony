@@ -169,17 +169,14 @@ tests:
         then:
           dependencies:
             - aeson
-            - async
             - attoparsec
             - base
             - base16-bytestring
             - bytestring
             - cacophony
             - directory
-            - free
             - lens
             - memory
-            - mtl
             - text
         else:
           buildable: False

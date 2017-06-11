@@ -14,8 +14,8 @@ import Crypto.Error        (throwCryptoError)
 import Crypto.Cipher.AES   (AES256)
 import Crypto.Cipher.Types (AuthTag(..), AEADMode(AEAD_GCM), cipherInit,
                             aeadInit, aeadSimpleEncrypt, aeadSimpleDecrypt)
-import Data.ByteArray      (ByteArray, Bytes, ScrubbedBytes, convert)
-import Data.ByteArray      (take, drop, length, copyAndFreeze, zero, append,
+import Data.ByteArray      (ByteArray, Bytes, ScrubbedBytes, convert, take,
+                            drop, length, copyAndFreeze, zero, append,
                             replicate)
 import Data.Word           (Word8)
 import Foreign.Ptr

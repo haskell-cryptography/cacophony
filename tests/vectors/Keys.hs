@@ -175,8 +175,8 @@ hexToSB = convert . fst . B16.decode
 privateToPublic :: SomeDHType
                 -> ScrubbedBytes
                 -> Maybe ScrubbedBytes
-privateToPublic (WrapDHType Curve25519) k = return . dhPubToBytes . snd =<< (dhBytesToPair k :: Maybe (KeyPair Curve25519))
-privateToPublic (WrapDHType Curve448)   k = return . dhPubToBytes . snd =<< (dhBytesToPair k :: Maybe (KeyPair Curve448))
+privateToPublic (WrapDHType Curve25519) k = fmap (dhPubToBytes . snd) (dhBytesToPair k :: Maybe (KeyPair Curve25519))
+privateToPublic (WrapDHType Curve448)   k = fmap (dhPubToBytes . snd) (dhBytesToPair k :: Maybe (KeyPair Curve448))
 
 psk :: ScrubbedBytes
 psk = "This is my Austrian perspective!"

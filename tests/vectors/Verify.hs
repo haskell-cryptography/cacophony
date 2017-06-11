@@ -36,10 +36,10 @@ resultSuccess _             = False
 compareMsgs :: [Message] -- ^ Given messages
             -> [Message] -- ^ Calculated messages
             -> [Maybe (Message, Message)]
-compareMsgs given calc = fmap
+compareMsgs given calc =
   (\(m1, m2) -> if m1 == m2
     then Nothing
-    else Just (m1, m2)) $ zip given calc
+    else Just (m1, m2)) <$> zip given calc
 
 verifyVector :: Vector
              -> ValidationResult
@@ -83,7 +83,7 @@ printExFailure :: [Either SomeException Message]
                -> IO ()
 printExFailure = mapM_ $
   either (\ex -> putStrLn $ "Exception: " <> (pack . show) ex)
-         (\m  -> printMessage m)
+         printMessage
 
 printComparisonFailure :: [Maybe (Message, Message)]
                        -> IO ()
@@ -106,9 +106,9 @@ verifyVectorFile f = do
 
   vf <- maybe (putStrLn ("Error decoding " <> pack f) >> exitFailure) return mvf
 
-  let results  = (\(idx, v) -> (idx, v, verifyVector v)) <$> (zip [0..] $ vfVectors vf)
+  let results  = (\(idx, v) -> (idx, v, verifyVector v)) <$> zip [0..] (vfVectors vf)
       failures = filter (\(_, v, r) ->
-                   (vFail v) `xor` (not . resultSuccess) r)
+                   vFail v `xor` (not . resultSuccess) r)
                    results
 
   if not (null failures) then do

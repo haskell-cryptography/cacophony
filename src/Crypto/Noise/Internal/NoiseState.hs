@@ -61,7 +61,7 @@ resumeHandshake :: (MonadThrow m, Cipher c, DH d, Hash h)
                 -> NoiseState c d h
                 -> m (NoiseResult, NoiseState c d h)
 resumeHandshake msg ns = do
-  let interpreterResult = runCatch $ runStateT (resume . runHandshake . (ns ^. nsHandshakeSuspension) $ msg)
+  let interpreterResult = runCatch . runStateT (resume . runHandshake . (ns ^. nsHandshakeSuspension) $ msg)
                                                $ ns ^. nsHandshakeState
   case interpreterResult of
     -- The interpreter threw an exception. Propagate it up the chain.

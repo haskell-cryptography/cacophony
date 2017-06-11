@@ -9,6 +9,7 @@ module Crypto.Noise.Internal.Handshake.Validation where
 
 import Control.Applicative.Free
 import Control.Lens
+import Control.Monad (when)
 import Control.Monad.State
 
 import Crypto.Noise.Internal.Handshake.Pattern
@@ -73,17 +74,13 @@ verifyRandDoneIfReq (Initiator _ _) = do
   initRandReq  <- use iInitRandReq
   initRandDone <- use iInitRandDone
 
-  if initRandReq && not initRandDone
-    then addError InitSecretNotRandom
-    else return ()
+  when (initRandReq && not initRandDone) $ addError InitSecretNotRandom
 
 verifyRandDoneIfReq (Responder _ _) = do
   respRandReq  <- use iRespRandReq
   respRandDone <- use iRespRandDone
 
-  if respRandReq && not respRandDone
-    then addError RespSecretNotRandom
-    else return ()
+  when (respRandReq && not respRandDone) $ addError RespSecretNotRandom
 
 verifyRandDoneIfReq _ = return ()
 
@@ -92,17 +89,13 @@ verifyESentIfPSK (Initiator _ _) = do
   initESent   <- use iInitESent
   initPSKSent <- use iInitPSKSent
 
-  if initPSKSent && not initESent
-    then addError PSKWithoutEToken
-    else return ()
+  when (initPSKSent && not initESent) $ addError PSKWithoutEToken
 
 verifyESentIfPSK (Responder _ _) = do
   respESent   <- use iRespESent
   respPSKSent <- use iRespPSKSent
 
-  if respPSKSent && not respESent
-    then addError PSKWithoutEToken
-    else return ()
+  when (respPSKSent && not respESent) $ addError PSKWithoutEToken
 
 verifyESentIfPSK _ = return ()
 

@@ -69,9 +69,8 @@ printMessageComparison :: Message
 printMessageComparison m1 m2 = do
   putStrLn "Message:"
   putStrLn $ "\tGiven payload:\t\t" <> (encodeSB . mPayload) m1
-  putStrLn $ "\tCalculated ciphertext:\t" <> (encodeSB . mCiphertext) m2
   putStrLn $ "\tGiven ciphertext:\t" <> (encodeSB . mCiphertext) m1
-  putStrLn $ "\tCalculated payload:\t" <> (encodeSB . mPayload) m2
+  putStrLn $ "\tCalculated ciphertext:\t" <> (encodeSB . mCiphertext) m2
 
 printMessage :: Message
              -> IO ()

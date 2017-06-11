@@ -196,6 +196,7 @@ data Vector =
          , vrEphemeral :: Maybe ScrubbedBytes
          , vrStatic    :: Maybe ScrubbedBytes
          , vrrStatic   :: Maybe ScrubbedBytes
+         , vHash       :: Maybe ScrubbedBytes
          , vMessages   :: [Message]
          } deriving Show
 
@@ -213,6 +214,7 @@ instance ToJSON Vector where
     , "resp_ephemeral"            .= (encodeSB <$> vrEphemeral)
     , "resp_static"               .= (encodeSB <$> vrStatic)
     , "resp_remote_static"        .= (encodeSB <$> vrrStatic)
+    , "handshake_hash"            .= (encodeSB <$> vHash)
     , "messages"                  .= vMessages
     ]
 
@@ -234,6 +236,7 @@ instance FromJSON Vector where
            <*> (fmap decodeSB <$> o .:? "resp_ephemeral")
            <*> (fmap decodeSB <$> o .:? "resp_static")
            <*> (fmap decodeSB <$> o .:? "resp_remote_static")
+           <*> (fmap decodeSB <$> o .:? "handshake_hash")
            <*> o .: "messages"
 
   parseJSON bad        = typeMismatch "Vector" bad

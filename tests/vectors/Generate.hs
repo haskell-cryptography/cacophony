@@ -42,10 +42,10 @@ genMessages :: (Cipher c, DH d, Hash h)
             -> Maybe ScrubbedBytes -- ^ Initiator PSK
             -> Maybe ScrubbedBytes -- ^ Responder PSK
             -> [ScrubbedBytes]     -- ^ Payloads
-            -> [Either SomeException Message]
+            -> ([Either SomeException Message], ScrubbedBytes)
 genMessages swap = go []
   where
-    go acc _ _ _ _ [] = acc
+    go acc s _ _ _ [] = (acc, handshakeHash s)
     go acc sendingState receivingState mspsk mrpsk (payload : rest) =
       let result = do
             (ct, sendingState')   <- genMessage True  mspsk payload sendingState
@@ -58,7 +58,7 @@ genMessages swap = go []
           if swap
             then go (acc <> [Right msg]) receivingState' sendingState' mrpsk mspsk rest
             else go (acc <> [Right msg]) sendingState' receivingState' mspsk mrpsk rest
-        Left e -> acc <> [Left e]
+        Left e -> (acc <> [Left e], handshakeHash sendingState)
 
 genNoiseStates :: (Cipher c, DH d, Hash h)
                => CipherType c
@@ -100,10 +100,11 @@ populateVector (WrapCipherType c)
                (WrapHashType h)
                payloads
                v@Vector{..} = do
-  let msgs = genMessages swap ins rns viPSK vrPSK payloads
+  let (msgs, hsHash) = genMessages swap ins rns viPSK vrPSK payloads
   if any isLeft msgs
     then Left msgs
-    else pure $ v { vMessages = either undefined id <$> msgs
+    else pure $ v { vHash     = Just hsHash
+                  , vMessages = either undefined id <$> msgs
                   }
   where
     pat        = hsPatternName vName
@@ -130,6 +131,7 @@ genVector pat payloads = finalVector
       , vrEphemeral = Nothing
       , vrStatic    = Nothing
       , vrrStatic   = Nothing
+      , vHash       = Nothing
       , vMessages   = []
       }
 

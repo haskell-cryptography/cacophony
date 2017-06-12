@@ -1,19 +1,22 @@
-language: generic
-sudo: false
+language: c
+dist: trusty
 
 cache:
   directories:
     - $HOME/.stack
 
+addons:
+  apt:
+    packages:
+      - libgmp-dev
+
 matrix:
   include:
     - env: ARGS="--resolver lts-8"
       compiler: ": #stack 8.0.2"
-      addons: {apt: {packages: [libgmp-dev]}}
 
     - env: ARGS="--resolver nightly"
       compiler: ": #stack nightly"
-      addons: {apt: {packages: [libgmp-dev]}}
 
   allow_failures:
     - env: BUILD=stack ARGS="--resolver nightly"
@@ -25,7 +28,8 @@ before_install:
   - travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
 
 install:
-  - stack --no-terminal --install-ghc $ARGS test --bench --only-dependencies
+  - stack $ARGS setup
 
 script:
-  - stack --no-terminal $ARGS test --flag "cacophony:build-examples" --flag "cacophony:hlint" --flag "cacophony:vectors" --bench --no-run-benchmarks --haddock --no-haddock-deps
+  - stack $ARGS --no-terminal test --flag "cacophony:build-examples" --flag "cacophony:hlint" --flag "cacophony:vectors" --bench --no-run-benchmarks --haddock --no-haddock-deps
+  - stack sdist

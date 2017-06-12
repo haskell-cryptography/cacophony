@@ -138,7 +138,6 @@ instance Show SomeCipherType where
   show (WrapCipherType ChaChaPoly1305) = "ChaChaPoly"
   show (WrapCipherType AESGCM)         = "AESGCM"
 
-
 data DHType :: * -> * where
   Curve25519 :: DHType Curve25519
   Curve448   :: DHType Curve448

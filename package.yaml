@@ -34,11 +34,6 @@ flags:
     default: False
     manual: False
 
-  build-examples:
-    description: Build example executables
-    default: False
-    manual: True
-
 library:
   source-dirs: src
   dependencies:
@@ -80,67 +75,6 @@ library:
 
   default-extensions:
     - OverloadedStrings
-
-executables:
-  echo-server:
-    source-dirs: examples/echo-server
-    main: Main.hs
-    when:
-      - condition: 'flag(build-examples)'
-        then:
-          dependencies:
-            - aeson
-            - attoparsec
-            - auto-update
-            - base
-            - base16-bytestring
-            - base64-bytestring
-            - bytestring
-            - cacophony
-            - directory
-            - fast-logger
-            - lens
-            - memory
-            - network
-            - network-simple
-            - unix
-            - unix-time
-        else:
-          buildable: False
-
-    ghc-options:
-      - -O2
-      - -rtsopts
-      - -threaded
-      - -with-rtsopts=-N
-
-  echo-client:
-    source-dirs: examples/echo-client
-    main: Main.hs
-    when:
-      - condition: 'flag(build-examples)'
-        then:
-          dependencies:
-            - attoparsec
-            - base
-            - base16-bytestring
-            - base64-bytestring
-            - bytestring
-            - cacophony
-            - directory
-            - lens
-            - memory
-            - network
-            - network-simple
-            - unix
-        else:
-          buildable: False
-      
-    ghc-options:
-      - -O2
-      - -rtsopts
-      - -threaded
-      - -with-rtsopts=-N
 
 tests:
   hlint:

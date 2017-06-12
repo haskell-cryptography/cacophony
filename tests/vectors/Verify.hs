@@ -6,6 +6,7 @@ import Data.Aeson           (decode)
 import Data.Bits
 import Data.ByteArray       (ScrubbedBytes)
 import Data.ByteString.Lazy (readFile)
+import Data.Maybe           (fromMaybe)
 import Data.Monoid          ((<>))
 import Data.Text            (Text, pack)
 import Data.Text.IO         (putStrLn)
@@ -46,9 +47,9 @@ verifyVector :: Vector
 verifyVector given =
   either ResultException finalResult rawResults
   where
-    cipher = hsCipher . vName $ given
-    dh     = hsDH     . vName $ given
-    hash   = hsHash   . vName $ given
+    cipher = hsCipher . vProtoName $ given
+    dh     = hsDH     . vProtoName $ given
+    hash   = hsHash   . vProtoName $ given
     rawResults = populateVector cipher dh hash (mPayload <$> vMessages given) given
     finalResult calc =
       let msgComparison  = compareMsgs (vMessages given) (vMessages calc)
@@ -116,7 +117,10 @@ verifyVectorFile f = do
     forM_ failures $ \(idx, vector, result) -> do
       putStrLn "================================================================"
       putStrLn $ "Vector number: " <> (pack . show) (idx :: Integer)
-      putStrLn $ "Handshake name: " <> (pack . show . vName) vector
+
+      let protoName = (pack . show . vProtoName) vector
+      putStrLn $ "Handshake name: " <> fromMaybe protoName (vName vector)
+      putStrLn $ "Protocol name: " <> protoName
       putStrLn $ "Should fail?: " <> if vFail vector then "yes" else "no"
       putStrLn $ "Nature of failure: " <> natureOfFailure result
       case result of

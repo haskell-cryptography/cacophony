@@ -2,7 +2,10 @@
 "vectors": [
 {%- for v in vectors %}
 {
+{%- if v.name %}
 "name": {{ v.name }},
+{%- endif %}
+"protocol_name": {{ v.protocol_name }},
 {%- if v.fail %}
 "fail": {{ v.fail }},
 {%- endif %}

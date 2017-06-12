@@ -13,7 +13,7 @@ import VectorFile
 
 setKeys :: Vector
         -> Vector
-setKeys v@Vector{vName = pat} = v
+setKeys v@Vector{vProtoName = pat} = v
     -- All patterns require the initiator to have an ephemeral key.
   { viEphemeral = Just . initiatorEphemeral $ dh
   , vrEphemeral = if name `elem` rePatterns'

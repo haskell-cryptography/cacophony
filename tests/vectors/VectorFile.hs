@@ -183,7 +183,8 @@ instance FromJSON Message where
   parseJSON bad        = typeMismatch "Message" bad
 
 data Vector =
-  Vector { vName       :: HandshakeName
+  Vector { vName       :: Maybe Text
+         , vProtoName  :: HandshakeName
          , vFail       :: Bool
          , viPrologue  :: ScrubbedBytes
          , viPSK       :: Maybe ScrubbedBytes
@@ -202,6 +203,7 @@ data Vector =
 instance ToJSON Vector where
   toJSON Vector{..} = object . stripDefaults . noNulls $
     [ "name"                      .= vName
+    , "protocol_name"             .= vProtoName
     , "fail"                      .= vFail
     , "init_prologue"             .= encodeSB viPrologue
     , "init_psk"                  .= (encodeSB <$> viPSK)
@@ -223,7 +225,8 @@ instance ToJSON Vector where
 
 instance FromJSON Vector where
   parseJSON (Object o) =
-    Vector <$> o .:  "name"
+    Vector <$> o .:?  "name"
+           <*> o .: "protocol_name"
            <*> o .:? "fail" .!= False
            <*> (decodeSB      <$> o .:  "init_prologue")
            <*> (fmap decodeSB <$> o .:? "init_psk")

@@ -107,7 +107,7 @@ populateVector (WrapCipherType c)
                   , vMessages = either undefined id <$> msgs
                   }
   where
-    pat        = hsPatternName vName
+    pat        = hsPatternName vProtoName
     swap       = pat /= PatternN && pat /= PatternK && pat /= PatternX &&
                  pat /= PatternNpsk0 && pat /= PatternKpsk0 && pat /= PatternXpsk1
     opts       = genOpts d v
@@ -119,7 +119,8 @@ genVector :: HandshakeName
 genVector pat payloads = finalVector
   where
     emptyVector = Vector
-      { vName       = pat
+      { vName       = Nothing
+      , vProtoName  = pat
       , vFail       = False
       , viPrologue  = "John Galt"
       , viPSK       = Nothing

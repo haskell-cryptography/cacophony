@@ -204,3 +204,6 @@ benchmarks:
       - deepseq
       - lens
       - memory
+
+    default-extensions:
+      - OverloadedStrings

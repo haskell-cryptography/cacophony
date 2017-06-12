@@ -37,7 +37,7 @@ flags:
 library:
   source-dirs: src
   dependencies:
-    - base
+    - base >= 4.9 && < 4.10
     - bytestring
     - cryptonite
     - exceptions
@@ -84,7 +84,7 @@ tests:
       - condition: 'flag(hlint)'
         then:
           dependencies:
-            - base
+            - base >= 4.9 && < 4.10
             - hlint
         else:
           buildable: False
@@ -104,7 +104,7 @@ tests:
           dependencies:
             - aeson
             - attoparsec
-            - base
+            - base >= 4.9 && < 4.10
             - base16-bytestring
             - bytestring
             - cacophony
@@ -130,7 +130,7 @@ benchmarks:
     source-dirs: benchmarks
     dependencies:
       - async
-      - base
+      - base >= 4.9 && < 4.10
       - base16-bytestring
       - bytestring
       - cacophony

@@ -19,7 +19,8 @@ matrix:
       compiler: ": #stack nightly"
 
   allow_failures:
-    - env: BUILD=stack ARGS="--resolver nightly"
+    - env: ARGS="--resolver nightly"
+      compiler: ": #stack nightly"
 
 before_install:
   - unset CC

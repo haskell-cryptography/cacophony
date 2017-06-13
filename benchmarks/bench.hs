@@ -66,16 +66,14 @@ genOpts :: DH d
         -> (HandshakeOpts d, HandshakeOpts d)
 genOpts d pat = (iopts, ropts)
   where
-    idho  = defaultHandshakeOpts InitiatorRole
-    rdho  = defaultHandshakeOpts ResponderRole
+    idho  = defaultHandshakeOpts InitiatorRole mempty
+    rdho  = defaultHandshakeOpts ResponderRole mempty
     keys  = getKeys (WrapDHType d) pat
-    iopts = idho & hoPrologue       .~ ""
-                 & hoLocalEphemeral .~ (dhBytesToPair =<< hskInitEphemeral    keys)
+    iopts = idho & hoLocalEphemeral .~ (dhBytesToPair =<< hskInitEphemeral    keys)
                  & hoLocalStatic    .~ (dhBytesToPair =<< hskInitStatic       keys)
                  & hoRemoteStatic   .~ (dhBytesToPub  =<< hskInitRemoteStatic keys)
 
-    ropts = rdho & hoPrologue       .~ ""
-                 & hoLocalEphemeral .~ (dhBytesToPair =<< hskRespEphemeral    keys)
+    ropts = rdho & hoLocalEphemeral .~ (dhBytesToPair =<< hskRespEphemeral    keys)
                  & hoLocalStatic    .~ (dhBytesToPair =<< hskRespStatic       keys)
                  & hoRemoteStatic   .~ (dhBytesToPub  =<< hskRespRemoteStatic keys)
 

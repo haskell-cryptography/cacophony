@@ -30,7 +30,8 @@ import Crypto.Noise.Internal.SymmetricState
 data HandshakeRole = InitiatorRole | ResponderRole
                      deriving (Show, Eq)
 
--- | Represents the various options which define a handshake.
+-- | Represents the various options and keys for a handshake parameterized by
+--   the 'DH' method.
 data HandshakeOpts d =
   HandshakeOpts { _hoRole                :: HandshakeRole
                 , _hoPrologue            :: Plaintext
@@ -67,44 +68,38 @@ newtype Handshake c d h r =
                        , MonadState (HandshakeState c d h)
                        )
 
--- | Returns a default set of handshake options. The prologue is set to an
---   empty string and all keys are set to 'Nothing'.
+-- | Returns a default set of handshake options. All keys are set to 'Nothing'.
 defaultHandshakeOpts :: HandshakeRole
+                     -> Plaintext
                      -> HandshakeOpts d
-defaultHandshakeOpts r =
+defaultHandshakeOpts r p =
   HandshakeOpts { _hoRole                = r
-                , _hoPrologue            = mempty
+                , _hoPrologue            = p
                 , _hoLocalEphemeral      = Nothing
                 , _hoLocalStatic         = Nothing
                 , _hoRemoteEphemeral     = Nothing
                 , _hoRemoteStatic        = Nothing
                 }
 
-setRole :: HandshakeRole
-        -> HandshakeOpts d
-        -> HandshakeOpts d
-setRole r opts = opts { _hoRole = r }
-
-setPrologue :: Plaintext
-            -> HandshakeOpts d
-            -> HandshakeOpts d
-setPrologue p opts = opts { _hoPrologue = p }
-
+-- | Sets the local ephemeral key.
 setLocalEphemeral :: Maybe (KeyPair d)
                   -> HandshakeOpts d
                   -> HandshakeOpts d
 setLocalEphemeral k opts = opts { _hoLocalEphemeral = k }
 
+-- | Sets the local static key.
 setLocalStatic :: Maybe (KeyPair d)
                -> HandshakeOpts d
                -> HandshakeOpts d
 setLocalStatic k opts = opts { _hoLocalStatic = k }
 
+-- | Sets the remote ephemeral key (rarely needed).
 setRemoteEphemeral :: Maybe (PublicKey d)
                    -> HandshakeOpts d
                    -> HandshakeOpts d
 setRemoteEphemeral k opts = opts { _hoRemoteEphemeral = k }
 
+-- | Sets the remote static key.
 setRemoteStatic :: Maybe (PublicKey d)
                 -> HandshakeOpts d
                 -> HandshakeOpts d

@@ -5,3 +5,4 @@ import "hint" HLint.HLint
 
 ignore "Reduce duplication"
 ignore "Parse error"
+ignore "Use module export list"

@@ -8,12 +8,12 @@
 -- Please see the README for usage information.
 module Crypto.Noise
   ( -- * Types
-    HandshakePattern
+    NoiseState
+  , NoiseResult(..)
+  , NoiseException(..)
+  , HandshakePattern
   , HandshakeRole(..)
   , HandshakeOpts
-  , NoiseException(..)
-  , NoiseState
-  , NoiseResult(..)
     -- * Functions
   , defaultHandshakeOpts
   , noiseState
@@ -26,8 +26,6 @@ module Crypto.Noise
   , rekeyReceiving
   , handshakePattern
     -- * HandshakeOpts Setters
-  , setRole
-  , setPrologue
   , setLocalEphemeral
   , setLocalStatic
   , setRemoteEphemeral
@@ -50,14 +48,31 @@ import Crypto.Noise.Internal.Handshake.State
 import Crypto.Noise.Internal.NoiseState
 import Crypto.Noise.Internal.SymmetricState
 
+-- | This type is used to indicate to the user the result of either writing or
+--   reading a message. In the simplest case, when processing a handshake or
+--   transport message, the (en|de)crypted message and mutated state will be
+--   available in 'NoiseResultMessage'.
+--
+--   If during the course of the handshake a pre-shared key is needed, a
+--   'NoiseResultNeedPSK' value will be returned along with the mutated state.
+--   To continue, the user must re-issue the 'writeMessage' or 'readMessage'
+--   call, passing in the PSK as the payload. If no further PSKs are required,
+--   the result will be 'NoiseResultMessage'.
+--
+--   If an exception is encountered at any point while processing a handshake or
+--   transport message, 'NoiseResultException' will be returned.
 data NoiseResult c d h
   = NoiseResultMessage   ScrubbedBytes (NoiseState c d h)
   | NoiseResultNeedPSK   (NoiseState c d h)
   | NoiseResultException SomeException
 
--- | Creates a Noise message with the provided payload. Note that the
---   payload may not be authenticated or encrypted at all points during the
---   handshake. Please see section 7.4 of the protocol document for details.
+-- | Creates a handshake or transport message with the provided payload. Note
+--   that the payload may not be authenticated or encrypted at all points during
+--   the handshake. Please see section 7.4 of the protocol document for details.
+--
+--   If a previous call to this function indicated that a pre-shared key is
+--   needed, it shall be provided as the payload. See the documentation of
+--   'NoiseResult' for details.
 --
 --   To prevent catastrophic key re-use, this function may only be used to
 --   secure 2^64 - 1 post-handshake messages.
@@ -74,9 +89,13 @@ writeMessage msg ns = maybe
     updateState   = arr $ \cs -> ns & nsSendingCipherState .~ Just cs
     encryptMsg cs = (ctToMsg *** updateState) <$> encryptWithAd mempty msg cs
 
--- | Reads a Noise message and returns the embedded payload. If the
---   handshake fails, a 'HandshakeError' will be returned. After the handshake
---   is complete, if decryption fails a 'DecryptionError' is returned.
+-- | Reads a handshake or transport message and returns the embedded payload. If
+--   the handshake fails, a 'HandshakeError' will be returned. After the
+--   handshake is complete, if decryption fails a 'DecryptionError' is returned.
+--
+--   If a previous call to this function indicated that a pre-shared key is
+--   needed, it shall be provided as the payload. See the documentation of
+--   'NoiseResult' for details.
 --
 --   To prevent catastrophic key re-use, this function may only be used to
 --   receive 2^64 - 1 post-handshake messages.
@@ -121,13 +140,14 @@ handshakeHash :: Hash h
 handshakeHash ns = either id hashToBytes
                    $ ns ^. nsHandshakeState . hsSymmetricState . ssh
 
--- | Rekeys the sending 'CipherState'.
+-- | Rekeys the sending @CipherState@ according to section 11.3 of the protocol.
 rekeySending :: (Cipher c, DH d, Hash h)
              => NoiseState c d h
              -> NoiseState c d h
 rekeySending ns = ns & nsSendingCipherState %~ (<*>) (pure rekey)
 
--- | Rekeys the receiving 'CipherState'.
+-- | Rekeys the receiving @CipherState@ according to section 11.3 of the
+--   protocol.
 rekeyReceiving :: (Cipher c, DH d, Hash h)
                => NoiseState c d h
                -> NoiseState c d h

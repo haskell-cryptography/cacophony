@@ -6,7 +6,7 @@
 -- Portability : POSIX
 module Crypto.Noise.Validation
   ( -- * Types
-    InspectionError
+    InspectionError(..)
   , ErrorPosition
     -- * Functions
   , validateHandshakePattern

@@ -29,25 +29,25 @@ class DH d where
   -- | Returns the length of public keys for this DH scheme in bytes.
   dhLength         :: proxy d -> Int
 
-  -- | Generates a @KeyPair@.
+  -- | Generates a 'KeyPair'.
   dhGenKey         :: IO (KeyPair d)
 
   -- | Performs DH.
   dhPerform        :: SecretKey d -> PublicKey d -> ScrubbedBytes
 
-  -- | Exports a @PublicKey@.
+  -- | Exports a 'PublicKey'.
   dhPubToBytes     :: PublicKey d -> ScrubbedBytes
 
-  -- | Imports a @PublicKey@.
+  -- | Imports a 'PublicKey'.
   dhBytesToPub     :: ScrubbedBytes -> Maybe (PublicKey d)
 
-  -- | Exports a @SecretKey@.
+  -- | Exports a 'SecretKey'.
   dhSecToBytes     :: SecretKey d -> ScrubbedBytes
 
-  -- | Imports a @SecretKey@.
+  -- | Imports a 'SecretKey'.
   dhBytesToPair    :: ScrubbedBytes -> Maybe (KeyPair d)
 
-  -- | Tests @PublicKey@s for equality.
+  -- | Tests 'PublicKey's for equality.
   dhPubEq :: PublicKey d -> PublicKey d -> Bool
 
 -- | Represents a private/public key pair for a given 'DH'.

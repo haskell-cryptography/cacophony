@@ -63,6 +63,9 @@ initiator = liftAp . flip Initiator ()
 responder :: MessagePattern () -> MessageSequence ()
 responder = liftAp . flip Responder ()
 
+-- | This type represents a handshake pattern such as @Noise_IK@. A large set of
+--   pre-defined patterns can be found in "Crypto.Noise.HandshakePatterns".
+--   Expert users are encouraged to define their own custom patterns with care.
 data HandshakePattern = HandshakePattern
   { _hpName    :: ByteString
   , _hpPSKMode :: Bool
@@ -73,7 +76,9 @@ $(makeLenses ''HandshakePattern)
 
 newtype HasPSK = HasPSK { unPSK :: Bool }
 
--- | Smart constructor for HandshakePatterns.
+-- | Constructs a 'HandshakePattern' given a protocol name (such as @XXpsk3@)
+--   and raw pattern. Please see the README for information about creating your
+--   own custom patterns.
 handshakePattern :: ByteString
                  -> MessageSequence ()
                  -> HandshakePattern

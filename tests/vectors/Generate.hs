@@ -77,15 +77,13 @@ genOpts :: DH d
         -> (HandshakeOpts d, HandshakeOpts d)
 genOpts _ Vector{..} = (iopts, ropts)
   where
-    idho  = defaultHandshakeOpts InitiatorRole
-    rdho  = defaultHandshakeOpts ResponderRole
-    iopts = idho & hoPrologue       .~ viPrologue
-                 & hoLocalEphemeral .~ (dhBytesToPair =<< viEphemeral)
+    idho  = defaultHandshakeOpts InitiatorRole viPrologue
+    rdho  = defaultHandshakeOpts ResponderRole vrPrologue
+    iopts = idho & hoLocalEphemeral .~ (dhBytesToPair =<< viEphemeral)
                  & hoLocalStatic    .~ (dhBytesToPair =<< viStatic)
                  & hoRemoteStatic   .~ (dhBytesToPub  =<< virStatic)
 
-    ropts = rdho & hoPrologue       .~ vrPrologue
-                 & hoLocalEphemeral .~ (dhBytesToPair =<< vrEphemeral)
+    ropts = rdho & hoLocalEphemeral .~ (dhBytesToPair =<< vrEphemeral)
                  & hoLocalStatic    .~ (dhBytesToPair =<< vrStatic)
                  & hoRemoteStatic   .~ (dhBytesToPub  =<< vrrStatic)
 

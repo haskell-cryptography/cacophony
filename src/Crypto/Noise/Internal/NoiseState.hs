@@ -24,7 +24,10 @@ import Crypto.Noise.Internal.Handshake.Pattern
 import Crypto.Noise.Internal.Handshake.State
 import Crypto.Noise.Internal.SymmetricState (split)
 
--- | Represents the complete state of a Noise conversation.
+-- | This type represents the state of an entire Noise conversation, and it is
+--   used both during the handshake and for every message read and written
+--   thereafter (transport messages). It is parameterized by the 'Cipher', 'DH'
+--   method, and 'Hash' to be used.
 data NoiseState c d h =
   NoiseState { _nsHandshakeState       :: HandshakeState c d h
              , _nsHandshakeSuspension  :: ScrubbedBytes -> Handshake c d h ()
@@ -34,7 +37,7 @@ data NoiseState c d h =
 
 $(makeLenses ''NoiseState)
 
--- | Creates a NoiseState from the given handshake options.
+-- | Creates a 'NoiseState' from the given handshake options and pattern.
 noiseState :: (Cipher c, DH d, Hash h)
            => HandshakeOpts d
            -> HandshakePattern
@@ -65,12 +68,12 @@ resumeHandshake msg ns = do
                                                $ ns ^. nsHandshakeState
   case interpreterResult of
     -- The interpreter threw an exception. Propagate it up the chain.
-    Left err     -> throwM err
+    Left err -> throwM err
     -- The interpreter did not throw an exception. Determine if it finished
     -- running.
     Right (suspension, hs) -> case suspension of
       -- The handshake pattern has not finished running. Save the suspension
-      -- and the mutated HandshakeState, and return what was yielded.
+      -- and the mutated HandshakeState and return what was yielded.
       Left (Request req resp) ->
         return (req, ns & nsHandshakeSuspension .~ (Handshake . resp) & nsHandshakeState .~ hs)
       -- The handshake pattern has finished running. Create the CipherStates.

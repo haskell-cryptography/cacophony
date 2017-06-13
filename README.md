@@ -12,8 +12,6 @@ This library implements the [Noise](https://noiseprotocol.org) protocol.
    For example, if you want to use `Noise_IK_25519_AESGCM_SHA256`, your imports would be:
 
    ```haskell
-   import Control.Lens
-
    import Crypto.Noise
    import Crypto.Noise.Cipher.AESGCM
    import Crypto.Noise.DH

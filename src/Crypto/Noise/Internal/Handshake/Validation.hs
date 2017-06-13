@@ -1,5 +1,5 @@
 {-# LANGUAGE TemplateHaskell #-}
-----------------------------------------------------------------
+-----------------------------------------------------------
 -- |
 -- Module      : Crypto.Noise.Internal.Handshake.Validation
 -- Maintainer  : John Galt <jgalt@centromere.net>
@@ -14,8 +14,34 @@ import Control.Monad.State
 
 import Crypto.Noise.Internal.Handshake.Pattern
 
+-- | @(message number, token number)@
+--
+--   Represents the location within the pattern at which an error resides,
+--   starting with zero.
 type ErrorPosition = (Int, Int)
 
+-- | Represents a single error associated with a pattern.
+--
+--   * 'InitMultipleETokens', 'InitMultipleSTokens', 'RespMultipleETokens',
+--     'RespMultipleSTokens' -- multiple @e@/@s@ tokens were encountered for a
+--     message originating with the initiator/responder.
+--
+--   * 'InitSecretNotRandom', 'RespSecretNotRandom' -- From the protocol:
+--
+--     > After performing a DH between a remote public key and any local private
+--     > key that is not an ephemeral private key, the local party must not send
+--     > any encrypted data (i.e. must not call ENCRYPT()) unless it has also
+--     > performed a DH between an ephemeral private key and the remote public
+--     > key.
+--
+--   * 'DHInPreMsg' -- A DH token (such as @ee@ or @es@) was found in the
+--     pre-message portion of the handshake.
+--
+--   * 'PSKInPreMsg' -- A @psk@ token was found in the pre-message portion of the
+--     handshake.
+--
+--   * 'PSKWithoutEToken' -- A @psk@ token was used before an @e@ token was
+--     encountered.
 data InspectionError
   = InitMultipleETokens ErrorPosition
   | InitMultipleSTokens ErrorPosition
@@ -218,5 +244,8 @@ inspectMessage m@(Responder mp next) = do
   verifyESentIfPSK m
   continueMsg next
 
+-- | Validates a 'HandshakePattern' according to the rules defined in section
+--   7.1 and 9.3 of the protocol. If no violations are found, the result will be
+--   an empty list.
 validateHandshakePattern :: HandshakePattern -> [InspectionError]
 validateHandshakePattern hp = execState (runAp inspectMessage $ hp ^. hpMsgSeq) inspection ^. iErrors

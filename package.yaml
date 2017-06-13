@@ -8,8 +8,7 @@ category: Cryptography
 github: centromere/cacophony
 ghc-options: -Wall
 description: |
-  This library implements the <https://github.com/trevp/noise/blob/master/noise.md Noise>
-  protocol.
+  This library implements the <https://noiseprotocol.org Noise> protocol.
 extra-source-files:
   - .travis.yml
   - README.md

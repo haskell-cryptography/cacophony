@@ -57,6 +57,7 @@ library:
     - Crypto.Noise.DH
     - Crypto.Noise.DH.Curve25519
     - Crypto.Noise.DH.Curve448
+    - Crypto.Noise.Exception
     - Crypto.Noise.HandshakePatterns
     - Crypto.Noise.Hash
     - Crypto.Noise.Hash.BLAKE2b
@@ -70,7 +71,6 @@ library:
     - Crypto.Noise.Internal.Handshake.Validation
     - Crypto.Noise.Internal.NoiseState
     - Crypto.Noise.Internal.SymmetricState
-    - Crypto.Noise.Internal.Types
     - Crypto.Noise.Validation
 
   default-extensions:

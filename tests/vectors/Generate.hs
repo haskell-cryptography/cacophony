@@ -23,17 +23,15 @@ genMessage :: (Cipher c, DH d, Hash h)
            -> Maybe ScrubbedBytes -- ^ If a PSK is called for, this value will be used
            -> ScrubbedBytes       -- ^ The payload to write/read
            -> NoiseState c d h    -- ^ The NoiseState to use
-           -> Either SomeException (ScrubbedBytes, NoiseState c d h)
-genMessage write mpsk payload state = do
-  noiseResult <- operation payload state
-  case noiseResult of
-    (ResultMessage m, s) -> pure (m, s)
-    (ResultNeedPSK, s) -> case mpsk of
-      Nothing -> Left . error $ "PSK requested but none has been configured"
-      Just k  -> genMessage write mpsk k s
-
+           -> NoiseResult c d h
+genMessage write mpsk payload state = case result of
+  NoiseResultNeedPSK s -> case mpsk of
+    Nothing -> NoiseResultException . error $ "PSK required but not provided"
+    Just k  -> genMessage write mpsk k s
+  r -> r
   where
-    operation   = if write then writeMessage else readMessage
+    operation = if write then writeMessage else readMessage
+    result    = operation payload state
 
 genMessages :: (Cipher c, DH d, Hash h)
             => Bool                -- ^ Set to False for one-way patterns
@@ -47,18 +45,19 @@ genMessages swap = go []
   where
     go acc s _ _ _ [] = (acc, handshakeHash s)
     go acc sendingState receivingState mspsk mrpsk (payload : rest) =
-      let result = do
-            (ct, sendingState')   <- genMessage True  mspsk payload sendingState
-            (pt, receivingState') <- genMessage False mrpsk ct      receivingState
-            pure ((Message pt ct), sendingState', receivingState')
-      in
+      case genMessage True mspsk payload sendingState of
+        NoiseResultMessage ct sendingState' ->
+          case genMessage False mrpsk ct receivingState of
+            NoiseResultMessage pt receivingState' ->
+              if swap
+                then go (acc <> [Right (Message pt ct)]) receivingState' sendingState' mrpsk mspsk rest
+                else go (acc <> [Right (Message pt ct)]) sendingState' receivingState' mspsk mrpsk rest
 
-      case result of
-        Right (msg, sendingState', receivingState') ->
-          if swap
-            then go (acc <> [Right msg]) receivingState' sendingState' mrpsk mspsk rest
-            else go (acc <> [Right msg]) sendingState' receivingState' mspsk mrpsk rest
-        Left e -> (acc <> [Left e], handshakeHash sendingState)
+            NoiseResultException ex -> (acc <> [Left ex], handshakeHash sendingState)
+            _ -> undefined -- the genMessage function should handle this
+
+        NoiseResultException ex -> (acc <> [Left ex], handshakeHash sendingState)
+        _ -> undefined -- the genMessage function should handle this
 
 genNoiseStates :: (Cipher c, DH d, Hash h)
                => CipherType c

@@ -11,7 +11,7 @@ import Control.Exception.Safe
 import Control.Lens
 
 import Crypto.Noise.Cipher
-import Crypto.Noise.Internal.Types
+import Crypto.Noise.Exception
 
 data CipherState c =
   CipherState { _csk     :: Maybe (SymmetricKey c)

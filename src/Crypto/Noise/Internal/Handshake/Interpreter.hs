@@ -19,12 +19,12 @@ import Prelude hiding (splitAt)
 
 import Crypto.Noise.Cipher
 import Crypto.Noise.DH
+import Crypto.Noise.Exception
 import Crypto.Noise.Hash
 import Crypto.Noise.Internal.Handshake.Pattern hiding (e, s, ee, es, se, ss)
 import Crypto.Noise.Internal.Handshake.State
 import Crypto.Noise.Internal.CipherState
 import Crypto.Noise.Internal.SymmetricState
-import Crypto.Noise.Internal.Types
 
 -- [ E ] -----------------------------------------------------------------------
 
@@ -156,7 +156,7 @@ interpretToken _ (Ss next) = do
 -- [ PSK ] -----------------------------------------------------------------------
 
 interpretToken _ (Psk next) = do
-  input <- Handshake <$> request $ ResultNeedPSK
+  input <- Handshake <$> request $ HandshakeResultNeedPSK
   hsSymmetricState %= mixKeyAndHash input
 
   return next
@@ -168,7 +168,7 @@ processMsgPattern :: (Cipher c, DH d, Hash h)
 processMsgPattern opRole mp = do
   myRole <- use $ hsOpts . hoRole
   buf    <- use hsMsgBuffer
-  input  <- Handshake <$> request $ ResultMessage buf
+  input  <- Handshake <$> request $ HandshakeResultMessage buf
 
   if opRole == myRole then do
     hsMsgBuffer .= mempty

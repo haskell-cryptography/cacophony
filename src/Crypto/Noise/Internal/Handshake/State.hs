@@ -53,11 +53,13 @@ data HandshakeState c d h =
 $(makeLenses ''HandshakeState)
 
 -- | This data structure is yielded by the coroutine when more data is needed.
-data NoiseResult = ResultMessage ScrubbedBytes | ResultNeedPSK
+data HandshakeResult
+  = HandshakeResultMessage ScrubbedBytes
+  | HandshakeResultNeedPSK
 
 -- | All HandshakePattern interpreters run within this Monad.
 newtype Handshake c d h r =
-  Handshake { runHandshake :: Coroutine (Request NoiseResult ScrubbedBytes) (StateT (HandshakeState c d h) Catch) r
+  Handshake { runHandshake :: Coroutine (Request HandshakeResult ScrubbedBytes) (StateT (HandshakeState c d h) Catch) r
             } deriving ( Functor
                        , Applicative
                        , Monad

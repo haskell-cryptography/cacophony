@@ -25,7 +25,7 @@ module Crypto.Noise
   , rekeySending
   , rekeyReceiving
   , handshakePattern
-    -- * Lenses
+    -- * HandshakeOpts Lenses
   , hoRole
   , hoPrologue
   , hoLocalEphemeral
@@ -34,7 +34,7 @@ module Crypto.Noise
   , hoRemoteStatic
   ) where
 
-import Control.Arrow   (arr, (***))
+import Control.Arrow   (arr, second, (***))
 import Control.Exception.Safe
 import Control.Lens
 import Data.ByteArray  (ScrubbedBytes)
@@ -42,13 +42,18 @@ import Data.Maybe      (isJust)
 
 import Crypto.Noise.Cipher
 import Crypto.Noise.DH
+import Crypto.Noise.Exception
 import Crypto.Noise.Hash
 import Crypto.Noise.Internal.CipherState
 import Crypto.Noise.Internal.Handshake.Pattern
 import Crypto.Noise.Internal.Handshake.State
 import Crypto.Noise.Internal.NoiseState
 import Crypto.Noise.Internal.SymmetricState
-import Crypto.Noise.Internal.Types
+
+data NoiseResult c d h
+  = NoiseResultMessage   ScrubbedBytes (NoiseState c d h)
+  | NoiseResultNeedPSK   (NoiseState c d h)
+  | NoiseResultException SomeException
 
 -- | Creates a Noise message with the provided payload. Note that the
 --   payload may not be authenticated or encrypted at all points during the
@@ -56,17 +61,18 @@ import Crypto.Noise.Internal.Types
 --
 --   To prevent catastrophic key re-use, this function may only be used to
 --   secure 2^64 - 1 post-handshake messages.
-writeMessage :: (MonadThrow m, Cipher c, DH d, Hash h)
+writeMessage :: (Cipher c, DH d, Hash h)
              => ScrubbedBytes
              -> NoiseState c d h
-             -> m (NoiseResult, NoiseState c d h)
+             -> NoiseResult c d h
 writeMessage msg ns = maybe
-  (resumeHandshake msg ns)
-  (\cs -> (ctToMsg *** updateState) <$> encryptWithAd mempty msg cs)
+  (convertHandshakeResult $ resumeHandshake msg ns)
+  (convertTransportResult . encryptMsg)
   (ns ^. nsSendingCipherState)
   where
-    ctToMsg     = arr $ ResultMessage . cipherTextToBytes
-    updateState = arr $ \cs -> ns & nsSendingCipherState .~ Just cs
+    ctToMsg       = arr cipherTextToBytes
+    updateState   = arr $ \cs -> ns & nsSendingCipherState .~ Just cs
+    encryptMsg cs = (ctToMsg *** updateState) <$> encryptWithAd mempty msg cs
 
 -- | Reads a Noise message and returns the embedded payload. If the
 --   handshake fails, a 'HandshakeError' will be returned. After the handshake
@@ -74,18 +80,18 @@ writeMessage msg ns = maybe
 --
 --   To prevent catastrophic key re-use, this function may only be used to
 --   receive 2^64 - 1 post-handshake messages.
-readMessage :: (MonadThrow m, Cipher c, DH d, Hash h)
+readMessage :: (Cipher c, DH d, Hash h)
             => ScrubbedBytes
             -> NoiseState c d h
-            -> m (NoiseResult, NoiseState c d h)
+            -> NoiseResult c d h
 readMessage ct ns = maybe
-  (resumeHandshake ct ns)
-  (\cs -> (ctToMsg *** updateState) <$> decryptWithAd mempty ct' cs)
+  (convertHandshakeResult $ resumeHandshake ct ns)
+  (convertTransportResult . decryptMsg)
   (ns ^. nsReceivingCipherState)
   where
-    ct'         = cipherBytesToText ct
-    ctToMsg     = arr ResultMessage
-    updateState = arr $ \cs -> ns & nsReceivingCipherState .~ Just cs
+    ct'           = cipherBytesToText ct
+    updateState   = arr $ \cs -> ns & nsReceivingCipherState .~ Just cs
+    decryptMsg cs = second updateState <$> decryptWithAd mempty ct' cs
 
 -- | For handshake patterns where the remote party's static key is
 --   transmitted, this function can be used to retrieve it. This allows
@@ -126,3 +132,18 @@ rekeyReceiving :: (Cipher c, DH d, Hash h)
                => NoiseState c d h
                -> NoiseState c d h
 rekeyReceiving ns = ns & nsReceivingCipherState %~ (<*>) (pure rekey)
+
+--------------------------------------------------------------------------------
+
+convertHandshakeResult :: (Cipher c, DH d, Hash h)
+                       => Either SomeException (HandshakeResult, NoiseState c d h)
+                       -> NoiseResult c d h
+convertHandshakeResult hsr = case hsr of
+  Left ex -> NoiseResultException ex
+  Right (HandshakeResultMessage m, ns) -> NoiseResultMessage m ns
+  Right (HandshakeResultNeedPSK  , ns) -> NoiseResultNeedPSK ns
+
+convertTransportResult :: (Cipher c, DH d, Hash h)
+                       => Either SomeException (ScrubbedBytes, NoiseState c d h)
+                       -> NoiseResult c d h
+convertTransportResult = either NoiseResultException (uncurry NoiseResultMessage)

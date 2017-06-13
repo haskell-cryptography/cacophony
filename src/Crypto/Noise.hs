@@ -25,13 +25,13 @@ module Crypto.Noise
   , rekeySending
   , rekeyReceiving
   , handshakePattern
-    -- * HandshakeOpts Lenses
-  , hoRole
-  , hoPrologue
-  , hoLocalEphemeral
-  , hoLocalStatic
-  , hoRemoteEphemeral
-  , hoRemoteStatic
+    -- * HandshakeOpts Setters
+  , setRole
+  , setPrologue
+  , setLocalEphemeral
+  , setLocalStatic
+  , setRemoteEphemeral
+  , setRemoteStatic
   ) where
 
 import Control.Arrow   (arr, second, (***))

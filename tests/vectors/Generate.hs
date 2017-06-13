@@ -14,6 +14,7 @@ import Crypto.Noise
 import Crypto.Noise.Cipher
 import Crypto.Noise.DH
 import Crypto.Noise.Hash hiding (hash)
+import Crypto.Noise.Internal.Handshake.State
 
 import Keys
 import VectorFile

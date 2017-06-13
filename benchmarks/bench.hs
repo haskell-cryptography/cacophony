@@ -1,16 +1,15 @@
 {-# LANGUAGE GADTs #-}
 module Main where
 
-import Control.Exception (SomeException)
 import Control.Lens
 import Criterion.Main
-import Data.ByteArray    (ScrubbedBytes)
-import Data.Monoid       ((<>))
+import Data.ByteArray (ScrubbedBytes)
 
 import Crypto.Noise
 import Crypto.Noise.Cipher
 import Crypto.Noise.DH
 import Crypto.Noise.Hash hiding (hash)
+import Crypto.Noise.Internal.Handshake.State
 
 import Keys
 import Types
@@ -20,17 +19,15 @@ genMessage :: (Cipher c, DH d, Hash h)
            -> Maybe ScrubbedBytes -- ^ If a PSK is called for, this value will be used
            -> ScrubbedBytes       -- ^ The payload to write/read
            -> NoiseState c d h    -- ^ The NoiseState to use
-           -> Either SomeException (ScrubbedBytes, NoiseState c d h)
-genMessage write mpsk payload state = do
-  noiseResult <- operation payload state
-  case noiseResult of
-    (ResultMessage m, s) -> pure (m, s)
-    (ResultNeedPSK, s) -> case mpsk of
-      Nothing -> Left . error $ "PSK requested but none has been configured"
-      Just k  -> genMessage write mpsk k s
-
+           -> NoiseResult c d h
+genMessage write mpsk payload state = case result of
+  NoiseResultNeedPSK s -> case mpsk of
+    Nothing -> NoiseResultException . error $ "PSK requested but none has been configured"
+    Just k  -> genMessage write mpsk k s
+  r -> r
   where
-    operation   = if write then writeMessage else readMessage
+    operation = if write then writeMessage else readMessage
+    result    = operation payload state
 
 genMessages :: (Cipher c, DH d, Hash h)
             => Bool                -- ^ Set to False for one-way patterns
@@ -42,18 +39,15 @@ genMessages swap = go []
   where
     go acc s r _ | handshakeComplete s && handshakeComplete r = acc
     go acc sendingState receivingState mpsk =
-      let result = do
-            (ct, sendingState')   <- genMessage True  mpsk "" sendingState
-            (pt, receivingState') <- genMessage False mpsk ct receivingState
-            pure ((pt, ct), sendingState', receivingState')
-      in
-
-      case result of
-        Right (msg, sendingState', receivingState') ->
-          if swap
-            then go (acc <> [msg]) receivingState' sendingState' mpsk
-            else go (acc <> [msg]) sendingState' receivingState' mpsk
-        Left e -> error $ "exception encountered during message generation: " <> show e
+      case genMessage True mpsk "" sendingState of
+        NoiseResultMessage ct sendingState' ->
+          case genMessage False mpsk ct receivingState of
+            NoiseResultMessage pt receivingState' ->
+              if swap
+                then go ((pt, ct) : acc) receivingState' sendingState' mpsk
+                else go ((pt, ct) : acc) sendingState' receivingState' mpsk
+            _ -> error $ "problem encountered during message generation"
+        _ -> error $ "problem encountered during message generation"
 
 genNoiseStates :: (Cipher c, DH d, Hash h)
                => CipherType c

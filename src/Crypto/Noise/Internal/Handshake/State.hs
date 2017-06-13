@@ -34,10 +34,10 @@ data HandshakeRole = InitiatorRole | ResponderRole
 data HandshakeOpts d =
   HandshakeOpts { _hoRole                :: HandshakeRole
                 , _hoPrologue            :: Plaintext
-                , _hoLocalStatic         :: Maybe (KeyPair d)
                 , _hoLocalEphemeral      :: Maybe (KeyPair d)
-                , _hoRemoteStatic        :: Maybe (PublicKey d)
+                , _hoLocalStatic         :: Maybe (KeyPair d)
                 , _hoRemoteEphemeral     :: Maybe (PublicKey d)
+                , _hoRemoteStatic        :: Maybe (PublicKey d)
                 }
 
 $(makeLenses ''HandshakeOpts)
@@ -79,6 +79,36 @@ defaultHandshakeOpts r =
                 , _hoRemoteEphemeral     = Nothing
                 , _hoRemoteStatic        = Nothing
                 }
+
+setRole :: HandshakeRole
+        -> HandshakeOpts d
+        -> HandshakeOpts d
+setRole r opts = opts { _hoRole = r }
+
+setPrologue :: Plaintext
+            -> HandshakeOpts d
+            -> HandshakeOpts d
+setPrologue p opts = opts { _hoPrologue = p }
+
+setLocalEphemeral :: Maybe (KeyPair d)
+                  -> HandshakeOpts d
+                  -> HandshakeOpts d
+setLocalEphemeral k opts = opts { _hoLocalEphemeral = k }
+
+setLocalStatic :: Maybe (KeyPair d)
+               -> HandshakeOpts d
+               -> HandshakeOpts d
+setLocalStatic k opts = opts { _hoLocalStatic = k }
+
+setRemoteEphemeral :: Maybe (PublicKey d)
+                   -> HandshakeOpts d
+                   -> HandshakeOpts d
+setRemoteEphemeral k opts = opts { _hoRemoteEphemeral = k }
+
+setRemoteStatic :: Maybe (PublicKey d)
+                -> HandshakeOpts d
+                -> HandshakeOpts d
+setRemoteStatic k opts = opts { _hoRemoteStatic = k }
 
 -- | Given a protocol name, returns the full handshake name according to the
 --   rules in section 8.

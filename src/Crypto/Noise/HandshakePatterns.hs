@@ -400,6 +400,7 @@ noiseNpsk0 = handshakePattern "Npsk0" $
 --  -> psk, e, es, ss@
 noiseKpsk0 :: HandshakePattern
 noiseKpsk0 = handshakePattern "Kpsk0" $
+  preInitiator s *>
   preResponder s *>
   initiator (psk *> e *> es *> ss)
 

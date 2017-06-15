@@ -31,12 +31,8 @@ setKeys v@Vector{vProtoName = pat} = v
   , vrrStatic   = if name `elem` rrPatterns
                     then privateToPublic dh . initiatorStatic $ dh
                     else Nothing
-  , viPSK       = if name `elem` pskPatterns
-                    then Just psk
-                    else Nothing
-  , vrPSK       = if name `elem` pskPatterns
-                    then Just psk
-                    else Nothing
+  , viPSKs      = [ psk | name `elem` pskPatterns ]
+  , vrPSKs      = [ psk | name `elem` pskPatterns ]
   }
 
   where

@@ -187,12 +187,12 @@ data Vector =
          , vProtoName  :: HandshakeName
          , vFail       :: Bool
          , viPrologue  :: ScrubbedBytes
-         , viPSK       :: Maybe ScrubbedBytes
+         , viPSKs      :: [ScrubbedBytes]
          , viEphemeral :: Maybe ScrubbedBytes
          , viStatic    :: Maybe ScrubbedBytes
          , virStatic   :: Maybe ScrubbedBytes
          , vrPrologue  :: ScrubbedBytes
-         , vrPSK       :: Maybe ScrubbedBytes
+         , vrPSKs      :: [ScrubbedBytes]
          , vrEphemeral :: Maybe ScrubbedBytes
          , vrStatic    :: Maybe ScrubbedBytes
          , vrrStatic   :: Maybe ScrubbedBytes
@@ -201,17 +201,17 @@ data Vector =
          } deriving Show
 
 instance ToJSON Vector where
-  toJSON Vector{..} = object . stripDefaults . noNulls $
+  toJSON Vector{..} = object . stripDefaults . stripEmptyLists . stripNulls $
     [ "name"                      .= vName
     , "protocol_name"             .= vProtoName
     , "fail"                      .= vFail
     , "init_prologue"             .= encodeSB viPrologue
-    , "init_psk"                  .= (encodeSB <$> viPSK)
+    , "init_psks"                 .= (encodeSB <$> viPSKs)
     , "init_ephemeral"            .= (encodeSB <$> viEphemeral)
     , "init_static"               .= (encodeSB <$> viStatic)
     , "init_remote_static"        .= (encodeSB <$> virStatic)
     , "resp_prologue"             .= encodeSB vrPrologue
-    , "resp_psk"                  .= (encodeSB <$> vrPSK)
+    , "resp_psks"                 .= (encodeSB <$> vrPSKs)
     , "resp_ephemeral"            .= (encodeSB <$> vrEphemeral)
     , "resp_static"               .= (encodeSB <$> vrStatic)
     , "resp_remote_static"        .= (encodeSB <$> vrrStatic)
@@ -220,8 +220,9 @@ instance ToJSON Vector where
     ]
 
     where
-      noNulls       = filter (\(_, v) -> v /= Null)
-      stripDefaults = filter (\(k, v) -> not (k == "fail" && v == Bool False))
+      stripNulls       = filter (\(_, v) -> v /= Null)
+      stripEmptyLists  = filter (\(_, v) -> v /= Array mempty)
+      stripDefaults    = filter (\(k, v) -> not (k == "fail" && v == Bool False))
 
 instance FromJSON Vector where
   parseJSON (Object o) =
@@ -229,12 +230,12 @@ instance FromJSON Vector where
            <*> o .: "protocol_name"
            <*> o .:? "fail" .!= False
            <*> (decodeSB      <$> o .:  "init_prologue")
-           <*> (fmap decodeSB <$> o .:? "init_psk")
+           <*> (fmap decodeSB <$> o .:? "init_psks" .!= [])
            <*> (fmap decodeSB <$> o .:? "init_ephemeral")
            <*> (fmap decodeSB <$> o .:? "init_static")
            <*> (fmap decodeSB <$> o .:? "init_remote_static")
            <*> (decodeSB      <$> o .:  "resp_prologue")
-           <*> (fmap decodeSB <$> o .:? "resp_psk")
+           <*> (fmap decodeSB <$> o .:? "resp_psks" .!= [])
            <*> (fmap decodeSB <$> o .:? "resp_ephemeral")
            <*> (fmap decodeSB <$> o .:? "resp_static")
            <*> (fmap decodeSB <$> o .:? "resp_remote_static")

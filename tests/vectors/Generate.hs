@@ -20,44 +20,44 @@ import Keys
 import VectorFile
 
 genMessage :: (Cipher c, DH d, Hash h)
-           => Bool                -- ^ True if we are writing a message
-           -> Maybe ScrubbedBytes -- ^ If a PSK is called for, this value will be used
-           -> ScrubbedBytes       -- ^ The payload to write/read
-           -> NoiseState c d h    -- ^ The NoiseState to use
-           -> NoiseResult c d h
-genMessage write mpsk payload state = case result of
-  NoiseResultNeedPSK s -> case mpsk of
-    Nothing -> NoiseResultException . error $ "PSK required but not provided"
-    Just k  -> genMessage write mpsk k s
-  r -> r
+           => Bool             -- ^ True if we are writing a message
+           -> [ScrubbedBytes]  -- ^ List of PSKs available for use
+           -> ScrubbedBytes    -- ^ The payload to write/read
+           -> NoiseState c d h -- ^ The NoiseState to use
+           -> ([ScrubbedBytes], NoiseResult c d h)
+genMessage write psks payload state = case result of
+  NoiseResultNeedPSK s -> if null psks
+    then (psks, NoiseResultException . error $ "not enough PSKs provided for handshake pattern")
+    else genMessage write (tail psks) (head psks) s
+  r -> (psks, r)
   where
     operation = if write then writeMessage else readMessage
     result    = operation payload state
 
 genMessages :: (Cipher c, DH d, Hash h)
-            => Bool                -- ^ Set to False for one-way patterns
-            -> NoiseState c d h    -- ^ Initiator NoiseState
-            -> NoiseState c d h    -- ^ Responder NoiseState
-            -> Maybe ScrubbedBytes -- ^ Initiator PSK
-            -> Maybe ScrubbedBytes -- ^ Responder PSK
-            -> [ScrubbedBytes]     -- ^ Payloads
+            => Bool             -- ^ Set to False for one-way patterns
+            -> NoiseState c d h -- ^ Initiator NoiseState
+            -> NoiseState c d h -- ^ Responder NoiseState
+            -> [ScrubbedBytes]  -- ^ Initiator PSKs
+            -> [ScrubbedBytes]  -- ^ Responder PSKs
+            -> [ScrubbedBytes]  -- ^ Payloads
             -> ([Either SomeException Message], ScrubbedBytes)
 genMessages swap = go []
   where
     go acc s _ _ _ [] = (acc, handshakeHash s)
-    go acc sendingState receivingState mspsk mrpsk (payload : rest) =
-      case genMessage True mspsk payload sendingState of
-        NoiseResultMessage ct sendingState' ->
-          case genMessage False mrpsk ct receivingState of
-            NoiseResultMessage pt receivingState' ->
+    go acc sendingState receivingState spsks rpsks (payload : rest) =
+      case genMessage True spsks payload sendingState of
+        (spsks', NoiseResultMessage ct sendingState') ->
+          case genMessage False rpsks ct receivingState of
+            (rpsks', NoiseResultMessage pt receivingState') ->
               if swap
-                then go (acc <> [Right (Message pt ct)]) receivingState' sendingState' mrpsk mspsk rest
-                else go (acc <> [Right (Message pt ct)]) sendingState' receivingState' mspsk mrpsk rest
+                then go (acc <> [Right (Message pt ct)]) receivingState' sendingState' rpsks' spsks' rest
+                else go (acc <> [Right (Message pt ct)]) sendingState' receivingState' spsks' rpsks' rest
 
-            NoiseResultException ex -> (acc <> [Left ex], handshakeHash sendingState)
+            (_, NoiseResultException ex) -> (acc <> [Left ex], handshakeHash sendingState)
             _ -> undefined -- the genMessage function should handle this
 
-        NoiseResultException ex -> (acc <> [Left ex], handshakeHash sendingState)
+        (_, NoiseResultException ex) -> (acc <> [Left ex], handshakeHash sendingState)
         _ -> undefined -- the genMessage function should handle this
 
 genNoiseStates :: (Cipher c, DH d, Hash h)
@@ -98,7 +98,7 @@ populateVector (WrapCipherType c)
                (WrapHashType h)
                payloads
                v@Vector{..} = do
-  let (msgs, hsHash) = genMessages swap ins rns viPSK vrPSK payloads
+  let (msgs, hsHash) = genMessages swap ins rns viPSKs vrPSKs payloads
   if any isLeft msgs
     then Left msgs
     else pure $ v { vHash     = Just hsHash
@@ -121,12 +121,12 @@ genVector pat payloads = finalVector
       , vProtoName  = pat
       , vFail       = False
       , viPrologue  = "John Galt"
-      , viPSK       = Nothing
+      , viPSKs      = []
       , viEphemeral = Nothing
       , viStatic    = Nothing
       , virStatic   = Nothing
       , vrPrologue  = "John Galt"
-      , vrPSK       = Nothing
+      , vrPSKs      = []
       , vrEphemeral = Nothing
       , vrStatic    = Nothing
       , vrrStatic   = Nothing

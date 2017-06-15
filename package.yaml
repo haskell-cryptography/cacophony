@@ -138,5 +138,11 @@ benchmarks:
       - lens
       - memory
 
+    ghc-options:
+      - -O2
+      - -rtsopts
+      - -threaded
+      - -with-rtsopts=-N
+
     default-extensions:
       - OverloadedStrings

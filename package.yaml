@@ -163,14 +163,11 @@ executables:
             - attoparsec
             - auto-update
             - base
-            - base16-bytestring
             - base64-bytestring
             - bytestring
             - cacophony
             - cryptonite
-            - directory
             - fast-logger
-            - lens
             - memory
             - network
             - network-simple
@@ -197,12 +194,10 @@ executables:
           dependencies:
             - attoparsec
             - base
-            - base16-bytestring
             - base64-bytestring
             - bytestring
             - cacophony
-            - directory
-            - lens
+            - haskeline
             - memory
             - network
             - network-simple

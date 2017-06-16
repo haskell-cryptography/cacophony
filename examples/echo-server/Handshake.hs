@@ -118,5 +118,7 @@ messageLoop writeCb readCb psks state = do
             NoiseResultMessage ct state'' -> do
               writeCb (convert ct)
               messageLoop writeCb readCb psks'' state''
+            NoiseResultNeedPSK _    -> error $ "PSK required but not provided"
             NoiseResultException ex -> error $ "error processing message: " `mappend` show ex
-        _ -> error "error processing message"
+        NoiseResultNeedPSK _    -> error $ "PSK required but not provided"
+        NoiseResultException ex -> error $ "error processing message: " `mappend` show ex

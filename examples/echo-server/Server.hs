@@ -115,5 +115,5 @@ startServer opts@Options{..} = do
 
             messageLoop (writeMessage sock)
                         (readMessage  leftoverBufRef sock)
-                        []
+                        [optPSK]
                         ns

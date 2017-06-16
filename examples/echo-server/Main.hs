@@ -1,7 +1,10 @@
 {-# LANGUAGE RecordWildCards, GADTs, ScopedTypeVariables #-}
 module Main where
 
+import Control.Monad      (when)
+import Data.Maybe         (isNothing)
 import System.Environment (getArgs)
+import System.Exit        (exitFailure)
 import System.IO          (hPutStr, stderr)
 
 import Crypto.Noise.DH.Curve25519
@@ -20,12 +23,35 @@ printKeys = do
   putStrLn . unwords $ psk : (fst =<< [k25519, k448])
   putStrLn . unwords $ psk : (snd =<< [k25519, k448])
 
+validateOpts :: Options
+             -> IO ()
+validateOpts Options{..} = do
+  when (optPSK == "") $ do
+    putStrLn "Error: A PSK is required (--psk)."
+    exitFailure
+
+  when (isNothing optServerStatic25519) $ do
+    putStrLn "Error: A static curve25519 key is required (--server-static-25519)."
+    exitFailure
+
+  when (isNothing optClientStatic25519) $ do
+    putStrLn "Error: A remote static curve25519 key is required (--client-static-25519)."
+    exitFailure
+
+  when (isNothing optServerStatic448) $ do
+    putStrLn "Error: A static curve448 key is required (--server-static-448)."
+    exitFailure
+
+  when (isNothing optClientStatic448) $ do
+    putStrLn "Error: A remote curve448 key is required (--client-static-448)."
+    exitFailure
+
 processOpts :: Options
              -> IO ()
 processOpts o@Options{..}
   | optShowHelp = putStr helpText
   | optGenKeys  = printKeys
-  | otherwise   = startServer o
+  | otherwise   = validateOpts o >> startServer o
 
 main :: IO ()
 main = do

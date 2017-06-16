@@ -13,7 +13,7 @@ data Options =
   Options { optShowHelp             :: Bool
           , optLogFile              :: Maybe FilePath
           , optPort                 :: String
-          , optPSK                  :: Maybe ScrubbedBytes
+          , optPSK                  :: ScrubbedBytes
           , optGenKeys              :: Bool
           , optServerEphemeral25519 :: Maybe (KeyPair   Curve25519)
           , optServerStatic25519    :: Maybe (KeyPair   Curve25519)
@@ -28,7 +28,7 @@ defaultOpts = Options
   { optShowHelp             = False
   , optLogFile              = Nothing
   , optPort                 = "4000"
-  , optPSK                  = Nothing
+  , optPSK                  = ""
   , optGenKeys              = False
   , optServerEphemeral25519 = Nothing
   , optServerStatic25519    = Nothing
@@ -56,7 +56,7 @@ options =
     (ReqArg (\p o -> o { optPort = p }) "PORT")
     "port on which to listen (default: 4000)"
   , Option [] ["psk"]
-    (ReqArg (\k o -> o { optPSK = Just . convert . pack $ k }) "BASE64 PSK")
+    (ReqArg (\k o -> o { optPSK = convert . pack $ k }) "BASE64 PSK")
     "pre-shared key [required]"
   , Option ['g'] ["gen-keys"]
     (NoArg (\o -> o { optGenKeys = True }))

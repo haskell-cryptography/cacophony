@@ -68,7 +68,8 @@ newtype Handshake c d h r =
                        , MonadState (HandshakeState c d h)
                        )
 
--- | Returns a default set of handshake options. All keys are set to 'Nothing'.
+-- | @defaultHandshakeOpts role prologue@ returns a default set of handshake
+--   options. All keys are set to 'Nothing'.
 defaultHandshakeOpts :: HandshakeRole
                      -> Plaintext
                      -> HandshakeOpts d

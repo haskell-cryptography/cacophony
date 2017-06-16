@@ -2,6 +2,7 @@ module Main where
 
 import Data.Monoid      ((<>))
 import System.Directory (createDirectoryIfMissing, getDirectoryContents)
+import System.Exit      (exitSuccess)
 
 import Generate
 import Verify
@@ -15,4 +16,4 @@ main = do
     then do
       genVectorFile "vectors/cacophony.txt"
       putStrLn "Generated default vectors."
-    else mapM_ verifyVectorFile $ fmap ("vectors/" <>) vectorFiles
+    else mapM_ verifyVectorFile $ fmap ("vectors/" <>) vectorFiles >> exitSuccess

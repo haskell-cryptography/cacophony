@@ -11,7 +11,7 @@ import Data.Monoid          ((<>))
 import Data.Text            (Text, pack)
 import Data.Text.IO         (putStrLn)
 import Prelude hiding       (readFile, putStrLn)
-import System.Exit          (exitFailure, exitSuccess)
+import System.Exit          (exitFailure)
 
 import VectorFile
 import Generate
@@ -130,6 +130,4 @@ verifyVectorFile f = do
         ResultSuccess            -> return ()
       putStrLn ""
     exitFailure
-  else do
-    putStrLn $ pack f <> ": All vectors passed."
-    exitSuccess
+  else putStrLn $ pack f <> ": All vectors passed."

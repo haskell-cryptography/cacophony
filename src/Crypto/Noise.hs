@@ -19,6 +19,7 @@ module Crypto.Noise
   , noiseState
   , writeMessage
   , readMessage
+  , processPSKs
   , remoteStaticKey
   , handshakeComplete
   , handshakeHash
@@ -43,7 +44,7 @@ import Crypto.Noise.DH
 import Crypto.Noise.Exception
 import Crypto.Noise.Hash
 import Crypto.Noise.Internal.CipherState
-import Crypto.Noise.Internal.Handshake.Pattern
+import Crypto.Noise.Internal.Handshake.Pattern hiding (psk)
 import Crypto.Noise.Internal.Handshake.State
 import Crypto.Noise.Internal.NoiseState
 import Crypto.Noise.Internal.SymmetricState
@@ -111,6 +112,20 @@ readMessage ct ns = maybe
     ct'           = cipherBytesToText ct
     updateState   = arr $ \cs -> ns & nsReceivingCipherState .~ Just cs
     decryptMsg cs = second updateState <$> decryptWithAd mempty ct' cs
+
+-- | Given an operation ('writeMessage' or 'readMessage'), a list of PSKs, and
+--   a 'NoiseResult', this function will repeatedly apply PSKs to the NoiseState
+--   until no more are requested or the list of PSKs becomes empty. This is
+--   useful for patterns which require one or more PSKs.
+processPSKs :: (Cipher c, DH d, Hash h)
+            => (ScrubbedBytes -> NoiseState c d h -> NoiseResult c d h)
+            -> [ScrubbedBytes]
+            -> NoiseResult c d h
+            -> ([ScrubbedBytes], NoiseResult c d h)
+processPSKs _ []                result = ([], result)
+processPSKs f psks@(psk : rest) result = case result of
+  NoiseResultNeedPSK state' -> processPSKs f rest (f psk state')
+  r -> (psks, r)
 
 -- | For handshake patterns where the remote party's static key is
 --   transmitted, this function can be used to retrieve it. This allows

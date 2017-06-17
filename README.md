@@ -110,8 +110,9 @@ it will check for the existence of `vectors/cacophony.txt` within the current wo
 found, it is generated. If it is found, it is verified. All files within the `vectors/` directory (regardless
 of their name) are also verified.
 
-The generated vectors are minified JSON. There is a small python script within the `tools/` directory that
-formats the JSON-blob in to something more readable.
+The generated vectors are minified JSON. There is a small python script within the `tools/pretty_print` directory
+that formats the JSON-blob according to [the format](https://github.com/noiseprotocol/noise_wiki/wiki/Test-vectors)
+specified on the Noise Wiki.
 
 ## Custom Handshakes
 

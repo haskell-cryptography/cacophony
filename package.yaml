@@ -17,9 +17,8 @@ extra-source-files:
   - stack.yaml
   - package.yaml
   - tests/.hlint
-  - tools/convert_vectors.py
-  - tools/run_benchmarks.sh
-  - tools/vector_template.jinja
+  - tools/pretty_print/format_vectors.py
+  - tools/pretty_print/vector_template.jinja
   - vectors/cacophony.txt
 
 flags:

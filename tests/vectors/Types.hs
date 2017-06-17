@@ -1,9 +1,15 @@
 {-# LANGUAGE RecordWildCards, RankNTypes, GADTs, KindSignatures #-}
 module Types where
 
-import Data.Maybe  (fromMaybe)
-import Data.Monoid ((<>))
-import Data.Tuple  (swap)
+import Control.Monad      (mzero)
+import Data.Aeson
+import Data.Aeson.Types   (typeMismatch)
+import Data.Attoparsec.ByteString.Char8
+import Data.Maybe         (fromMaybe)
+import Data.Monoid        ((<>))
+import Data.Text          (pack)
+import Data.Text.Encoding (encodeUtf8)
+import Data.Tuple         (swap)
 
 import Crypto.Noise
 import Crypto.Noise.Cipher.ChaChaPoly1305
@@ -145,6 +151,29 @@ hashMap =
   , ("SHA512" , WrapHashType SHA512)
   ]
 
+parseHandshakeName :: Parser HandshakeName
+parseHandshakeName = do
+  _ <- string "Noise_"
+
+  let untilUnderscore = anyChar `manyTill'` (char '_')
+      untilEOI        = anyChar `manyTill'` endOfInput
+
+  pattern <- (flip lookup patternMap) <$> untilUnderscore
+  dh      <- (flip lookup dhMap)      <$> untilUnderscore
+  cipher  <- (flip lookup cipherMap)  <$> untilUnderscore
+  hash    <- (flip lookup hashMap)    <$> untilEOI
+
+
+  let mHandshakeName = do
+        p <- pattern
+        d <- dh
+        c <- cipher
+        h <- hash
+
+        return $ HandshakeName p c d h
+
+  maybe mempty return mHandshakeName
+
 patternToHandshake :: PatternName
                    -> HandshakePattern
 patternToHandshake PatternNN = noiseNN
@@ -183,6 +212,14 @@ patternToHandshake PatternIXpsk2 = noiseIXpsk2
 patternToHandshake PatternNpsk0  = noiseNpsk0
 patternToHandshake PatternKpsk0  = noiseKpsk0
 patternToHandshake PatternXpsk1  = noiseXpsk1
+
+instance FromJSON HandshakeName where
+  parseJSON (String s) =
+    either (const mzero) pure $ parseOnly parseHandshakeName (encodeUtf8 s)
+  parseJSON bad        = typeMismatch "HandshakeName" bad
+
+instance ToJSON HandshakeName where
+  toJSON = String . pack . show
 
 instance Show HandshakeName where
   show HandshakeName{..} = "Noise_"

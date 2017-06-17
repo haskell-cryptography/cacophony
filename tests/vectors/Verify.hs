@@ -14,8 +14,9 @@ import System.Exit          (exitFailure)
 
 import Crypto.Noise         (ScrubbedBytes)
 
-import VectorFile
 import Generate
+import Types
+import VectorFile
 
 data ValidationResult
   = ResultException      [Either SomeException Message]

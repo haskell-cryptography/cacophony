@@ -9,6 +9,7 @@ import Crypto.Noise.DH
 import Crypto.Noise.DH.Curve25519
 import Crypto.Noise.DH.Curve448
 
+import Types
 import VectorFile
 
 setKeys :: Vector

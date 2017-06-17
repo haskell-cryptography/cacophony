@@ -12,6 +12,7 @@ import Crypto.Noise
 import Crypto.Noise.DH
 
 import Keys
+import Types
 import VectorFile
 
 genMessage :: (Cipher c, DH d, Hash h)

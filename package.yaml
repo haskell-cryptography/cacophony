@@ -22,16 +22,6 @@ extra-source-files:
   - vectors/cacophony.txt
 
 flags:
-  hlint:
-    description: Build hlint test
-    default: False
-    manual: False
-
-  vectors:
-    description: Build vector test
-    default: False
-    manual: False
-
   build-examples:
     description: Build example executables
     default: False
@@ -83,14 +73,9 @@ tests:
   hlint:
     main: hlint.hs
     source-dirs: tests/hlint
-    when:
-      - condition: 'flag(hlint)'
-        then:
-          dependencies:
-            - base >= 4.9 && < 4.10
-            - hlint
-        else:
-          buildable: False
+    dependencies:
+      - base >= 4.9 && < 4.10
+      - hlint
 
     ghc-options:
       - -O2
@@ -101,20 +86,15 @@ tests:
   vectors:
     main: Main.hs
     source-dirs: tests/vectors
-    when:
-      - condition: 'flag(vectors)'
-        then:
-          dependencies:
-            - aeson
-            - attoparsec
-            - base >= 4.9 && < 4.10
-            - base16-bytestring
-            - bytestring
-            - cacophony
-            - directory
-            - text
-        else:
-          buildable: False
+    dependencies:
+      - aeson
+      - attoparsec
+      - base >= 4.9 && < 4.10
+      - base16-bytestring
+      - bytestring
+      - cacophony
+      - directory
+      - text
 
     ghc-options:
       - -O2

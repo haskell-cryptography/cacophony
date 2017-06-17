@@ -14,7 +14,7 @@ This library implements the [Noise](https://noiseprotocol.org) protocol.
    ```haskell
    import Crypto.Noise
    import Crypto.Noise.Cipher.AESGCM
-   import Crypto.Noise.DH
+   import Crypto.Noise.DH -- Used to generate and manipulate keys
    import Crypto.Noise.DH.Curve25519
    import Crypto.Noise.Hash.SHA256
    import Crypto.Noise.HandshakePatterns (noiseIK)
@@ -22,14 +22,12 @@ This library implements the [Noise](https://noiseprotocol.org) protocol.
 
 2. Set the handshake parameters.
 
-   Select a handshake pattern to use. Patterns are defined in the `Crypto.Noise.HandshakePatterns` module.
    Ensure that you provide the keys which are required by the handshake pattern you choose. For example,
    the `Noise_IK` pattern requires that the initiator provides a local static key and a remote static key,
    while the responder is only responsible for a local static key. You can use `defaultHandshakeOpts` to
-   return a default set of options in which all keys are set to `Nothing`. You must set the local ephemeral
-   key for all handshake patterns, and it should never be re-used.
-
-   Functions for manipulating DH keys can be found in the `Crypto.Noise.DH` module.
+   return a default set of options in which all keys are set to `Nothing`. The initiator must set a
+   local ephemeral key for all handshake patterns. The responder must set a local ephemeral key for all
+   interactive (i.e. not one-way) patterns.
 
    ```haskell
    -- Initiator
@@ -66,20 +64,16 @@ This library implements the [Noise](https://noiseprotocol.org) protocol.
    -- Initiator
    let writeResult = writeMessage "They must find it difficult -- those who have taken authority as the truth, rather than truth as the authority." ins
    case writeResult of
-     NoiseResultMessage ciphertext ins' -> ciphertext
-     NoiseResultNeedPSK ins' -> case writeMessage "PSK" ins' of
-       NoiseResultMessage ciphertext ins' -> ciphertext
-       _ -> error "something terrible happened"
-     NoiseResultException ex -> error "something terrible happened"
+     NoiseResultMessage ciphertext ins' -> ...
+     NoiseResultNeedPSK   _ -> error "something terrible happened" -- will never happen in Noise_IK
+     NoiseResultException _ -> error "something terrible happened"
 
    -- Responder
    let readResult = readMessage ciphertext rns
    case readResult of
-     NoiseResultMessage plaintext rns' -> plaintext
-     NoiseResultNeedPSK rns' -> case readMessage "PSK" rns' of
-       NoiseResultMessage plaintext rns' -> plaintext
-       _ -> error "something terrible happened"
-     NoiseResultException ex -> error "something terrible happened"
+     NoiseResultMessage plaintext rns' -> ...
+     NoiseResultNeedPSK   _ -> error "something terrible happened"
+     NoiseResultException _ -> error "something terrible happened"
    ```
 
    **Ensure that you never re-use a NoiseState to send more than one message.**
@@ -89,8 +83,15 @@ This library implements the [Noise](https://noiseprotocol.org) protocol.
 
 ### Helper Functions
 
-The following functions are found in `Crypto.Noise` and can be helpful when designing an application which uses
-Noise:
+The following functions are found in `Crypto.Noise.DH` and are used to manipulate keys:
+
+  * `dhGenKey` -- Generate a fresh (private, public) key pair
+  * `dhPubToBytes` -- Convert a public key to `ScrubbedBytes`
+  * `dhBytesToPub` -- Convert `ScrubbedBytes` to a public key
+  * `dhSecToBytes` -- Convert a private key to `ScrubbedBytes`
+  * `dhBytesToPair` -- Convert `ScrubbedBytes` to a (private, public) key pair
+
+The following functions are found in `Crypto.Noise`:
 
   * `remoteStaticKey` -- For handshake patterns where the remote party's static key is transmitted, this function
     can be used to retrieve it. This allows for the creation of public key-based access-control lists.
@@ -108,7 +109,8 @@ Noise:
 Test vectors can be generated and verified using the `vectors` program. It accepts no arguments. When run,
 it will check for the existence of `vectors/cacophony.txt` within the current working directory. If it is not
 found, it is generated. If it is found, it is verified. All files within the `vectors/` directory (regardless
-of their name) are also verified.
+of their name) are also verified. Note that this program can only generate and verify vectors whose handshake
+patterns are pre-defined in this library.
 
 The generated vectors are minified JSON. There is a small python script within the `tools/pretty_print` directory
 that formats the JSON-blob according to [the format](https://github.com/noiseprotocol/noise_wiki/wiki/Test-vectors)
@@ -141,3 +143,5 @@ noiseFOOpsk0 = handshakePattern "FOOpsk0" $
 λ> validateHandshakePattern noiseKKpsk0
 []
 ```
+
+See the `Crypto.Noise.Validation` module for details.

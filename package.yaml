@@ -107,7 +107,7 @@ tests:
 
 benchmarks:
   bench:
-    main: bench.hs
+    main: Main.hs
     source-dirs: benchmarks
     dependencies:
       - async

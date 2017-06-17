@@ -1,10 +1,10 @@
 {-# LANGUAGE GADTs #-}
 module Keys where
 
-import Data.ByteArray  (ScrubbedBytes, convert)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base16 as B16
 
+import Crypto.Noise    (ScrubbedBytes, convert)
 import Crypto.Noise.DH
 import Crypto.Noise.DH.Curve25519
 import Crypto.Noise.DH.Curve448

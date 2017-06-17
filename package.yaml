@@ -112,8 +112,6 @@ tests:
             - bytestring
             - cacophony
             - directory
-            - lens
-            - memory
             - text
         else:
           buildable: False
@@ -139,8 +137,6 @@ benchmarks:
       - cacophony
       - criterion
       - deepseq
-      - lens
-      - memory
 
     ghc-options:
       - -O2

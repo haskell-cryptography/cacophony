@@ -1,15 +1,10 @@
 {-# LANGUAGE GADTs #-}
 module Main where
 
-import Control.Lens
 import Criterion.Main
-import Data.ByteArray (ScrubbedBytes)
 
 import Crypto.Noise
-import Crypto.Noise.Cipher
 import Crypto.Noise.DH
-import Crypto.Noise.Hash hiding (hash)
-import Crypto.Noise.Internal.Handshake.State
 
 import Keys
 import Types
@@ -68,14 +63,18 @@ genOpts d pat = (iopts, ropts)
   where
     idho  = defaultHandshakeOpts InitiatorRole mempty
     rdho  = defaultHandshakeOpts ResponderRole mempty
-    keys  = getKeys (WrapDHType d) pat
-    iopts = idho & hoLocalEphemeral .~ (dhBytesToPair =<< hskInitEphemeral    keys)
-                 & hoLocalStatic    .~ (dhBytesToPair =<< hskInitStatic       keys)
-                 & hoRemoteStatic   .~ (dhBytesToPub  =<< hskInitRemoteStatic keys)
 
-    ropts = rdho & hoLocalEphemeral .~ (dhBytesToPair =<< hskRespEphemeral    keys)
-                 & hoLocalStatic    .~ (dhBytesToPair =<< hskRespStatic       keys)
-                 & hoRemoteStatic   .~ (dhBytesToPub  =<< hskRespRemoteStatic keys)
+    keys  = getKeys (WrapDHType d) pat
+
+    iopts = setLocalEphemeral (dhBytesToPair =<< hskInitEphemeral    keys)
+            . setLocalStatic  (dhBytesToPair =<< hskInitStatic       keys)
+            . setRemoteStatic (dhBytesToPub  =<< hskInitRemoteStatic keys)
+            $ idho
+
+    ropts = setLocalEphemeral (dhBytesToPair =<< hskRespEphemeral    keys)
+            . setLocalStatic  (dhBytesToPair =<< hskRespStatic       keys)
+            . setRemoteStatic (dhBytesToPub  =<< hskRespRemoteStatic keys)
+            $ rdho
 
 toBench :: SomeCipherType
         -> SomeDHType

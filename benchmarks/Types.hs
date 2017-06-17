@@ -4,14 +4,11 @@ module Types where
 import Data.Monoid ((<>))
 
 import Crypto.Noise
-import Crypto.Noise.Cipher
 import Crypto.Noise.Cipher.ChaChaPoly1305
 import Crypto.Noise.Cipher.AESGCM
-import Crypto.Noise.DH
 import Crypto.Noise.DH.Curve25519
 import Crypto.Noise.DH.Curve448
 import Crypto.Noise.HandshakePatterns
-import Crypto.Noise.Hash hiding (hash)
 import Crypto.Noise.Hash.SHA256
 import Crypto.Noise.Hash.SHA512
 import Crypto.Noise.Hash.BLAKE2s

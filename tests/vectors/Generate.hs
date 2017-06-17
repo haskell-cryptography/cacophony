@@ -1,20 +1,15 @@
 {-# LANGUAGE GADTs, RecordWildCards #-}
 module Generate where
 
-import Control.Exception        (SomeException)
-import Control.Lens
-import Data.Aeson               (encode)
-import Data.ByteArray           (ScrubbedBytes)
-import Data.ByteString.Lazy     (writeFile)
-import Data.Either              (isLeft)
-import Data.Monoid              ((<>))
-import Prelude hiding           (writeFile)
+import Control.Exception    (SomeException)
+import Data.Aeson           (encode)
+import Data.ByteString.Lazy (writeFile)
+import Data.Either          (isLeft)
+import Data.Monoid          ((<>))
+import Prelude hiding       (writeFile)
 
 import Crypto.Noise
-import Crypto.Noise.Cipher
 import Crypto.Noise.DH
-import Crypto.Noise.Hash hiding (hash)
-import Crypto.Noise.Internal.Handshake.State
 
 import Keys
 import VectorFile
@@ -79,13 +74,16 @@ genOpts _ Vector{..} = (iopts, ropts)
   where
     idho  = defaultHandshakeOpts InitiatorRole viPrologue
     rdho  = defaultHandshakeOpts ResponderRole vrPrologue
-    iopts = idho & hoLocalEphemeral .~ (dhBytesToPair =<< viEphemeral)
-                 & hoLocalStatic    .~ (dhBytesToPair =<< viStatic)
-                 & hoRemoteStatic   .~ (dhBytesToPub  =<< virStatic)
 
-    ropts = rdho & hoLocalEphemeral .~ (dhBytesToPair =<< vrEphemeral)
-                 & hoLocalStatic    .~ (dhBytesToPair =<< vrStatic)
-                 & hoRemoteStatic   .~ (dhBytesToPub  =<< vrrStatic)
+    iopts = setLocalEphemeral (dhBytesToPair =<< viEphemeral)
+            . setLocalStatic  (dhBytesToPair =<< viStatic)
+            . setRemoteStatic (dhBytesToPub  =<< virStatic)
+            $ idho
+
+    ropts = setLocalEphemeral (dhBytesToPair =<< vrEphemeral)
+            . setLocalStatic  (dhBytesToPair =<< vrStatic)
+            . setRemoteStatic (dhBytesToPub  =<< vrrStatic)
+            $ rdho
 
 populateVector :: SomeCipherType
                -> SomeDHType

@@ -4,7 +4,6 @@ import Control.Exception    (SomeException)
 import Control.Monad        (forM_)
 import Data.Aeson           (eitherDecode)
 import Data.Bits
-import Data.ByteArray       (ScrubbedBytes)
 import Data.ByteString.Lazy (readFile)
 import Data.Maybe           (fromMaybe)
 import Data.Monoid          ((<>))
@@ -12,6 +11,8 @@ import Data.Text            (Text, pack)
 import Data.Text.IO         (putStrLn)
 import Prelude hiding       (readFile, putStrLn)
 import System.Exit          (exitFailure)
+
+import Crypto.Noise         (ScrubbedBytes)
 
 import VectorFile
 import Generate

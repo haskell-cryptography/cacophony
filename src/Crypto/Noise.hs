@@ -31,12 +31,19 @@ module Crypto.Noise
   , setLocalStatic
   , setRemoteEphemeral
   , setRemoteStatic
+    -- * Classes
+  , Cipher
+  , DH
+  , Hash
+    -- * Re-exports
+  , ScrubbedBytes
+  , convert
   ) where
 
 import Control.Arrow   (arr, second, (***))
 import Control.Exception.Safe
 import Control.Lens
-import Data.ByteArray  (ScrubbedBytes)
+import Data.ByteArray  (ScrubbedBytes, convert)
 import Data.Maybe      (isJust)
 
 import Crypto.Noise.Cipher

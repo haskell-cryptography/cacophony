@@ -84,11 +84,12 @@ options =
 header :: String
 header = "Usage: echo-server [OPTION]"
 
-parseOptions :: [String] -> Either String Options
+parseOptions :: [String]
+             -> Either String Options
 parseOptions argv =
   case getOpt RequireOrder options argv of
-    (o, [], []  ) -> Right $ foldl (flip id) defaultOpts o
-    (_, _, errs) -> Left  $ concat errs `mappend` helpText
+    (o, [], [])   -> Right $ foldl (flip id) defaultOpts o
+    (_, _,  errs) -> Left  $ concat errs `mappend` helpText
 
 helpText :: String
 helpText = usageInfo header options `mappend` "\n\n" `mappend` extra
@@ -98,5 +99,6 @@ helpText = usageInfo header options `mappend` "\n\n" `mappend` extra
       , ""
       , "When using --gen-keys, the output is formatted as follows:"
       , "<command line arguments for echo-server>"
-      , "<command line arguments for echo-client>"
+      , "<command line arguments for echo-client (curve25519)>"
+      , "<command line arguments for echo-client (curve448)>"
       ]

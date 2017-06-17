@@ -43,9 +43,9 @@ keyToArgs keyType Keys{..} = (serverArgs, clientArgs)
                  , "--server-static-"    <> keyType <> "=" <> privToStr serverStatic
                  , "--client-static-"    <> keyType <> "=" <> pubToStr  clientStatic
                  ]
-    clientArgs = [ "--client-ephemeral-" <> keyType <> "=" <> privToStr clientEphemeral
-                 , "--client-static-"    <> keyType <> "=" <> privToStr clientStatic
-                 , "--server-static-"    <> keyType <> "=" <> pubToStr  serverStatic
+    clientArgs = [ "--client-ephemeral" <> "=" <> privToStr clientEphemeral
+                 , "--client-static"    <> "=" <> privToStr clientStatic
+                 , "--server-static"    <> "=" <> pubToStr  serverStatic
                  ]
 
 genPSKArg :: IO String

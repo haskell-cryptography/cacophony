@@ -21,7 +21,8 @@ printKeys = do
   psk    <- genPSKArg
 
   putStrLn . unwords $ psk : (fst =<< [k25519, k448])
-  putStrLn . unwords $ psk : (snd =<< [k25519, k448])
+  putStrLn . unwords $ psk : (snd k25519)
+  putStrLn . unwords $ psk : (snd k448)
 
 validateOpts :: Options
              -> IO ()
@@ -57,5 +58,5 @@ main :: IO ()
 main = do
   argv <- getArgs
   case parseOptions argv of
-    Left errMsg -> hPutStr stderr errMsg
-    Right o -> processOpts o
+    Left  errMsg -> hPutStr stderr errMsg
+    Right o      -> processOpts o

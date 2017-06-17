@@ -3,6 +3,7 @@ module Server where
 
 import Control.AutoUpdate          (mkAutoUpdate, defaultUpdateSettings, updateAction)
 import Control.Exception           (handle)
+import Control.Monad               (join)
 import Data.Attoparsec.ByteString
 import Data.Bits                   (shiftL, shiftR, (.|.), (.&.))
 import Data.ByteString             (ByteString, pack, length)
@@ -58,7 +59,9 @@ parseSocket bufRef sock p = do
 readMessage :: IORef ByteString
             -> Socket
             -> IO (Maybe ByteString)
-readMessage buf sock = parseSocket buf sock parseMessage
+readMessage buf sock = do
+  tm <- timeout 60000000 $ parseSocket buf sock parseMessage
+  return . join $ tm
 
 writeMessage :: Socket
              -> ByteString
@@ -66,23 +69,22 @@ writeMessage :: Socket
 writeMessage sock msg = send sock . prependLength $ msg
 
 genEphemeralIfNeeded :: DHType d
-                     -> SockAddr
-                     -> (SockAddr -> ByteString -> IO ())
+                     -> (ByteString -> IO ())
                      -> Options
                      -> IO Options
-genEphemeralIfNeeded d ip log opts@Options{..} = do
+genEphemeralIfNeeded d log opts@Options{..} = do
   case d of
     Curve25519 -> do
       if isNothing optServerEphemeral25519 then do
         k <- dhGenKey
-        log ip $ "generated ephemeral curve25519 key: " <> secretKeyToB64 k
+        log $ "generated ephemeral curve25519 key: " <> secretKeyToB64 k
         return opts { optServerEphemeral25519 = Just k }
       else return opts
 
     Curve448 -> do
       if isNothing optServerEphemeral448 then do
         k <- dhGenKey
-        log ip $ "generated ephemeral curve448 key: " <> secretKeyToB64 k
+        log $ "generated ephemeral curve448 key: " <> secretKeyToB64 k
         return opts { optServerEphemeral448 = Just k }
       else return opts
 
@@ -107,13 +109,15 @@ startServer opts@Options{..} = do
           log ip "failed to parse handshake name"
         Just hsn -> case (hsCipher hsn, hsDH hsn, hsHash hsn) of
           (WrapCipherType c, WrapDHType d, WrapHashType h) -> do
-            opts' <- genEphemeralIfNeeded d ip log opts
+            opts' <- genEphemeralIfNeeded d (log ip) opts
 
             let pat = hsPatternName hsn
                 rho = genOpts d opts' pat
                 ns  = genNoiseState c h rho (patternToHandshake pat)
 
             messageLoop (writeMessage sock)
-                        (readMessage  leftoverBufRef sock)
+                        (readMessage leftoverBufRef sock)
                         [optPSK]
                         ns
+
+    log ip "connection closed"

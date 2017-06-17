@@ -23,7 +23,12 @@ import Options
 import Types
 
 parseHeader :: Parser HandshakeName
-parseHeader = anyWord8 >> snd <$> match parseHandshakeName
+parseHeader = do
+  len <- fromIntegral <$> anyWord8
+  hdr <- take len
+  either mempty
+         return
+         (parseOnly parseHandshakeName hdr)
 
 parseMessage :: Parser ByteString
 parseMessage = do

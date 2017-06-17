@@ -253,6 +253,66 @@ instance FromJSON VectorFile where
   parseJSON (Object o) = VectorFile <$> o .: "vectors"
   parseJSON bad        = typeMismatch "VectorFile" bad
 
+patternMap :: [(String, PatternName)]
+patternMap =
+  [ ("NN", PatternNN)
+  , ("KN", PatternKN)
+  , ("NK", PatternNK)
+  , ("KK", PatternKK)
+  , ("NX", PatternNX)
+  , ("KX", PatternKX)
+  , ("XN", PatternXN)
+  , ("IN", PatternIN)
+  , ("XK", PatternXK)
+  , ("IK", PatternIK)
+  , ("XX", PatternXX)
+  , ("IX", PatternIX)
+  , ("N" , PatternN)
+  , ("K" , PatternK)
+  , ("X" , PatternX)
+  , ("NNpsk0", PatternNNpsk0)
+  , ("NNpsk2", PatternNNpsk2)
+  , ("NKpsk0", PatternNKpsk0)
+  , ("NKpsk2", PatternNKpsk2)
+  , ("NXpsk2", PatternNXpsk2)
+  , ("XNpsk3", PatternXNpsk3)
+  , ("XKpsk3", PatternXKpsk3)
+  , ("XXpsk3", PatternXXpsk3)
+  , ("KNpsk0", PatternKNpsk0)
+  , ("KNpsk2", PatternKNpsk2)
+  , ("KKpsk0", PatternKKpsk0)
+  , ("KKpsk2", PatternKKpsk2)
+  , ("KXpsk2", PatternKXpsk2)
+  , ("INpsk1", PatternINpsk1)
+  , ("INpsk2", PatternINpsk2)
+  , ("IKpsk1", PatternIKpsk1)
+  , ("IKpsk2", PatternIKpsk2)
+  , ("IXpsk2", PatternIXpsk2)
+  , ("Npsk0" , PatternNpsk0)
+  , ("Kpsk0" , PatternKpsk0)
+  , ("Xpsk1" , PatternXpsk1)
+  ]
+
+dhMap :: [(String, SomeDHType)]
+dhMap =
+  [ ("25519", WrapDHType Curve25519)
+  , ("448"  , WrapDHType Curve448)
+  ]
+
+cipherMap :: [(String, SomeCipherType)]
+cipherMap =
+  [ ("AESGCM"    , WrapCipherType AESGCM)
+  , ("ChaChaPoly", WrapCipherType ChaChaPoly1305)
+  ]
+
+hashMap :: [(String, SomeHashType)]
+hashMap =
+  [ ("BLAKE2b", WrapHashType BLAKE2b)
+  , ("BLAKE2s", WrapHashType BLAKE2s)
+  , ("SHA256" , WrapHashType SHA256)
+  , ("SHA512" , WrapHashType SHA512)
+  ]
+
 parseHandshakeName :: Parser HandshakeName
 parseHandshakeName = do
   _ <- string "Noise_"
@@ -260,68 +320,21 @@ parseHandshakeName = do
   let untilUnderscore = anyChar `manyTill'` (char '_')
       untilEOI        = anyChar `manyTill'` endOfInput
 
-  patternS <- untilUnderscore
-  dhS      <- untilUnderscore
-  cipherS  <- untilUnderscore
-  hashS    <- untilEOI
+  pattern <- (flip lookup patternMap) <$> untilUnderscore
+  dh      <- (flip lookup dhMap)      <$> untilUnderscore
+  cipher  <- (flip lookup cipherMap)  <$> untilUnderscore
+  hash    <- (flip lookup hashMap)    <$> untilEOI
 
-  pattern <- case patternS of
-    "NN" -> return PatternNN
-    "KN" -> return PatternKN
-    "NK" -> return PatternNK
-    "KK" -> return PatternKK
-    "NX" -> return PatternNX
-    "KX" -> return PatternKX
-    "XN" -> return PatternXN
-    "IN" -> return PatternIN
-    "XK" -> return PatternXK
-    "IK" -> return PatternIK
-    "XX" -> return PatternXX
-    "IX" -> return PatternIX
-    "N"  -> return PatternN
-    "K"  -> return PatternK
-    "X"  -> return PatternX
-    "NNpsk0" -> return PatternNNpsk0
-    "NNpsk2" -> return PatternNNpsk2
-    "NKpsk0" -> return PatternNKpsk0
-    "NKpsk2" -> return PatternNKpsk2
-    "NXpsk2" -> return PatternNXpsk2
-    "XNpsk3" -> return PatternXNpsk3
-    "XKpsk3" -> return PatternXKpsk3
-    "XXpsk3" -> return PatternXXpsk3
-    "KNpsk0" -> return PatternKNpsk0
-    "KNpsk2" -> return PatternKNpsk2
-    "KKpsk0" -> return PatternKKpsk0
-    "KKpsk2" -> return PatternKKpsk2
-    "KXpsk2" -> return PatternKXpsk2
-    "INpsk1" -> return PatternINpsk1
-    "INpsk2" -> return PatternINpsk2
-    "IKpsk1" -> return PatternIKpsk1
-    "IKpsk2" -> return PatternIKpsk2
-    "IXpsk2" -> return PatternIXpsk2
-    "Npsk0"  -> return PatternNpsk0
-    "Kpsk0"  -> return PatternKpsk0
-    "Xpsk1"  -> return PatternXpsk1
-    _    -> fail $ "unknown pattern: " <> patternS
 
-  dh <- case dhS of
-    "25519" -> return . WrapDHType $ Curve25519
-    "448"   -> return . WrapDHType $ Curve448
-    _       -> fail $ "unknown DH: " <> dhS
+  let mHandshakeName = do
+        p <- pattern
+        d <- dh
+        c <- cipher
+        h <- hash
 
-  cipher <- case cipherS of
-    "AESGCM"     -> return . WrapCipherType $ AESGCM
-    "ChaChaPoly" -> return . WrapCipherType $ ChaChaPoly1305
-    _            -> fail $ "unknown cipher: " <> cipherS
+        return $ HandshakeName p c d h
 
-  hash <- case hashS of
-    "BLAKE2b" -> return . WrapHashType $ BLAKE2b
-    "BLAKE2s" -> return . WrapHashType $ BLAKE2s
-    "SHA256"  -> return . WrapHashType $ SHA256
-    "SHA512"  -> return . WrapHashType $ SHA512
-    _         -> fail $ "unknown hash: " <> hashS
-
-  return $ HandshakeName pattern cipher dh hash
+  maybe mempty return mHandshakeName
 
 patternToHandshake :: PatternName
                    -> HandshakePattern

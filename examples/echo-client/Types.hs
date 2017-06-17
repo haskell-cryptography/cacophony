@@ -1,7 +1,6 @@
 {-# LANGUAGE RecordWildCards, RankNTypes, GADTs, KindSignatures #-}
 module Types where
 
-import Data.ByteString (ByteString)
 import Data.Attoparsec.ByteString.Char8
 import Data.Monoid     ((<>))
 
@@ -150,7 +149,7 @@ instance Show SomeHashType where
   show (WrapHashType SHA256)  = "SHA256"
   show (WrapHashType SHA512)  = "SHA512"
 
-patternMap :: [(ByteString, PatternName)]
+patternMap :: [(String, PatternName)]
 patternMap =
   [ ("NN", PatternNN)
   , ("KN", PatternKN)
@@ -190,19 +189,19 @@ patternMap =
   , ("Xpsk1" , PatternXpsk1)
   ]
 
-dhMap :: [(ByteString, SomeDHType)]
+dhMap :: [(String, SomeDHType)]
 dhMap =
   [ ("25519", WrapDHType Curve25519)
   , ("448"  , WrapDHType Curve448)
   ]
 
-cipherMap :: [(ByteString, SomeCipherType)]
+cipherMap :: [(String, SomeCipherType)]
 cipherMap =
   [ ("AESGCM"    , WrapCipherType AESGCM)
   , ("ChaChaPoly", WrapCipherType ChaChaPoly1305)
   ]
 
-hashMap :: [(ByteString, SomeHashType)]
+hashMap :: [(String, SomeHashType)]
 hashMap =
   [ ("BLAKE2b", WrapHashType BLAKE2b)
   , ("BLAKE2s", WrapHashType BLAKE2s)
@@ -214,15 +213,14 @@ parseHandshakeName :: Parser HandshakeName
 parseHandshakeName = do
   _ <- string "Noise_"
 
-  let parseMap m = flip lookup m <$> (choice . map (string . fst) $ m)
+  let untilUnderscore = anyChar `manyTill'` (char '_')
+      untilEOI        = anyChar `manyTill'` endOfInput
 
-  pattern <- parseMap patternMap
-  _ <- char '_'
-  dh      <- parseMap dhMap
-  _ <- char '_'
-  cipher  <- parseMap cipherMap
-  _ <- char '_'
-  hash    <- parseMap hashMap
+  pattern <- (flip lookup patternMap) <$> untilUnderscore
+  dh      <- (flip lookup dhMap)      <$> untilUnderscore
+  cipher  <- (flip lookup cipherMap)  <$> untilUnderscore
+  hash    <- (flip lookup hashMap)    <$> untilEOI
+
 
   let mHandshakeName = do
         p <- pattern

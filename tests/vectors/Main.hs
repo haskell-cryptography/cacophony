@@ -16,4 +16,4 @@ main = do
     then do
       genVectorFile "vectors/cacophony.txt"
       putStrLn "Generated default vectors."
-    else mapM_ verifyVectorFile $ fmap ("vectors/" <>) vectorFiles >> exitSuccess
+    else mapM_ verifyVectorFile (fmap ("vectors/" <>) vectorFiles) >> exitSuccess

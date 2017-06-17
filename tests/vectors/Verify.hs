@@ -2,7 +2,7 @@ module Verify where
 
 import Control.Exception    (SomeException)
 import Control.Monad        (forM_)
-import Data.Aeson           (decode)
+import Data.Aeson           (eitherDecode)
 import Data.Bits
 import Data.ByteArray       (ScrubbedBytes)
 import Data.ByteString.Lazy (readFile)
@@ -103,9 +103,11 @@ verifyVectorFile :: FilePath
 verifyVectorFile f = do
   fd <- readFile f
 
-  let mvf = decode fd :: Maybe VectorFile
-
-  vf <- maybe (putStrLn ("Error decoding " <> pack f) >> exitFailure) return mvf
+  vf <- case eitherDecode fd of
+    Left err -> do
+      putStrLn $ "Error decoding " <> pack f <> ": " <> pack err
+      exitFailure
+    Right r -> return r
 
   let results  = (\(idx, v) -> (idx, v, verifyVector v)) <$> zip [0..] (vfVectors vf)
       failures = filter (\(_, v, r) ->

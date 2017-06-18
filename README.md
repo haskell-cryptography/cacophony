@@ -154,3 +154,5 @@ to a vector file as an argument and reformats it so that it conforms to
 
 This program acts as a kind of REPL for Noise messages. It supports sending and receiving messages via UDP
 or via a pipe to a shell command.
+
+All messages transmitted via a pipe are expected to be prepended by a two byte big-endian length.

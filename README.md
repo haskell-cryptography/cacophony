@@ -112,7 +112,7 @@ found, it is generated. If it is found, it is verified. All files within the `ve
 of their name) are also verified. Note that this program can only generate and verify vectors whose handshake
 patterns are pre-defined in this library.
 
-The generated vectors are minified JSON. There is a small python script within the `tools/pretty_print` directory
+The generated vectors are minified JSON. There is a small python script within the `tools/pretty-print` directory
 that formats the JSON-blob according to [the format](https://github.com/noiseprotocol/noise_wiki/wiki/Test-vectors)
 specified on the Noise Wiki.
 

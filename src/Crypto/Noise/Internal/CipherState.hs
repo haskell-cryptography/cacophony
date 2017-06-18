@@ -36,7 +36,7 @@ encryptWithAd :: (MonadThrow m, Cipher c)
               -> m (Ciphertext c, CipherState c)
 encryptWithAd ad plaintext cs
   | validNonce cs = return (result, newState)
-  | otherwise     = throwM $ MessageLimitReached "encryptWithAd"
+  | otherwise     = throwM MessageLimitReached
   where
     result = maybe (cipherBytesToText plaintext)
                    (\k -> cipherEncrypt k (cs ^. csn) ad plaintext)
@@ -54,10 +54,10 @@ decryptWithAd :: (MonadThrow m, Cipher c)
               -> m (Plaintext, CipherState c)
 decryptWithAd ad ct cs
   | validNonce cs =
-    maybe (throwM (DecryptionError "decryptWithAd"))
+    maybe (throwM DecryptionError)
           (\x -> return (x, newState))
           result
-  | otherwise     = throwM $ MessageLimitReached "decryptWithAd"
+  | otherwise     = throwM MessageLimitReached
   where
     result   = maybe (Just . cipherTextToBytes $ ct)
                      (\k -> cipherDecrypt k (cs ^. csn) ad ct)

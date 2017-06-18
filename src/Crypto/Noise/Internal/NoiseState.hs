@@ -55,7 +55,7 @@ resumeHandshake :: (MonadThrow m, Cipher c, DH d, Hash h)
                 => ScrubbedBytes
                 -> NoiseState c d h
                 -> m (HandshakeResult, NoiseState c d h)
-resumeHandshake msg ns = case (ns ^. nsHandshakeSuspension) of
+resumeHandshake msg ns = case ns ^. nsHandshakeSuspension of
   Nothing -> do
     let hp = ns ^. nsHandshakePattern
     (_, ns') <- runInterpreter . runHandshakePattern $ hp

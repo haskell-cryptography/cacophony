@@ -10,7 +10,6 @@ module Crypto.Noise
   ( -- * Types
     NoiseState
   , NoiseResult(..)
-  , NoiseException(..)
   , HandshakePattern
   , HandshakeRole(..)
   , HandshakeOpts
@@ -48,7 +47,6 @@ import Data.Maybe      (isJust)
 
 import Crypto.Noise.Cipher
 import Crypto.Noise.DH
-import Crypto.Noise.Exception
 import Crypto.Noise.Hash
 import Crypto.Noise.Internal.CipherState
 import Crypto.Noise.Internal.Handshake.Pattern hiding (psk)

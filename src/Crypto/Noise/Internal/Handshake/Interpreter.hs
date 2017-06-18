@@ -13,7 +13,6 @@ import Control.Lens
 import Control.Monad.Coroutine.SuspensionFunctors
 import Data.ByteArray (splitAt)
 import Data.Maybe     (isJust)
-import Data.Monoid    ((<>))
 import Data.Proxy
 import Prelude hiding (splitAt)
 
@@ -37,7 +36,7 @@ interpretToken opRole (E next) = do
   pskMode <- use hsPSKMode
 
   if opRole == myRole then do
-    (_, pk) <- getKeyPair hoLocalEphemeral "local ephemeral"
+    (_, pk) <- getKeyPair hoLocalEphemeral LocalEphemeral
     let pkBytes = dhPubToBytes pk
 
     if pskMode
@@ -49,7 +48,7 @@ interpretToken opRole (E next) = do
   else do
     buf <- use hsMsgBuffer
     let (pkBytes, remainingBytes) = splitAt (dhLength (Proxy :: Proxy d)) buf
-    theirKey <- maybe (throwM . HandshakeError $ "invalid remote ephemeral key")
+    theirKey <- maybe (throwM . InvalidKey $ RemoteEphemeral)
                       return
                       (dhBytesToPub pkBytes)
     hsOpts . hoRemoteEphemeral .= Just theirKey
@@ -69,7 +68,7 @@ interpretToken opRole (S next) = do
 
   if opRole == myRole then do
     ss <- use hsSymmetricState
-    (_, pk) <- getKeyPair hoLocalStatic "local static"
+    (_, pk) <- getKeyPair hoLocalStatic LocalStatic
     (ct, ss') <- encryptAndHash (dhPubToBytes pk) ss
     hsSymmetricState .= ss'
     hsMsgBuffer      <>= cipherTextToBytes ct
@@ -77,7 +76,7 @@ interpretToken opRole (S next) = do
   else do
     configuredRemoteStatic <- use $ hsOpts . hoRemoteStatic
     if isJust configuredRemoteStatic
-      then throwM . InvalidHandshakeOptions $ "unable to overwrite remote static key"
+      then throwM StaticKeyOverwrite
       else do
         -- If a SymmetricKey has been established, the static key will be
         -- encrypted. In that case, the number of bytes to be read off the
@@ -90,10 +89,8 @@ interpretToken opRole (S next) = do
         buf <- use hsMsgBuffer
         ss  <- use hsSymmetricState
         let (b, rest) = splitAt lenToRead buf
-        (pk, ss') <- maybe (throwM . HandshakeError $ "failed to decrypt remote static key")
-                           return
-                           (decryptAndHash (cipherBytesToText b) ss)
-        pk' <- maybe (throwM . HandshakeError $ "invalid static key provided by remote peer")
+        (pk, ss') <- decryptAndHash (cipherBytesToText b) ss
+        pk' <- maybe (throwM . InvalidKey $ RemoteStatic)
                      return
                      (dhBytesToPub pk)
 
@@ -106,8 +103,8 @@ interpretToken opRole (S next) = do
 -- [ EE ] -----------------------------------------------------------------------
 
 interpretToken _ (Ee next) = do
-  ~(sk, _) <- getKeyPair   hoLocalEphemeral  "local ephemeral"
-  rpk      <- getPublicKey hoRemoteEphemeral "remote ephemeral"
+  ~(sk, _) <- getKeyPair   hoLocalEphemeral  LocalEphemeral
+  rpk      <- getPublicKey hoRemoteEphemeral RemoteEphemeral
   hsSymmetricState %= mixKey (dhPerform sk rpk)
 
   return next
@@ -118,12 +115,12 @@ interpretToken _ (Es next) = do
   myRole <- use $ hsOpts . hoRole
 
   if myRole == InitiatorRole then do
-    rpk      <- getPublicKey hoRemoteStatic   "remote static"
-    ~(sk, _) <- getKeyPair   hoLocalEphemeral "local ephemeral"
+    rpk      <- getPublicKey hoRemoteStatic   RemoteStatic
+    ~(sk, _) <- getKeyPair   hoLocalEphemeral LocalEphemeral
     hsSymmetricState %= mixKey (dhPerform sk rpk)
   else do
-    ~(sk, _) <- getKeyPair   hoLocalStatic     "local static"
-    rpk      <- getPublicKey hoRemoteEphemeral "remote ephemeral"
+    ~(sk, _) <- getKeyPair   hoLocalStatic     LocalStatic
+    rpk      <- getPublicKey hoRemoteEphemeral RemoteEphemeral
     hsSymmetricState %= mixKey (dhPerform sk rpk)
 
   return next
@@ -134,12 +131,12 @@ interpretToken _ (Se next) = do
   myRole <- use $ hsOpts . hoRole
 
   if myRole == InitiatorRole then do
-    ~(sk, _) <- getKeyPair   hoLocalStatic     "local static"
-    rpk      <- getPublicKey hoRemoteEphemeral "remote ephemeral"
+    ~(sk, _) <- getKeyPair   hoLocalStatic     LocalStatic
+    rpk      <- getPublicKey hoRemoteEphemeral RemoteEphemeral
     hsSymmetricState %= mixKey (dhPerform sk rpk)
   else do
-    rpk      <- getPublicKey hoRemoteStatic   "remote static"
-    ~(sk, _) <- getKeyPair   hoLocalEphemeral "local ephemeral"
+    rpk      <- getPublicKey hoRemoteStatic   RemoteStatic
+    ~(sk, _) <- getKeyPair   hoLocalEphemeral LocalEphemeral
     hsSymmetricState %= mixKey (dhPerform sk rpk)
 
   return next
@@ -147,8 +144,8 @@ interpretToken _ (Se next) = do
 -- [ SS ] -----------------------------------------------------------------------
 
 interpretToken _ (Ss next) = do
-  ~(sk, _) <- getKeyPair   hoLocalStatic  "local static"
-  rpk      <- getPublicKey hoRemoteStatic "remote static"
+  ~(sk, _) <- getKeyPair   hoLocalStatic  LocalStatic
+  rpk      <- getPublicKey hoRemoteStatic RemoteStatic
   hsSymmetricState %= mixKey (dhPerform sk rpk)
 
   return next
@@ -196,8 +193,8 @@ interpretPreToken :: (Cipher c, DH d, Hash h)
 interpretPreToken opRole (E next) = do
   myRole <- use $ hsOpts . hoRole
   pk <- if opRole == myRole
-    then snd <$> getKeyPair hoLocalEphemeral "local ephemeral"
-    else getPublicKey hoRemoteEphemeral "remote ephemeral"
+    then snd <$> getKeyPair hoLocalEphemeral LocalEphemeral
+    else getPublicKey hoRemoteEphemeral RemoteEphemeral
 
   hsSymmetricState %= mixHash (dhPubToBytes pk)
 
@@ -206,14 +203,14 @@ interpretPreToken opRole (E next) = do
 interpretPreToken opRole (S next) = do
   myRole <- use $ hsOpts . hoRole
   pk <- if opRole == myRole
-    then snd <$> getKeyPair hoLocalStatic "local static"
-    else getPublicKey hoRemoteStatic "remote static"
+    then snd <$> getKeyPair hoLocalStatic LocalStatic
+    else getPublicKey hoRemoteStatic RemoteStatic
 
   hsSymmetricState %= mixHash (dhPubToBytes pk)
 
   return next
 
-interpretPreToken _ _ = throwM . HandshakeError $ "invalid pre-message pattern token"
+interpretPreToken _ _ = throwM InvalidPattern
 
 interpretMessage :: (Cipher c, DH d, Hash h)
                  => Message r
@@ -236,19 +233,15 @@ runHandshakePattern :: (Cipher c, DH d, Hash h)
 runHandshakePattern hp = runAp interpretMessage $ hp ^. hpMsgSeq
 
 getPublicKey :: Lens' (HandshakeOpts d) (Maybe (PublicKey d))
-             -> String
+             -> ExceptionKeyType
              -> Handshake c d h (PublicKey d)
-getPublicKey k desc = do
+getPublicKey k keyType = do
   r <- use $ hsOpts . k
-  maybe (throwM (InvalidHandshakeOptions $ "a " <> desc <> " key is required but has not been set"))
-        return
-        r
+  maybe (throwM . KeyMissing $ keyType) return r
 
 getKeyPair :: Lens' (HandshakeOpts d) (Maybe (KeyPair d))
-           -> String
+           -> ExceptionKeyType
            -> Handshake c d h (KeyPair d)
-getKeyPair k desc = do
+getKeyPair k keyType = do
   r <- use $ hsOpts . k
-  maybe (throwM (InvalidHandshakeOptions $ "a " <> desc <> " key is required but has not been set"))
-        return
-        r
+  maybe (throwM . KeyMissing $ keyType) return r

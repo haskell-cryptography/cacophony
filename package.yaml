@@ -27,11 +27,6 @@ flags:
     default: False
     manual: True
 
-  build-examples:
-    description: Build example executables
-    default: False
-    manual: True
-
 library:
   source-dirs: src
   dependencies:
@@ -149,67 +144,6 @@ executables:
             - haskeline
             - network
             - process
-        else:
-          buildable: False
-
-    ghc-options:
-      - -O2
-      - -rtsopts
-      - -threaded
-      - -with-rtsopts=-N
-
-    default-extensions:
-      - OverloadedStrings
-
-  echo-server:
-    source-dirs: examples/echo-server
-    main: Main.hs
-    when:
-      - condition: 'flag(build-examples)'
-        then:
-          dependencies:
-            - attoparsec
-            - auto-update
-            - base
-            - base64-bytestring
-            - bytestring
-            - cacophony
-            - cryptonite
-            - fast-logger
-            - memory
-            - network
-            - network-simple
-            - unix
-            - unix-time
-        else:
-          buildable: False
-
-    ghc-options:
-      - -O2
-      - -rtsopts
-      - -threaded
-      - -with-rtsopts=-N
-
-    default-extensions:
-      - OverloadedStrings
-
-  echo-client:
-    source-dirs: examples/echo-client
-    main: Main.hs
-    when:
-      - condition: 'flag(build-examples)'
-        then:
-          dependencies:
-            - attoparsec
-            - base
-            - base64-bytestring
-            - bytestring
-            - cacophony
-            - haskeline
-            - memory
-            - network
-            - network-simple
-            - unix
         else:
           buildable: False
 

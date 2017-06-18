@@ -12,7 +12,6 @@ main = do
                    , "benchmarks"
                    , "tests"
                    , "tools"
-                   , "examples"
                    , "--hint=tests/.hlint"
                    , "--cpp-define=HLINT"
                    ] `mappend` args

@@ -79,9 +79,13 @@ resumeHandshake msg ns = do
       -- The handshake pattern has finished running. Create the CipherStates.
       Right _ -> do
         let (cs1, cs2) = split (hs ^. hsSymmetricState)
+
             ns'        = if hs ^. hsOpts . hoRole == InitiatorRole
                            then ns & nsSendingCipherState   .~ Just cs1
                                    & nsReceivingCipherState .~ Just cs2
                            else ns & nsSendingCipherState   .~ Just cs2
                                    & nsReceivingCipherState .~ Just cs1
-        return (HandshakeResultMessage (hs ^. hsMsgBuffer), ns')
+
+            ns''       = ns' & nsHandshakeState .~ hs
+
+        return (HandshakeResultMessage (hs ^. hsMsgBuffer), ns'')

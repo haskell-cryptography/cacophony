@@ -218,13 +218,11 @@ interpretPreToken _ _ = throwM . HandshakeError $ "invalid pre-message pattern t
 interpretMessage :: (Cipher c, DH d, Hash h)
                  => Message r
                  -> Handshake c d h r
-interpretMessage (PreInitiator mp next) = do
-  runAp (interpretPreToken InitiatorRole) mp
-  return next
+interpretMessage (PreInitiator mp next) =
+  runAp (interpretPreToken InitiatorRole) mp >> return next
 
-interpretMessage (PreResponder mp next) = do
-  runAp (interpretPreToken ResponderRole) mp
-  return next
+interpretMessage (PreResponder mp next) =
+  runAp (interpretPreToken ResponderRole) mp >> return next
 
 interpretMessage (Initiator mp next) =
   processMsgPattern InitiatorRole mp >> return next

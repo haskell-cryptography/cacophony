@@ -26,10 +26,6 @@ validateOpts Options{..} = do
     putStrLn "Error: A handshake prologue is required (--prologue, plaintext)."
     exitFailure
 
-  when (isNothing optInputFormat) $ do
-    putStrLn "Error: An input format is required (--format=[plain|hex|base64])."
-    exitFailure
-
   let networkMode = all isJust [optLocalHost, optLocalPort, optRemoteHost, optRemotePort]
   unless (networkMode `xor` isJust optPipeCommand) $ do
     putStrLn "Error: A set of sending/receiving hosts/ports OR a pipe command must be set (not both nor neither)."

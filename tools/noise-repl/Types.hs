@@ -213,6 +213,11 @@ patternToHandshake PatternNpsk0  = noiseNpsk0
 patternToHandshake PatternKpsk0  = noiseKpsk0
 patternToHandshake PatternXpsk1  = noiseXpsk1
 
+instance Show InputFormat where
+  show FormatPlain  = "plain"
+  show FormatHex    = "hex"
+  show FormatBase64 = "base64"
+
 instance Show HandshakeName where
   show HandshakeName{..} = "Noise_"
                           <> show hsPatternName

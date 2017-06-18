@@ -14,7 +14,7 @@ data Options = Options
   , optHandshakeName     :: Maybe HandshakeName
   , optHandshakeRole     :: Maybe HandshakeRole
   , optHandshakePrologue :: Maybe ScrubbedBytes
-  , optInputFormat       :: Maybe InputFormat
+  , optInputFormat       :: InputFormat
   , optLocalHost         :: Maybe String
   , optLocalPort         :: Maybe String
   , optRemoteHost        :: Maybe String
@@ -31,7 +31,7 @@ defaultOpts = Options
   , optHandshakeName     = Nothing
   , optHandshakeRole     = Nothing
   , optHandshakePrologue = Nothing
-  , optInputFormat       = Just FormatPlain
+  , optInputFormat       = FormatPlain
   , optLocalHost         = Nothing
   , optLocalPort         = Nothing
   , optRemoteHost        = Nothing
@@ -49,11 +49,11 @@ readRole "responder" = Just ResponderRole
 readRole _           = Nothing
 
 readFormat :: String
-           -> Maybe InputFormat
-readFormat "plain"  = Just FormatPlain
-readFormat "hex"    = Just FormatHex
-readFormat "base64" = Just FormatBase64
-readFormat _        = Nothing
+           -> InputFormat
+readFormat "plain"  = FormatPlain
+readFormat "hex"    = FormatHex
+readFormat "base64" = FormatBase64
+readFormat _        = FormatPlain
 
 options :: [OptDescr (Options -> Options)]
 options =

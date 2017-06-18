@@ -6,6 +6,8 @@
 
 * Removed examples because they are difficult to maintain
 
+* Added noise-repl tool
+
 # 0.9.2
 
 * Added ability to export raw symmetric keys

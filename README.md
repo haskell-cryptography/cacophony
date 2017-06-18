@@ -98,6 +98,9 @@ The following functions are found in `Crypto.Noise`:
 
   * `handshakeComplete` -- Returns `True` if the handshake is complete.
 
+  * `processPSKs` -- This function repeatedly applies PSKs to a NoiseState until the list of PSKs becomes empty
+    or the handshake pattern stops asking for PSKs.
+
   * `handshakeHash` -- Retrieves the `h` value associated with the conversation's SymmetricState. This value is
     intended to be used for channel binding. For example, the initiator might cryptographically sign this value
     as part of some higher-level authentication scheme. See section 11.2 of the protocol for details.

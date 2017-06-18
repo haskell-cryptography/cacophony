@@ -123,7 +123,8 @@ readMessage ct ns = maybe
 -- | Given an operation ('writeMessage' or 'readMessage'), a list of PSKs, and
 --   a 'NoiseResult', this function will repeatedly apply PSKs to the NoiseState
 --   until no more are requested or the list of PSKs becomes empty. This is
---   useful for patterns which require one or more PSKs.
+--   useful for patterns which require two or more PSKs, and you know exactly
+--   what they all should be ahead of time.
 processPSKs :: (Cipher c, DH d, Hash h)
             => (ScrubbedBytes -> NoiseState c d h -> NoiseResult c d h)
             -> [ScrubbedBytes]

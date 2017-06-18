@@ -32,5 +32,5 @@ install:
   - stack $ARGS setup
 
 script:
-  - stack $ARGS --no-terminal test --flag "cacophony:hlint" --flag "cacophony:vectors" --bench --no-run-benchmarks --haddock --no-haddock-deps
+  - stack $ARGS --no-terminal test --flag "cacophony:build-tools" --bench --no-run-benchmarks --haddock --no-haddock-deps
   - stack sdist

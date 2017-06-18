@@ -16,8 +16,9 @@ import System.Exit            (exitFailure)
 import Crypto.Noise
 import Crypto.Noise.DH
 
-import IO
 import Options
+import Pipe
+import Socket
 import Types
 
 data HandshakeState
@@ -33,8 +34,8 @@ printKeys (epriv, epub) (spriv, spub) = do
   putStrLn "Your keys are as follows:"
   putStrLn $ "private ephemeral: " <> (B64.encode . convert . dhSecToBytes) epriv
   putStrLn $ "public  ephemeral: " <> (B64.encode . convert . dhPubToBytes) epub
-  putStrLn $ "private static: "    <> (B64.encode . convert . dhSecToBytes) spriv
-  putStrLn $ "public  static: "    <> (B64.encode . convert . dhPubToBytes) spub
+  putStrLn $ "private static:    " <> (B64.encode . convert . dhSecToBytes) spriv
+  putStrLn $ "public  static:    " <> (B64.encode . convert . dhPubToBytes) spub
 
 genKeyIfNeeded :: DH d
                => DHType d
@@ -69,21 +70,20 @@ handshakeLoop :: (Cipher c, DH d, Hash h)
         -> NoiseState c d h
         -> InputT IO ()
 handshakeLoop writeCb readCb IncompleteWaitingOnUser seenStatic state = do
-  minput <- (fmap . fmap) (convert . pack) $ getInputLine "payload> "
+  minput <- fmap (convert . pack) <$> getInputLine "payload> "
 
   case minput of
     Nothing    -> return ()
-    Just input -> do
-      case writeMessage input state of
-        NoiseResultMessage ct state' -> processCiphertext ct state'
-        NoiseResultNeedPSK state' -> do
-          pskResult <- pskLoop True state'
-          case pskResult of
-            Nothing            -> return ()
-            Just (ct, state'') -> processCiphertext ct state''
-        NoiseResultException ex      -> do
-          outputStrLn $ "exception: " <> show ex
-          handshakeLoop writeCb readCb IncompleteWaitingOnPeer seenStatic state
+    Just input -> case writeMessage input state of
+      NoiseResultMessage ct state' -> processCiphertext ct state'
+      NoiseResultNeedPSK state' -> do
+        pskResult <- pskLoop True state'
+        case pskResult of
+          Nothing            -> return ()
+          Just (ct, state'') -> processCiphertext ct state''
+      NoiseResultException ex      -> do
+        outputStrLn $ "exception: " <> show ex
+        handshakeLoop writeCb readCb IncompleteWaitingOnPeer seenStatic state
 
   where
     processCiphertext ct state' = do
@@ -119,8 +119,8 @@ handshakeLoop writeCb readCb IncompleteWaitingOnPeer seenStatic state = do
     processPayload pt ns = do
       outputStrLn . unpack $ "payload: " <> convert pt
 
-      seenStatic' <- if not seenStatic then do
-        case remoteStaticKey ns of
+      seenStatic' <- if not seenStatic
+        then case remoteStaticKey ns of
           Nothing -> return False
           Just k  -> do
             let b64key = B64.encode . convert . dhPubToBytes $ k
@@ -148,19 +148,18 @@ messageWriteLoop :: (Cipher c, DH d, Hash h)
                  -> NoiseState c d h
                  -> InputT IO ()
 messageWriteLoop writeCb state = do
-  minput <- (fmap . fmap) (convert . pack) $ getInputLine "message> "
+  minput <- fmap (convert . pack) <$> getInputLine "message> "
   case minput of
     Nothing    -> return ()
-    Just input -> do
-      case writeMessage input state of
-        NoiseResultMessage ct state' -> do
-          liftIO . writeCb . convert $ ct
-          outputStrLn . unpack $ "sent: " <> (B16.encode . convert) ct
-          messageWriteLoop writeCb state'
-        NoiseResultNeedPSK   _  -> return () -- this should never happen
-        NoiseResultException ex -> do
-          outputStrLn $ "exception: " <> show ex
-          messageWriteLoop writeCb state
+    Just input -> case writeMessage input state of
+      NoiseResultMessage ct state' -> do
+        liftIO . writeCb . convert $ ct
+        outputStrLn . unpack $ "sent: " <> (B16.encode . convert) ct
+        messageWriteLoop writeCb state'
+      NoiseResultNeedPSK   _  -> return () -- this should never happen
+      NoiseResultException ex -> do
+        outputStrLn $ "exception: " <> show ex
+        messageWriteLoop writeCb state
 
 messageReadLoop :: (Cipher c, DH d, Hash h)
                 => IO ByteString
@@ -185,23 +184,22 @@ pskLoop :: (Cipher c, DH d, Hash h)
         -> NoiseState c d h
         -> InputT IO (Maybe (ScrubbedBytes, NoiseState c d h))
 pskLoop write state = do
-  minput <- (fmap . fmap) (convert . pack) $ getInputLine "psk> "
+  minput <- fmap (convert . pack) <$> getInputLine "psk> "
   case minput of
     Nothing    -> return Nothing
-    Just input -> do
-      case operation input state of
-        NoiseResultMessage ct state' -> return . Just $ (ct, state')
-        NoiseResultNeedPSK state'    -> pskLoop write state'
-        NoiseResultException ex      -> do
-          outputStrLn $ "exception: " <> show ex
-          pskLoop write state
+    Just input -> case operation input state of
+      NoiseResultMessage ct state' -> return . Just $ (ct, state')
+      NoiseResultNeedPSK state'    -> pskLoop write state'
+      NoiseResultException ex      -> do
+        outputStrLn $ "exception: " <> show ex
+        pskLoop write state
 
   where
     operation = if write then writeMessage else readMessage
 
 genCallbacks :: Options
              -> IO (ByteString -> IO (), IO ByteString)
-genCallbacks Options{..} = do
+genCallbacks Options{..} =
   case (optLocalHost, optLocalPort, optRemoteHost, optRemotePort, optPipeCommand) of
     (Just lhost, Just lport, Just rhost, Just rport, _) ->
       genSocket lhost lport rhost rport

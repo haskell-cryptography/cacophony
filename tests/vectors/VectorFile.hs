@@ -1,4 +1,4 @@
-{-# LANGUAGE RecordWildCards, RankNTypes, GADTs, KindSignatures #-}
+{-# LANGUAGE RecordWildCards, RankNTypes, GADTs #-}
 module VectorFile where
 
 import Data.Aeson

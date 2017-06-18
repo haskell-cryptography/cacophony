@@ -90,7 +90,7 @@ options =
   , Option [] ["local-ephemeral"]
     (ReqArg (\k o -> o { optLocalEphemeral = Just . convert . B64.decodeLenient . pack $ k }) "BASE64 PRIVATE KEY")
     "your private ephemeral key"
-  , Option [] ["server-static"]
+  , Option [] ["local-static"]
     (ReqArg (\k o -> o { optLocalStatic = Just . convert . B64.decodeLenient . pack $ k }) "BASE64 PRIVATE KEY")
     "your private static key"
   , Option [] ["remote-static"]

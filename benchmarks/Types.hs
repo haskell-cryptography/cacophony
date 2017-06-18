@@ -195,7 +195,7 @@ instance Show HandshakeName where
                           <> show hsHash
 
 instance Show PatternName where
-  show = fromMaybe "unknown" . flip lookup (map swap patternMap)
+  show = fromMaybe "unknown" . flip lookup (fmap swap patternMap)
 
 instance Show SomeCipherType where
   show (WrapCipherType ChaChaPoly1305) = "ChaChaPoly"

@@ -1,7 +1,7 @@
 {-# LANGUAGE RecordWildCards #-}
 module Main where
 
-import Control.Monad      (when)
+import Control.Monad      (when, unless)
 import Data.Bits          (xor)
 import Data.Maybe         (isNothing, isJust)
 import System.Environment (getArgs)
@@ -31,7 +31,7 @@ validateOpts Options{..} = do
     exitFailure
 
   let networkMode = all isJust [optLocalHost, optLocalPort, optRemoteHost, optRemotePort]
-  when (not (networkMode `xor` isJust optPipeCommand)) $ do
+  unless (networkMode `xor` isJust optPipeCommand) $ do
     putStrLn "Error: A set of sending/receiving hosts/ports OR a pipe command must be set (not both nor neither)."
     exitFailure
 

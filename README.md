@@ -107,6 +107,62 @@ The following functions are found in `Crypto.Noise`:
 
   * `rekeySending` and `rekeyReceiving` -- Rekeys the given NoiseState according to section 11.3 of the protocol.
 
+## Supported Features
+
+All combinations of the following handshake parameters are oficially supported and covered by the unit tests:
+
+* Patterns
+  * NN
+  * KN
+  * NK
+  * KK
+  * NX
+  * KX
+  * XN
+  * IN
+  * XK
+  * IK
+  * XX
+  * IX
+  * N
+  * K
+  * X
+  * NNpsk0
+  * NNpsk2
+  * NKpsk0
+  * NKpsk2
+  * NXpsk2
+  * XNpsk3
+  * XKpsk3
+  * XXpsk3
+  * KNpsk0
+  * KNpsk2
+  * KKpsk0
+  * KKpsk2
+  * KXpsk2
+  * INpsk1
+  * INpsk2
+  * IKpsk1
+  * IKpsk2
+  * IXpsk2
+  * Npsk0
+  * Kpsk0
+  * Xpsk1
+
+* Ciphers
+  * AESGCM
+  * ChaChaPoly1305
+
+* Curves
+  * Curve25519
+  * Curve448
+
+* Hashes
+  * BLAKE2b
+  * BLAKE2s
+  * SHA256
+  * SHA512
+
 ## Vectors
 
 Test vectors can be generated and verified using the `vectors` program. It accepts no arguments. When run,

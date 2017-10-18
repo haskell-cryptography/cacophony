@@ -12,7 +12,7 @@ module Crypto.Noise.DH.Curve448
 
 import Crypto.Error          (throwCryptoError, maybeCryptoError)
 import Crypto.Random.Entropy (getEntropy)
-import qualified Crypto.PubKey.Ed448 as C
+import qualified Crypto.PubKey.Curve448 as C
 import Crypto.Noise.DH
 import Data.ByteArray        (ScrubbedBytes, convert)
 

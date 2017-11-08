@@ -12,7 +12,7 @@ addons:
 
 matrix:
   include:
-    - env: ARGS="--resolver lts-8"
+    - env: ARGS=""
       compiler: ": #stack 8.0.2"
 
     - env: ARGS="--resolver nightly"
@@ -33,4 +33,4 @@ install:
 
 script:
   - stack $ARGS --no-terminal test --flag "cacophony:build-tools" --bench --no-run-benchmarks --haddock --no-haddock-deps
-  - stack sdist
+  - stack $ARGS sdist

@@ -23,7 +23,7 @@ import Data.Proxy
 import Crypto.Noise.Cipher
 import Crypto.Noise.DH
 import Crypto.Noise.Hash
-import Crypto.Noise.Internal.Handshake.Pattern hiding (e, s, ee, es, se, ss)
+import Crypto.Noise.Internal.Handshake.Pattern hiding (ss)
 import Crypto.Noise.Internal.SymmetricState
 
 -- | Represents the side of the conversation upon which a party resides.

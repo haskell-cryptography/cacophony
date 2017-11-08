@@ -2,7 +2,7 @@ module Socket where
 
 import Data.ByteString.Char8
 import Data.Monoid           ((<>))
-import Network.Socket hiding (send, sendTo, recv, recvFrom)
+import Network.Socket hiding (recvFrom)
 import Network.Socket.ByteString
 import Prelude hiding        (putStrLn)
 import System.Exit           (exitFailure)

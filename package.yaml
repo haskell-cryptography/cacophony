@@ -30,7 +30,7 @@ flags:
 library:
   source-dirs: src
   dependencies:
-    - base >= 4.9 && < 4.10
+    - base >= 4.9 && < 4.11
     - bytestring
     - cryptonite
     - exceptions
@@ -74,7 +74,7 @@ tests:
     main: hlint.hs
     source-dirs: tests/hlint
     dependencies:
-      - base >= 4.9 && < 4.10
+      - base >= 4.9 && < 4.11
       - hlint
 
     ghc-options:
@@ -89,7 +89,7 @@ tests:
     dependencies:
       - aeson
       - attoparsec
-      - base >= 4.9 && < 4.10
+      - base >= 4.9 && < 4.11
       - base16-bytestring
       - bytestring
       - cacophony
@@ -111,7 +111,7 @@ benchmarks:
     source-dirs: benchmarks
     dependencies:
       - async
-      - base >= 4.9 && < 4.10
+      - base >= 4.9 && < 4.11
       - base16-bytestring
       - bytestring
       - cacophony
@@ -136,7 +136,7 @@ executables:
         then:
           dependencies:
             - attoparsec
-            - base
+            - base >= 4.9 && < 4.11
             - base16-bytestring
             - base64-bytestring
             - bytestring

@@ -1,15 +1,15 @@
 {-# LANGUAGE RecordWildCards, RankNTypes, GADTs, KindSignatures #-}
 module Types where
 
-import Control.Monad      (mzero)
 import Data.Aeson
-import Data.Aeson.Types   (typeMismatch)
+import Data.Aeson.Types      (typeMismatch)
 import Data.Attoparsec.ByteString.Char8
-import Data.Maybe         (fromMaybe)
-import Data.Monoid        ((<>))
-import Data.Text          (pack)
-import Data.Text.Encoding (encodeUtf8)
-import Data.Tuple         (swap)
+import Data.ByteString.Char8 (ByteString, unpack)
+import Data.Maybe            (fromMaybe)
+import Data.Monoid           ((<>))
+import Data.Text             (pack)
+import Data.Text.Encoding    (encodeUtf8)
+import Data.Tuple            (swap)
 
 import Crypto.Noise
 import Crypto.Noise.Cipher.ChaChaPoly1305
@@ -91,7 +91,7 @@ data HashType :: * -> * where
 data SomeHashType where
   WrapHashType :: forall h. Hash h => HashType h -> SomeHashType
 
-patternMap :: [(String, PatternName)]
+patternMap :: [(ByteString, PatternName)]
 patternMap =
   [ ("NN", PatternNN)
   , ("KN", PatternKN)
@@ -131,19 +131,19 @@ patternMap =
   , ("Xpsk1" , PatternXpsk1)
   ]
 
-dhMap :: [(String, SomeDHType)]
+dhMap :: [(ByteString, SomeDHType)]
 dhMap =
   [ ("25519", WrapDHType Curve25519)
   , ("448"  , WrapDHType Curve448)
   ]
 
-cipherMap :: [(String, SomeCipherType)]
+cipherMap :: [(ByteString, SomeCipherType)]
 cipherMap =
   [ ("AESGCM"    , WrapCipherType AESGCM)
   , ("ChaChaPoly", WrapCipherType ChaChaPoly1305)
   ]
 
-hashMap :: [(String, SomeHashType)]
+hashMap :: [(ByteString, SomeHashType)]
 hashMap =
   [ ("BLAKE2b", WrapHashType BLAKE2b)
   , ("BLAKE2s", WrapHashType BLAKE2s)
@@ -155,14 +155,17 @@ parseHandshakeName :: Parser HandshakeName
 parseHandshakeName = do
   _ <- string "Noise_"
 
-  let untilUnderscore = anyChar `manyTill'` (char '_')
-      untilEOI        = anyChar `manyTill'` endOfInput
+  let untilUnderscore = do
+        val <- takeWhile1 (/= '_')
+        skipWhile (== '_')
+        return val
+
+      untilEOI        = takeByteString
 
   pattern <- (flip lookup patternMap) <$> untilUnderscore
   dh      <- (flip lookup dhMap)      <$> untilUnderscore
   cipher  <- (flip lookup cipherMap)  <$> untilUnderscore
   hash    <- (flip lookup hashMap)    <$> untilEOI
-
 
   let mHandshakeName = do
         p <- pattern
@@ -215,7 +218,7 @@ patternToHandshake PatternXpsk1  = noiseXpsk1
 
 instance FromJSON HandshakeName where
   parseJSON (String s) =
-    either (const mzero) pure $ parseOnly parseHandshakeName (encodeUtf8 s)
+    either fail pure $ parseOnly parseHandshakeName (encodeUtf8 s)
   parseJSON bad        = typeMismatch "HandshakeName" bad
 
 instance ToJSON HandshakeName where
@@ -232,7 +235,7 @@ instance Show HandshakeName where
                           <> show hsHash
 
 instance Show PatternName where
-  show = fromMaybe "unknown" . flip lookup (map swap patternMap)
+  show = unpack . fromMaybe "unknown" . flip lookup (map swap patternMap)
 
 instance Show SomeCipherType where
   show (WrapCipherType ChaChaPoly1305) = "ChaChaPoly"

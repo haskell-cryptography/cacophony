@@ -32,7 +32,7 @@ library:
   dependencies:
     - base >= 4.9 && < 4.11
     - bytestring
-    - cryptonite
+    - cryptonite >= 0.22
     - exceptions
     - free
     - lens

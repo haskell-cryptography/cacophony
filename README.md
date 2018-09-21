@@ -109,7 +109,7 @@ The following functions are found in `Crypto.Noise`:
 
 ## Supported Features
 
-All combinations of the following handshake parameters are oficially supported and covered by the unit tests:
+All combinations of the following handshake parameters are officially supported and covered by the unit tests:
 
 * Patterns
   * NN

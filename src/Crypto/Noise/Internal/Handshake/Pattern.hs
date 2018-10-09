@@ -10,6 +10,7 @@ module Crypto.Noise.Internal.Handshake.Pattern where
 import Control.Applicative.Free
 import Control.Lens
 import Data.ByteString (ByteString)
+import Data.Semigroup (Semigroup(..))
 
 data Token next
   = E   next
@@ -94,6 +95,9 @@ handshakePattern protoName ms = HandshakePattern protoName hasPSK ms
     scanP (Psk _) = HasPSK True
     scanP _       = mempty
 
+instance Semigroup HasPSK where
+  (HasPSK a) <> (HasPSK b) = HasPSK $ a || b
+
 instance Monoid HasPSK where
-  mempty = HasPSK False
-  (HasPSK a) `mappend` (HasPSK b) = HasPSK $ a || b
+  mempty  = HasPSK False
+  mappend = (<>)

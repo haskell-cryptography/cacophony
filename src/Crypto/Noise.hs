@@ -92,7 +92,7 @@ writeMessage msg ns = maybe
   (ns ^. nsSendingCipherState)
   where
     ctToMsg       = arr cipherTextToBytes
-    updateState   = arr $ \cs -> ns & nsSendingCipherState .~ Just cs
+    updateState   = arr $ \cs -> ns & nsSendingCipherState ?~ cs
     encryptMsg cs = (ctToMsg *** updateState) <$> encryptWithAd mempty msg cs
 
 -- | Reads a handshake or transport message and returns the embedded payload. If
@@ -115,7 +115,7 @@ readMessage ct ns = maybe
   (ns ^. nsReceivingCipherState)
   where
     ct'           = cipherBytesToText ct
-    updateState   = arr $ \cs -> ns & nsReceivingCipherState .~ Just cs
+    updateState   = arr $ \cs -> ns & nsReceivingCipherState ?~ cs
     decryptMsg cs = second updateState <$> decryptWithAd mempty ct' cs
 
 -- | Given an operation ('writeMessage' or 'readMessage'), a list of PSKs, and

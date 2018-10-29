@@ -76,7 +76,7 @@ resumeHandshake msg ns = case ns ^. nsHandshakeSuspension of
           -- The handshake pattern has not finished running. Save the suspension
           -- and the mutated HandshakeState and return what was yielded.
           Left (Request req resp) -> do
-            let ns' = ns & nsHandshakeSuspension .~ Just (Handshake . resp)
+            let ns' = ns & nsHandshakeSuspension ?~ (Handshake . resp)
                          & nsHandshakeState      .~ hs
             return (req, ns')
           -- The handshake pattern has finished running. Create the CipherStates.
@@ -84,10 +84,10 @@ resumeHandshake msg ns = case ns ^. nsHandshakeSuspension of
             let (cs1, cs2) = split (hs ^. hsSymmetricState)
 
                 ns'        = if hs ^. hsOpts . hoRole == InitiatorRole
-                               then ns & nsSendingCipherState   .~ Just cs1
-                                       & nsReceivingCipherState .~ Just cs2
-                               else ns & nsSendingCipherState   .~ Just cs2
-                                       & nsReceivingCipherState .~ Just cs1
+                               then ns & nsSendingCipherState   ?~ cs1
+                                       & nsReceivingCipherState ?~ cs2
+                               else ns & nsSendingCipherState   ?~ cs2
+                                       & nsReceivingCipherState ?~ cs1
 
                 ns''       = ns' & nsHandshakeState .~ hs
 

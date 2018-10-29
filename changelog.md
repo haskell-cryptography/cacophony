@@ -1,3 +1,13 @@
+# 0.10.1
+
+* Support GHC > 8.0.2
+
+* Parse pattern names more efficiently in unit tests
+
+* Use preferred Curve448 module from cryptonite
+
+* Add list of supported handshake parameters to README
+
 # 0.10.0
 
 * Completely refactored API

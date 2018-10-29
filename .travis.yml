@@ -13,20 +13,20 @@ addons:
 matrix:
   include:
     - env: ARGS="--resolver lts-9.21"
-      compiler: ": #stack 8.0.2"
+      compiler: "stack-8.0.2"
 
     - env: ARGS="--resolver lts-11.22"
-      compiler: ": #stack 8.2.2"
+      compiler: "stack-8.2.2"
 
     - env: ARGS=""
-      compiler: ": #stack 8.4.3"
+      compiler: "stack-8.4.3"
 
     - env: ARGS="--resolver nightly"
-      compiler: ": #stack nightly"
+      compiler: "stack-nightly"
 
   allow_failures:
     - env: ARGS="--resolver nightly"
-      compiler: ": #stack nightly"
+      compiler: "stack-nightly"
 
 before_install:
   - unset CC

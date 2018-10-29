@@ -12,13 +12,13 @@ addons:
 
 matrix:
   include:
-    - env: ARGS=""
+    - env: ARGS="--resolver lts-9.21"
       compiler: ": #stack 8.0.2"
 
     - env: ARGS="--resolver lts-11.22"
       compiler: ": #stack 8.2.2"
 
-    - env: ARGS="--resolver lts-12.12"
+    - env: ARGS=""
       compiler: ": #stack 8.4.3"
 
     - env: ARGS="--resolver nightly"

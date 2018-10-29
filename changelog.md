@@ -1,5 +1,7 @@
 # 0.10.1
 
+* Set default GHC version to 8.4
+
 * Support GHC > 8.0.2
 
 * Parse pattern names more efficiently in unit tests

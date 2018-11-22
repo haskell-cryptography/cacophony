@@ -19,7 +19,7 @@ matrix:
       compiler: "stack-8.2.2"
 
     - env: ARGS=""
-      compiler: "stack-8.4.3"
+      compiler: "stack-8.4.4"
 
     - env: ARGS="--resolver nightly"
       compiler: "stack-nightly"

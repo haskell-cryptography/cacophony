@@ -7,7 +7,7 @@ import sys
 
 def format_input(val):
     if isinstance(val, dict):
-        return { k: format_input(v) for k, v in val.iteritems() }
+        return { k: format_input(v) for k, v in val.items() }
     if isinstance(val, list):
         return map(format_input, val)
     if val is None:

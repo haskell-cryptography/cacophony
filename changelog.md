@@ -1,3 +1,7 @@
+# 0.11.0
+
+* Add support for deferred patterns
+
 # 0.10.1
 
 * Set default GHC version to 8.4

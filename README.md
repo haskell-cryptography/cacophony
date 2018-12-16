@@ -148,6 +148,29 @@ All combinations of the following handshake parameters are officially supported 
   * Npsk0
   * Kpsk0
   * Xpsk1
+  * NK1
+  * NX1
+  * X1N
+  * X1K
+  * XK1
+  * X1K1
+  * X1X
+  * XX1
+  * X1X1
+  * K1N
+  * K1K
+  * KK1
+  * K1K1
+  * K1X
+  * KX1
+  * K1X1
+  * I1N
+  * I1K
+  * IK1
+  * I1K1
+  * I1X
+  * IX1
+  * I1X1
 
 * Ciphers
   * AESGCM

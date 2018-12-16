@@ -59,6 +59,29 @@ data PatternName
   | PatternNpsk0
   | PatternKpsk0
   | PatternXpsk1
+  | PatternNK1
+  | PatternNX1
+  | PatternX1N
+  | PatternX1K
+  | PatternXK1
+  | PatternX1K1
+  | PatternX1X
+  | PatternXX1
+  | PatternX1X1
+  | PatternK1N
+  | PatternK1K
+  | PatternKK1
+  | PatternK1K1
+  | PatternK1X
+  | PatternKX1
+  | PatternK1X1
+  | PatternI1N
+  | PatternI1K
+  | PatternIK1
+  | PatternI1K1
+  | PatternI1X
+  | PatternIX1
+  | PatternI1X1
   deriving (Eq, Enum, Bounded)
 
 data HandshakeName = HandshakeName
@@ -93,21 +116,21 @@ data SomeHashType where
 
 patternMap :: [(ByteString, PatternName)]
 patternMap =
-  [ ("NN", PatternNN)
-  , ("KN", PatternKN)
-  , ("NK", PatternNK)
-  , ("KK", PatternKK)
-  , ("NX", PatternNX)
-  , ("KX", PatternKX)
-  , ("XN", PatternXN)
-  , ("IN", PatternIN)
-  , ("XK", PatternXK)
-  , ("IK", PatternIK)
-  , ("XX", PatternXX)
-  , ("IX", PatternIX)
-  , ("N" , PatternN)
-  , ("K" , PatternK)
-  , ("X" , PatternX)
+  [ ("NN"    , PatternNN)
+  , ("KN"    , PatternKN)
+  , ("NK"    , PatternNK)
+  , ("KK"    , PatternKK)
+  , ("NX"    , PatternNX)
+  , ("KX"    , PatternKX)
+  , ("XN"    , PatternXN)
+  , ("IN"    , PatternIN)
+  , ("XK"    , PatternXK)
+  , ("IK"    , PatternIK)
+  , ("XX"    , PatternXX)
+  , ("IX"    , PatternIX)
+  , ("N"     , PatternN)
+  , ("K"     , PatternK)
+  , ("X"     , PatternX)
   , ("NNpsk0", PatternNNpsk0)
   , ("NNpsk2", PatternNNpsk2)
   , ("NKpsk0", PatternNKpsk0)
@@ -129,6 +152,29 @@ patternMap =
   , ("Npsk0" , PatternNpsk0)
   , ("Kpsk0" , PatternKpsk0)
   , ("Xpsk1" , PatternXpsk1)
+  , ("NK1"   , PatternNK1)
+  , ("NX1"   , PatternNX1)
+  , ("X1N"   , PatternX1N)
+  , ("X1K"   , PatternX1K)
+  , ("XK1"   , PatternXK1)
+  , ("X1K1"  , PatternX1K1)
+  , ("X1X"   , PatternX1X)
+  , ("XX1"   , PatternXX1)
+  , ("X1X1"  , PatternX1X1)
+  , ("K1N"   , PatternK1N)
+  , ("K1K"   , PatternK1K)
+  , ("KK1"   , PatternKK1)
+  , ("K1K1"  , PatternK1K1)
+  , ("K1X"   , PatternK1X)
+  , ("KX1"   , PatternKX1)
+  , ("K1X1"  , PatternK1X1)
+  , ("I1N"   , PatternI1N)
+  , ("I1K"   , PatternI1K)
+  , ("IK1"   , PatternIK1)
+  , ("I1K1"  , PatternI1K1)
+  , ("I1X"   , PatternI1X)
+  , ("IX1"   , PatternIX1)
+  , ("I1X1"  , PatternI1X1)
   ]
 
 dhMap :: [(ByteString, SomeDHType)]
@@ -179,21 +225,21 @@ parseHandshakeName = do
 
 patternToHandshake :: PatternName
                    -> HandshakePattern
-patternToHandshake PatternNN = noiseNN
-patternToHandshake PatternKN = noiseKN
-patternToHandshake PatternNK = noiseNK
-patternToHandshake PatternKK = noiseKK
-patternToHandshake PatternNX = noiseNX
-patternToHandshake PatternKX = noiseKX
-patternToHandshake PatternXN = noiseXN
-patternToHandshake PatternIN = noiseIN
-patternToHandshake PatternXK = noiseXK
-patternToHandshake PatternIK = noiseIK
-patternToHandshake PatternXX = noiseXX
-patternToHandshake PatternIX = noiseIX
-patternToHandshake PatternN  = noiseN
-patternToHandshake PatternK  = noiseK
-patternToHandshake PatternX  = noiseX
+patternToHandshake PatternNN     = noiseNN
+patternToHandshake PatternKN     = noiseKN
+patternToHandshake PatternNK     = noiseNK
+patternToHandshake PatternKK     = noiseKK
+patternToHandshake PatternNX     = noiseNX
+patternToHandshake PatternKX     = noiseKX
+patternToHandshake PatternXN     = noiseXN
+patternToHandshake PatternIN     = noiseIN
+patternToHandshake PatternXK     = noiseXK
+patternToHandshake PatternIK     = noiseIK
+patternToHandshake PatternXX     = noiseXX
+patternToHandshake PatternIX     = noiseIX
+patternToHandshake PatternN      = noiseN
+patternToHandshake PatternK      = noiseK
+patternToHandshake PatternX      = noiseX
 patternToHandshake PatternNNpsk0 = noiseNNpsk0
 patternToHandshake PatternNNpsk2 = noiseNNpsk2
 patternToHandshake PatternNKpsk0 = noiseNKpsk0
@@ -215,6 +261,29 @@ patternToHandshake PatternIXpsk2 = noiseIXpsk2
 patternToHandshake PatternNpsk0  = noiseNpsk0
 patternToHandshake PatternKpsk0  = noiseKpsk0
 patternToHandshake PatternXpsk1  = noiseXpsk1
+patternToHandshake PatternNK1    = noiseNK1
+patternToHandshake PatternNX1    = noiseNX1
+patternToHandshake PatternX1N    = noiseX1N
+patternToHandshake PatternX1K    = noiseX1K
+patternToHandshake PatternXK1    = noiseXK1
+patternToHandshake PatternX1K1   = noiseX1K1
+patternToHandshake PatternX1X    = noiseX1X
+patternToHandshake PatternXX1    = noiseXX1
+patternToHandshake PatternX1X1   = noiseX1X1
+patternToHandshake PatternK1N    = noiseK1N
+patternToHandshake PatternK1K    = noiseK1K
+patternToHandshake PatternKK1    = noiseKK1
+patternToHandshake PatternK1K1   = noiseK1K1
+patternToHandshake PatternK1X    = noiseK1X
+patternToHandshake PatternKX1    = noiseKX1
+patternToHandshake PatternK1X1   = noiseK1X1
+patternToHandshake PatternI1N    = noiseI1N
+patternToHandshake PatternI1K    = noiseI1K
+patternToHandshake PatternIK1    = noiseIK1
+patternToHandshake PatternI1K1   = noiseI1K1
+patternToHandshake PatternI1X    = noiseI1X
+patternToHandshake PatternIX1    = noiseIX1
+patternToHandshake PatternI1X1   = noiseI1X1
 
 instance FromJSON HandshakeName where
   parseJSON (String s) =

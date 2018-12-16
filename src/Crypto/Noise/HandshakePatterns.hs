@@ -46,6 +46,30 @@ module Crypto.Noise.HandshakePatterns
   , noiseNpsk0
   , noiseKpsk0
   , noiseXpsk1
+  -- * Deferred patterns
+  , noiseNK1
+  , noiseNX1
+  , noiseX1N
+  , noiseX1K
+  , noiseXK1
+  , noiseX1K1
+  , noiseX1X
+  , noiseXX1
+  , noiseX1X1
+  , noiseK1N
+  , noiseK1K
+  , noiseKK1
+  , noiseK1K1
+  , noiseK1X
+  , noiseKX1
+  , noiseK1X1
+  , noiseI1N
+  , noiseI1K
+  , noiseIK1
+  , noiseI1K1
+  , noiseI1X
+  , noiseIX1
+  , noiseI1X1
   ) where
 
 import Crypto.Noise.Internal.Handshake.Pattern
@@ -412,3 +436,285 @@ noiseXpsk1 :: HandshakePattern
 noiseXpsk1 = handshakePattern "Xpsk1" $
   preResponder s *>
   initiator (e *> es *> s *> ss *> psk)
+
+-- | @Noise_NK1:
+--  <- s
+--  ...
+--  -> e
+--  <- e, ee, es
+noiseNK1 :: HandshakePattern
+noiseNK1 = handshakePattern "NK1" $
+  preResponder s *>
+  initiator e *>
+  responder (e *> ee *> es)
+
+-- | @Noise_NX1:
+--  -> e
+--  <- e, ee, s
+--  -> es
+noiseNX1 :: HandshakePattern
+noiseNX1 = handshakePattern "NX1" $
+  initiator e *>
+  responder (e *> ee *> s) *>
+  initiator es
+
+-- | @Noise_X1N:
+--  -> e
+--  <- e, ee
+--  -> s
+--  <- se
+noiseX1N :: HandshakePattern
+noiseX1N = handshakePattern "X1N" $
+  initiator e *>
+  responder (e *> ee) *>
+  initiator s *>
+  responder se
+
+-- | @Noise_X1K:
+--  <- s
+--  ...
+--  -> e, es
+--  <- e, ee
+--  -> s
+--  <- se
+noiseX1K :: HandshakePattern
+noiseX1K = handshakePattern "X1K" $
+  preResponder s *>
+  initiator (e *> es) *>
+  responder (e *> ee) *>
+  initiator s *>
+  responder se
+
+-- | @Noise_XK1:
+--  <- s
+--  ...
+--  -> e
+--  <- e, ee, es
+--  -> s, se
+noiseXK1 :: HandshakePattern
+noiseXK1 = handshakePattern "XK1" $
+  preResponder s *>
+  initiator e *>
+  responder (e *> ee *> es) *>
+  initiator (s *> se)
+
+-- | @Noise_X1K1:
+--  <- s
+--  ...
+--  -> e
+--  <- e, ee, es
+--  -> s
+--  <- se
+noiseX1K1 :: HandshakePattern
+noiseX1K1 = handshakePattern "X1K1" $
+  preResponder s *>
+  initiator e *>
+  responder (e *> ee *> es) *>
+  initiator s *>
+  responder se
+
+-- | @Noise_X1X
+--  -> e
+--  <- e, ee, s, es
+--  -> s
+--  <- se
+noiseX1X :: HandshakePattern
+noiseX1X = handshakePattern "X1X" $
+  initiator e *>
+  responder (e *> ee *> s *> es) *>
+  initiator s *>
+  responder se
+
+-- | @Noise_XX1:
+--  -> e
+--  <- e, ee, s
+--  -> es, s, se
+noiseXX1 :: HandshakePattern
+noiseXX1 = handshakePattern "XX1" $
+  initiator e *>
+  responder (e *> ee *> s) *>
+  initiator (es *> s *> se)
+
+-- | @Noise_X1X1:
+--  -> e
+--  <- e, ee, s
+--  -> es, s
+--  <- se
+noiseX1X1 :: HandshakePattern
+noiseX1X1 = handshakePattern "X1X1" $
+  initiator e *>
+  responder (e *> ee *> s) *>
+  initiator (es *> s) *>
+  responder se
+
+-- | @Noise_K1N:
+--  -> s
+--  ...
+--  -> e
+--  <- e, ee
+--  -> se
+noiseK1N :: HandshakePattern
+noiseK1N = handshakePattern "K1N" $
+  preInitiator s *>
+  initiator e *>
+  responder (e *> ee) *>
+  initiator se
+
+-- | @Noise_K1K:
+--  -> s
+--  <- s
+--  ...
+--  -> e, es
+--  <- e, ee
+--  -> se
+noiseK1K :: HandshakePattern
+noiseK1K = handshakePattern "K1K" $
+  preInitiator s *>
+  preResponder s *>
+  initiator (e *> es) *>
+  responder (e *> ee) *>
+  initiator se
+
+-- | @Noise_KK1:
+--  -> s
+--  <- s
+--  ...
+--  -> e
+--  <- e, ee, se, es
+noiseKK1 :: HandshakePattern
+noiseKK1 = handshakePattern "KK1" $
+  preInitiator s *>
+  preResponder s *>
+  initiator e *>
+  responder (e *> ee *> se *> es)
+
+-- | @Noise_K1K1:
+--  -> s
+--  <- s
+--  ...
+--  -> e
+--  <- e, ee, es
+--  -> se
+noiseK1K1 :: HandshakePattern
+noiseK1K1 = handshakePattern "K1K1" $
+  preInitiator s *>
+  preResponder s *>
+  initiator e *>
+  responder (e *> ee *> es) *>
+  initiator se
+
+-- | @Noise_K1X
+--  -> s
+--  ...
+--  -> e
+--  <- e, ee, s, es
+--  -> se
+noiseK1X :: HandshakePattern
+noiseK1X = handshakePattern "K1X" $
+  preInitiator s *>
+  initiator e *>
+  responder (e *> ee *> s *> es) *>
+  initiator se
+
+-- | @Noise_KX1
+--  -> s
+--  ...
+--  -> e
+--  <- e, ee, se, s
+--  -> es
+noiseKX1 :: HandshakePattern
+noiseKX1 = handshakePattern "KX1" $
+  preInitiator s *>
+  initiator e *>
+  responder (e *> ee *> se *> s) *>
+  initiator es
+
+-- | @Noise_K1X1:
+--  -> s
+--  ...
+--  -> e
+--  <- e, ee, s
+--  -> se, es
+noiseK1X1 :: HandshakePattern
+noiseK1X1 = handshakePattern "K1X1" $
+  preInitiator s *>
+  initiator e *>
+  responder (e *> ee *> s) *>
+  initiator (se *> es)
+
+-- | @Noise_I1N:
+--  -> e, s
+--  <- e, ee
+--  -> se
+noiseI1N :: HandshakePattern
+noiseI1N = handshakePattern "I1N" $
+  initiator (e *> s) *>
+  responder (e *> ee) *>
+  initiator se
+
+-- | @Noise_I1K:
+--  <- s
+--  ...
+--  -> e, es, s
+--  <- e, ee
+--  -> se
+noiseI1K :: HandshakePattern
+noiseI1K = handshakePattern "I1K" $
+  preResponder s *>
+  initiator (e *> es *> s) *>
+  responder (e *> ee) *>
+  initiator se
+
+-- | @Noise_IK1:
+--  <- s
+--  ...
+--  -> e, s
+--  <- e, ee, se, es
+noiseIK1 :: HandshakePattern
+noiseIK1 = handshakePattern "IK1" $
+  preResponder s *>
+  initiator (e *> s) *>
+  responder (e *> ee *> se *> es)
+
+-- | @Noise_I1K1:
+--  <- s
+--  ...
+--  -> e, s
+--  <- e, ee, es
+--  -> se
+noiseI1K1 :: HandshakePattern
+noiseI1K1 = handshakePattern "I1K1" $
+  preResponder s *>
+  initiator (e *> s) *>
+  responder (e *> ee *> es) *>
+  initiator se
+
+-- | @Noise_I1X:
+--  -> e, s
+--  <- e, ee, s, es
+--  -> se
+noiseI1X :: HandshakePattern
+noiseI1X = handshakePattern "I1X" $
+  initiator (e *> s) *>
+  responder (e *> ee *> s *> es) *>
+  initiator se
+
+-- | @Noise_IX1:
+--  -> e, s
+--  <- e, ee, se, s
+--  -> es
+noiseIX1 :: HandshakePattern
+noiseIX1 = handshakePattern "IX1" $
+  initiator (e *> s) *>
+  responder (e *> ee *> se *> s) *>
+  initiator es
+
+-- | @Noise_I1X1:
+--  -> e, s
+--  <- e, ee, s
+--  -> se, es
+noiseI1X1 :: HandshakePattern
+noiseI1X1 = handshakePattern "I1X1" $
+  initiator (e *> s) *>
+  responder (e *> ee *> s) *>
+  initiator (se *> es)

@@ -76,6 +76,27 @@ setKeys v@Vector{vProtoName = pat} = v
                  , PatternX
                  , PatternKpsk0
                  , PatternXpsk1
+                 , PatternX1N
+                 , PatternX1K
+                 , PatternXK1
+                 , PatternX1K1
+                 , PatternX1X
+                 , PatternXX1
+                 , PatternX1X1
+                 , PatternK1N
+                 , PatternK1K
+                 , PatternKK1
+                 , PatternK1K1
+                 , PatternK1X
+                 , PatternKX1
+                 , PatternK1X1
+                 , PatternI1N
+                 , PatternI1K
+                 , PatternIK1
+                 , PatternI1K1
+                 , PatternI1X
+                 , PatternIX1
+                 , PatternI1X1
                  ]
 
     -- The following patterns require a static key for the responder.
@@ -104,6 +125,26 @@ setKeys v@Vector{vProtoName = pat} = v
                  , PatternNpsk0
                  , PatternKpsk0
                  , PatternXpsk1
+                 , PatternNK1
+                 , PatternNX1
+                 , PatternX1K
+                 , PatternXK1
+                 , PatternX1K1
+                 , PatternX1X
+                 , PatternXX1
+                 , PatternX1X1
+                 , PatternK1K
+                 , PatternKK1
+                 , PatternK1K1
+                 , PatternK1X
+                 , PatternKX1
+                 , PatternK1X1
+                 , PatternI1K
+                 , PatternIK1
+                 , PatternI1K1
+                 , PatternI1X
+                 , PatternIX1
+                 , PatternI1X1
                  ]
 
     -- The following patterns require the initiator to know the responder's
@@ -125,6 +166,16 @@ setKeys v@Vector{vProtoName = pat} = v
                  , PatternNpsk0
                  , PatternKpsk0
                  , PatternXpsk1
+                 , PatternNK1
+                 , PatternX1K
+                 , PatternXK1
+                 , PatternX1K1
+                 , PatternK1K
+                 , PatternKK1
+                 , PatternK1K1
+                 , PatternI1K
+                 , PatternIK1
+                 , PatternI1K1
                  ]
 
     -- The following patterns require the responder to know the initiator's
@@ -139,6 +190,13 @@ setKeys v@Vector{vProtoName = pat} = v
                  , PatternKXpsk2
                  , PatternK
                  , PatternKpsk0
+                 , PatternK1N
+                 , PatternK1K
+                 , PatternKK1
+                 , PatternK1K1
+                 , PatternK1X
+                 , PatternKX1
+                 , PatternK1X1
                  ]
 
     -- The following patterns use the psk token.

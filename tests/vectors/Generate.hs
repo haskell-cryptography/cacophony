@@ -137,7 +137,7 @@ genVector pat payloads = finalVector
     d = hsDH     pat
     h = hsHash   pat
 
-    finalVector = either (error "failed to generate messages!")
+    finalVector = either (\err -> error ("Pattern: " <> (show pat) <> " Error: " <> (show err)))
                          id
                          (populateVector c d h payloads . setKeys $ emptyVector)
 

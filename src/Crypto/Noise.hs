@@ -37,13 +37,23 @@ module Crypto.Noise
     -- * Re-exports
   , ScrubbedBytes
   , convert
+  , nsSendingCipherState
+  , csk
+  , csn
+  , nsHandshakeState
+  , hsSymmetricState
+  , ssck
+  , ssh
+  , ssCipher
+  , nsReceivingCipherState
+  , mixKey
   ) where
 
 import Control.Arrow   (arr, second, (***))
 import Control.Exception.Safe
 import Control.Lens
 import Data.ByteArray  (ScrubbedBytes, convert)
-import Data.Maybe      (isJust)
+import Data.Maybe      (isJust, fromJust)
 
 import Crypto.Noise.Cipher
 import Crypto.Noise.DH

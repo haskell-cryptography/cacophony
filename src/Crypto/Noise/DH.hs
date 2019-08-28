@@ -13,6 +13,7 @@ module Crypto.Noise.DH
   ) where
 
 import Data.ByteArray (ScrubbedBytes)
+import GHC.Stack
 
 -- | Typeclass for Diffie-Hellman key agreement.
 class DH d where
@@ -33,13 +34,13 @@ class DH d where
   dhGenKey         :: IO (KeyPair d)
 
   -- | Performs DH.
-  dhPerform        :: SecretKey d -> PublicKey d -> ScrubbedBytes
+  dhPerform        :: HasCallStack => SecretKey d -> PublicKey d -> ScrubbedBytes
 
   -- | Exports a 'PublicKey'.
   dhPubToBytes     :: PublicKey d -> ScrubbedBytes
 
   -- | Imports a 'PublicKey'.
-  dhBytesToPub     :: ScrubbedBytes -> Maybe (PublicKey d)
+  dhBytesToPub     :: HasCallStack => ScrubbedBytes -> Maybe (PublicKey d)
 
   -- | Exports a 'SecretKey'.
   dhSecToBytes     :: SecretKey d -> ScrubbedBytes

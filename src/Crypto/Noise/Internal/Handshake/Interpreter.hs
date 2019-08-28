@@ -11,10 +11,13 @@ import Control.Applicative.Free
 import Control.Exception.Safe
 import Control.Lens
 import Control.Monad.Coroutine.SuspensionFunctors
-import Data.ByteArray (splitAt)
+import Data.ByteArray (splitAt, convert)
+import Data.ByteString hiding (splitAt)
 import Data.Maybe     (isJust)
 import Data.Proxy
-import Prelude hiding (splitAt)
+import Prelude hiding (splitAt, length)
+import Debug.Trace
+import Data.ByteString.Base16
 
 import Crypto.Noise.Cipher
 import Crypto.Noise.DH
@@ -37,7 +40,7 @@ interpretToken opRole (E next) = do
 
   if opRole == myRole then do
     (_, pk) <- getKeyPair hoLocalEphemeral LocalEphemeral
-    let pkBytes = dhPubToBytes pk
+    let pkBytes = trace ("dhPubToBytes: " ++ (show $ encode $ convert $ dhPubToBytes pk)) dhPubToBytes pk
 
     if pskMode
       then hsSymmetricState %= mixKey pkBytes . mixHash pkBytes
@@ -105,7 +108,7 @@ interpretToken opRole (S next) = do
 interpretToken _ (Ee next) = do
   ~(sk, _) <- getKeyPair   hoLocalEphemeral  LocalEphemeral
   rpk      <- getPublicKey hoRemoteEphemeral RemoteEphemeral
-  hsSymmetricState %= mixKey (dhPerform sk rpk)
+  hsSymmetricState %= mixKey (trace "dh1" $ dhPerform sk rpk)
 
   return next
 
@@ -117,11 +120,11 @@ interpretToken _ (Es next) = do
   if myRole == InitiatorRole then do
     rpk      <- getPublicKey hoRemoteStatic   RemoteStatic
     ~(sk, _) <- getKeyPair   hoLocalEphemeral LocalEphemeral
-    hsSymmetricState %= mixKey (dhPerform sk rpk)
+    hsSymmetricState %= mixKey (trace ("dh2: " ++ show [encode $ convert $ dhSecToBytes sk, encode $ convert $ dhPubToBytes $ rpk, encode $ convert $ dhPerform sk rpk]) $ dhPerform sk rpk)
   else do
     ~(sk, _) <- getKeyPair   hoLocalStatic     LocalStatic
     rpk      <- getPublicKey hoRemoteEphemeral RemoteEphemeral
-    hsSymmetricState %= mixKey (dhPerform sk rpk)
+    hsSymmetricState %= mixKey (trace "dh3" $ dhPerform sk rpk)
 
   return next
 
@@ -133,11 +136,11 @@ interpretToken _ (Se next) = do
   if myRole == InitiatorRole then do
     ~(sk, _) <- getKeyPair   hoLocalStatic     LocalStatic
     rpk      <- getPublicKey hoRemoteEphemeral RemoteEphemeral
-    hsSymmetricState %= mixKey (dhPerform sk rpk)
+    hsSymmetricState %= mixKey (trace "dh4" $ dhPerform sk rpk)
   else do
     rpk      <- getPublicKey hoRemoteStatic   RemoteStatic
     ~(sk, _) <- getKeyPair   hoLocalEphemeral LocalEphemeral
-    hsSymmetricState %= mixKey (dhPerform sk rpk)
+    hsSymmetricState %= mixKey (trace "dh5" $ dhPerform sk rpk)
 
   return next
 
@@ -146,7 +149,7 @@ interpretToken _ (Se next) = do
 interpretToken _ (Ss next) = do
   ~(sk, _) <- getKeyPair   hoLocalStatic  LocalStatic
   rpk      <- getPublicKey hoRemoteStatic RemoteStatic
-  hsSymmetricState %= mixKey (dhPerform sk rpk)
+  hsSymmetricState %= mixKey (trace "dh6" $ dhPerform sk rpk)
 
   return next
 

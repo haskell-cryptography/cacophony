@@ -24,8 +24,9 @@ import Crypto.Noise.Internal.CipherState
 
 data SymmetricState c h =
   SymmetricState { _ssCipher :: CipherState c
-                 , _ssck     :: ChainingKey h
                  , _ssh      :: Either ScrubbedBytes (Digest h)
+                 , _sendingCK   :: ChainingKey h
+                 , _receivingCK :: ChainingKey h
                  }
 
 $(makeLenses ''SymmetricState)
@@ -34,7 +35,7 @@ $(makeLenses ''SymmetricState)
 symmetricState :: forall c h. (Cipher c, Hash h)
                => ScrubbedBytes
                -> SymmetricState c h
-symmetricState protoName = SymmetricState cs ck h
+symmetricState protoName = SymmetricState cs h ck ck
   where
     hashLen    = hashLength (Proxy :: Proxy h)
     shouldHash = length protoName > hashLen
@@ -55,11 +56,12 @@ mixKey keyMat ss =
     traceStack ("mixKey hash now: " ++ (show $ keyMat == (convert $ fst $ decode $ "1e2fb3c8fe8fb9f262f649f64d26ecf0f2c0a805a767cf02dc2d77a6ef1fdcc3")) ++ " " ++ (show [encode $ convert $ keyMat, encode $ convert $ k])) res
   where
     --[t1, t2] = hashHKDF @SHA256 (hashBytesToCK $ convert $ fst $ decode $ "2640f52eebcd9e882958951c794250eedb28002c05d7dc2ea0f195406042caf1") (convert $ fst $ decode $ "1e2fb3c8fe8fb9f262f649f64d26ecf0f2c0a805a767cf02dc2d77a6ef1fdcc3") 2
-    [ck, k] = hashHKDF (ss ^. ssck) keyMat 2
+    [ck, k] = hashHKDF (ss ^. sendingCK) keyMat 2
     -- k is truncated automatically by cipherBytesToSym
     cs      = cipherState . Just . cipherBytesToSym $ k
     res = ss & ssCipher .~ cs
-             & ssck     .~ hashBytesToCK ck
+             & sendingCK       .~ hashBytesToCK ck
+             & receivingCK     .~ hashBytesToCK ck
 
 -- | Mixes arbitrary data in to the SymmetricState.
 mixHash :: Hash h
@@ -79,11 +81,12 @@ mixKeyAndHash :: (Cipher c, Hash h)
               -> SymmetricState c h
 mixKeyAndHash keyMat ss = trace ("mixKeyAndHash: " ++ (show [ck, h, k])) res
   where
-    [ck, h, k] = hashHKDF (ss ^. ssck) keyMat 3
+    [ck, h, k] = hashHKDF (ss ^. sendingCK) keyMat 3
     ss'        = mixHash h ss
     cs         = cipherState . Just . cipherBytesToSym $ k
     res        = ss' & ssCipher .~ cs
-                     & ssck     .~ hashBytesToCK ck
+                     & sendingCK     .~ hashBytesToCK ck
+                     & receivingCK   .~ hashBytesToCK ck
 
 -- | Encrypts the given Plaintext. Note that this may not actually perform
 --   encryption if a key has not been established yet, in which case the
@@ -124,7 +127,7 @@ split :: (Cipher c, Hash h)
       -> (CipherState c, CipherState c)
 split ss = trace ("split: " ++ (show [k1, k2])) (c1, c2)
   where
-    [k1, k2] = hashHKDF (ss ^. ssck) mempty 2
+    [k1, k2] = hashHKDF (ss ^. sendingCK) mempty 2
     c1       = cipherState . Just . cipherBytesToSym $ k1
     c2       = cipherState . Just . cipherBytesToSym $ k2
 

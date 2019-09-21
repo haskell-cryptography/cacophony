@@ -2,7 +2,7 @@
 module Main where
 
 import Prelude hiding (replicate, length, concat, splitAt)
-import Crypto.Noise (NoiseState, NoiseResult(..), ScrubbedBytes, HandshakeOpts, writeMessage, readMessage, nsReceivingCipherState, nsSendingCipherState, csn, csk, ssck, nsHandshakeState, hsSymmetricState, noiseState, setLocalEphemeral, setLocalStatic, setRemoteStatic, defaultHandshakeOpts, HandshakeRole(..))
+import Crypto.Noise (NoiseState, NoiseResult(..), ScrubbedBytes, HandshakeOpts, writeMessage, readMessage, nsReceivingCipherState, nsSendingCipherState, csn, csk, receivingCK, sendingCK, nsHandshakeState, hsSymmetricState, noiseState, setLocalEphemeral, setLocalStatic, setRemoteStatic, defaultHandshakeOpts, HandshakeRole(..), setLightningRotation)
 import Crypto.Noise.Cipher.ChaChaPoly1305 (ChaChaPoly1305)
 import Crypto.Noise.DH (KeyPair, dhBytesToPair)
 import Crypto.Noise.DH.Secp256k1 (Secp256k1)
@@ -36,6 +36,7 @@ test_handshake = do
       iiho = setLocalStatic      (Just ilocalStaticKey)
             . setLocalEphemeral (Just ilocalEphemeralKey)
             . setRemoteStatic   (Just iremoteStaticKey) -- communicated out-of-band
+            . setLightningRotation (Just 1000)
             $ idho
 
   -- Responder
@@ -44,6 +45,7 @@ test_handshake = do
   let rdho = defaultHandshakeOpts ResponderRole "lightning" :: HandshakeOpts Secp256k1
       rrho = setLocalStatic      (Just (sec, iremoteStaticKey))
             . setLocalEphemeral (Just rlocalEphemeralKey)
+            . setLightningRotation (Just 1000)
             $ rdho
 
   -- Initiator
@@ -102,17 +104,6 @@ test_handshake = do
   --putStrLn $ "sending symmetric key" ++ (show $ fmap (encode . convert . cipherSymToBytes) $ ins ^? nsSendingCipherState . _Just . csk . _Just)
   --putStrLn $ "receiving symmetric key" ++ (show $ fmap (encode . convert . cipherSymToBytes) $ ins ^? nsReceivingCipherState . _Just . csk . _Just)
 
-  Just cipherstate <- pure $ ins ^. nsSendingCipherState
-  let ssckb = ins ^. nsHandshakeState . hsSymmetricState . ssck
-  let Just initialCskb = cipherstate ^. csk
-  let [ck, k] = hashHKDF ssckb (cipherSymToBytes initialCskb) 2
-  ins <- pure $ ins & nsHandshakeState . hsSymmetricState . ssck %~ const (hashBytesToCK ck)
-  unless (k == convert (fst $ decode "3fbdc101abd1132ca3a0ae34a669d8d9ba69a587e0bb4ddd59524541cf4813d8")) $ error "couldn't calculate sk"
-  let newcsk = Just $ cipherBytesToSym @ChaChaPoly1305 k
-  cipherstate <- pure $ cipherstate & csk %~ const newcsk
-  cipherstate <- pure $ cipherstate & csn %~ const cipherZeroNonce
-  ins <- pure $ ins & nsSendingCipherState %~ const (Just cipherstate)
-
   (lastm, ins) <- sendLnMsg msgtowrite ins
   unless (lastm == convert (fst $ decode "178cb9d7387190fa34db9c2d50027d21793c9bc2d40b1e14dcf30ebeeeb220f48364f7a4c68bf8")) $ error $ "wrong msg4: " ++ show (encode $ convert lastm)
 
@@ -120,15 +111,6 @@ test_handshake = do
     (m2, newins) <- sendLnMsg msgtowrite tins
     return (m2, newins)
     ) ("", ins) [1..499]
-
-  Just cipherstate <- pure $ ins ^. nsSendingCipherState
-  let Just cskb = cipherstate ^. csk
-  [ck, k] <- pure $ hashHKDF @SHA256 (ins ^. nsHandshakeState . hsSymmetricState . ssck) (cipherSymToBytes cskb) 2
-  ins <- pure $ ins & nsHandshakeState . hsSymmetricState . ssck %~ const (hashBytesToCK ck)
-  let newcsk = Just $ cipherBytesToSym @ChaChaPoly1305 k
-  cipherstate <- pure $ cipherstate & csk %~ const newcsk
-  cipherstate <- pure $ cipherstate & csn %~ const cipherZeroNonce
-  ins <- pure $ ins & nsSendingCipherState %~ const (Just cipherstate)
 
   (lastm, ins) <- sendLnMsg msgtowrite ins
   unless (lastm == convert (fst $ decode "4a2f3cc3b5e78ddb83dcb426d9863d9d9a723b0337c89dd0b005d89f8d3c05c52b76b29b740f09")) $ error $ "wrong msg5: " ++ show (encode $ convert lastm)
@@ -138,36 +120,24 @@ test_handshake = do
   (lastm, rns) <- sendLnMsg msgtowrite rns
   unless (lastm == convert (fst $ decode "5bed0e4d7e2bc28afff2c05dd8fd7a24da81dc17be87e87504e5266a5301529467b98884e0b269")) $ error $ "wrong msg6: " ++ show (encode $ convert lastm)
 
-  (lastm, rns) <- foldM (\(_lastm, trns) _ -> do
+  let (p1, p2) = splitAt 18 $ convert lastm
+  NoiseResultMessage plain_len ins <- pure $ readMessage (convert p1) ins
+  NoiseResultMessage plain_msg ins <- pure $ readMessage (convert p2) ins
+
+  (lastm, rns, ins) <- foldM (\(_lastm, trns, ins) _ -> do
     (m2, newrns) <- sendLnMsg msgtowrite trns
-    return (m2, newrns)
-    ) ("", rns) [1..499]
+    let (p1, p2) = splitAt 18 $ convert m2
+    NoiseResultMessage plain_len ins <- pure $ readMessage (convert p1) ins
+    NoiseResultMessage plain_msg ins <- pure $ readMessage (convert p2) ins
+    return (m2, newrns, ins)
+    ) ("", rns, ins) [1..499]
 
   print $ encode $ convert lastm
-
-  -- we'll pretend r has sent a lot of messages and needs to rotate now
-  Just cipherstate <- pure $ rns ^. nsSendingCipherState
-  let Just cskb = cipherstate ^. csk
-  [ck, k] <- pure $ hashHKDF @SHA256 (rns ^. nsHandshakeState . hsSymmetricState . ssck) (cipherSymToBytes cskb) 2
-  rns <- pure $ rns & nsHandshakeState . hsSymmetricState . ssck %~ const (hashBytesToCK ck)
-  let newcsk = Just $ cipherBytesToSym @ChaChaPoly1305 k
-  cipherstate <- pure $ cipherstate & csk %~ const newcsk
-  cipherstate <- pure $ cipherstate & csn %~ const cipherZeroNonce
-  rns <- pure $ rns & nsSendingCipherState %~ const (Just cipherstate)
 
   (lastm, rns) <- sendLnMsg msgtowrite rns
   unless (lastm == convert (fst $ decode "bfd031ec37bfd43f29401e2c5a465256ec7efe5258e70d7b0271200afd24239f7d3adc01e0be1f")) $ error $ "wrong msg7: " ++ show (encode $ convert lastm)
 
   let (p1, p2) = splitAt 18 $ convert lastm
-
-  Just cipherstate <- pure $ ins ^. nsReceivingCipherState
-  let Just cskb = cipherstate ^. csk
-  [ck, k] <- pure $ hashHKDF @SHA256 ssckb (cipherSymToBytes cskb) 2
-  ins <- pure $ ins & nsHandshakeState . hsSymmetricState . ssck %~ const (hashBytesToCK ck)
-  let newcsk = Just $ cipherBytesToSym @ChaChaPoly1305 k
-  cipherstate <- pure $ cipherstate & csk %~ const newcsk
-  cipherstate <- pure $ cipherstate & csn %~ const cipherZeroNonce
-  ins <- pure $ ins & nsReceivingCipherState %~ const (Just cipherstate)
 
   NoiseResultMessage plain_len ins <- pure $ readMessage (convert p1) ins
   NoiseResultMessage plain_msg ins <- pure $ readMessage (convert p2) ins

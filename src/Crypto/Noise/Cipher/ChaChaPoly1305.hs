@@ -40,6 +40,7 @@ instance Cipher ChaChaPoly1305 where
   cipherSymToBytes  = symToBytes
   cipherTextToBytes = ctToBytes
   cipherBytesToText = bytesToCt
+  nonceToBytes (NCCP1305 x) = convert x
 
 encrypt :: SymmetricKey ChaChaPoly1305
         -> Nonce ChaChaPoly1305

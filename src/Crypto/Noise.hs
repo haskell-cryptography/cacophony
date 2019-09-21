@@ -113,15 +113,17 @@ writeMessage msg ns2 = maybe
 
     encryptMsg cs = (ctToMsg *** updateState) <$> encryptWithAd mempty msg cs
 
+sck = nsHandshakeState . hsSymmetricState . sendingCK
+
 lightningRotateSending :: (Cipher a, Hash c) => NoiseState a b c -> NoiseState a b c
 lightningRotateSending cs =
     if doRotate then new else cs
   where
-    oldCK = cs ^. nsHandshakeState . hsSymmetricState . sendingCK
+    oldCK = cs ^. sck
     oldSK = cipherSymToBytes $ fromMaybe (error "Noise.hs: no csk available") $ cs ^? nsSendingCipherState . _Just . csk . _Just
     [ck, sk] = hashHKDF oldCK oldSK 2
     new = (cs & nsSendingCipherState %~ (updateMaybeCS $ cipherBytesToSym sk))
-              & nsHandshakeState . hsSymmetricState . sendingCK %~ (const $ hashBytesToCK ck)
+              & sck .~ (hashBytesToCK ck)
     currentNonceBytes = fmap (convert . nonceToBytes) (cs ^? nsSendingCipherState . _Just . csn)
     maybeEightBytes = fmap (snd . (splitAt 4)) currentNonceBytes
     currentNonce = fmap os2ip maybeEightBytes
@@ -138,7 +140,7 @@ lightningRotateReceiving cs =
     oldSK = cipherSymToBytes $ fromMaybe (error "Noise.hs: no csk available") $ cs ^? nsReceivingCipherState . _Just . csk . _Just
     [ck, sk] = hashHKDF oldCK oldSK 2
     new = (cs & nsReceivingCipherState %~ (updateMaybeCS $ cipherBytesToSym sk))
-              & nsHandshakeState . hsSymmetricState . receivingCK %~ (const $ hashBytesToCK ck)
+              & nsHandshakeState . hsSymmetricState . receivingCK .~ (hashBytesToCK ck)
     currentNonceBytes = fmap (convert . nonceToBytes) (cs ^? nsReceivingCipherState . _Just . csn)
     maybeEightBytes = fmap (snd . (splitAt 4)) currentNonceBytes
     currentNonce = fmap os2ip maybeEightBytes
@@ -149,8 +151,8 @@ lightningRotateReceiving cs =
 
 updateMaybeCS :: Cipher a => SymmetricKey a -> Maybe (CipherState a) -> Maybe (CipherState a)
 updateMaybeCS _  Nothing = Nothing
-updateMaybeCS sk (Just cs) = Just $ (cs & csk %~ (const $ Just sk))
-                                        & csn %~ const cipherZeroNonce
+updateMaybeCS sk (Just cs) = Just $ (cs & csk .~ (Just sk))
+                                        & csn .~ cipherZeroNonce
 
 -- | Reads a handshake or transport message and returns the embedded payload. If
 --   the handshake fails, a 'HandshakeError' will be returned. After the

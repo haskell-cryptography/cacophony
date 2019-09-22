@@ -1,22 +1,22 @@
 {-# LANGUAGE OverloadedStrings, TypeApplications #-}
 module Main where
 
-import Prelude hiding (replicate, length, concat, splitAt)
-import Crypto.Noise (NoiseState, NoiseResult(..), ScrubbedBytes, HandshakeOpts, writeMessage, readMessage, nsReceivingCipherState, nsSendingCipherState, csn, csk, receivingCK, sendingCK, nsHandshakeState, hsSymmetricState, noiseState, setLocalEphemeral, setLocalStatic, setRemoteStatic, defaultHandshakeOpts, HandshakeRole(..), setLightningRotation)
+import Prelude hiding (replicate, length, splitAt)
+import Data.ByteString.Base16 (encode, decode)
+import Data.ByteArray (convert, length)
+import Data.ByteString (ByteString, pack, splitAt)
+import Control.Monad (unless, foldM)
+import Data.Bits (shiftR)
+import Data.Maybe (fromJust, isNothing)
+import System.Exit
+import Data.Monoid ((<>))
+
+import Crypto.Noise (NoiseState, NoiseResult(..), ScrubbedBytes, HandshakeOpts, writeMessage, readMessage, noiseState, setLocalEphemeral, setLocalStatic, setRemoteStatic, defaultHandshakeOpts, HandshakeRole(..), setLightningRotation)
 import Crypto.Noise.Cipher.ChaChaPoly1305 (ChaChaPoly1305)
 import Crypto.Noise.DH (KeyPair, dhBytesToPair)
 import Crypto.Noise.DH.Secp256k1 (Secp256k1)
 import Crypto.Noise.Hash.SHA256 (SHA256)
 import Crypto.Noise.HandshakePatterns (noiseXK)
-import Crypto.Noise.Cipher (cipherBytesToSym, cipherSymToBytes, cipherZeroNonce)
-import Data.ByteString.Base16 (encode, decode)
-import Data.ByteArray (convert, length)
-import Data.ByteString (ByteString, pack, concat, splitAt)
-import Control.Monad (unless, foldM)
-import Control.Lens
-import Crypto.Noise.Hash (hashBytesToCK, hashHKDF)
-import Data.Bits (shiftR)
-import Data.Maybe (fromJust, isNothing)
 
 hexToPair :: ByteString -> KeyPair Secp256k1
 hexToPair x = fromJust $ dhBytesToPair $ convert $ fst $ decode x
@@ -29,6 +29,7 @@ test_handshake = do
   -- https://github.com/cdecker/lightning/blob/pywire/contrib/pyln-proto/tests/test_wire.py#L29
   -- which uses values from
   -- https://github.com/lightningnetwork/lightning-rfc/blob/master/08-transport.md#initiator-tests
+  -- the test has been amended with the patch in test_wire.patch
   let ilocalEphemeralKey = hexToPair "1212121212121212121212121212121212121212121212121212121212121212"
 
   -- Initiator
@@ -141,7 +142,7 @@ test_handshake = do
 
   NoiseResultMessage plain_len ins <- pure $ readMessage (convert p1) ins
   NoiseResultMessage plain_msg ins <- pure $ readMessage (convert p2) ins
-  return ()
+  return True
 
 i2osp :: Int -> ByteString
 i2osp a =
@@ -155,13 +156,20 @@ sendLnMsg msg ins = do
   let lenBytes = convert $ i2osp $ length msg
   NoiseResultMessage lengthPart ins <- pure $ writeMessage lenBytes ins
   NoiseResultMessage msgPart ins <- pure $ writeMessage msg ins
-  pure (convert $ concat [convert lengthPart, convert msgPart], ins)
+  let lpbs = convert lengthPart
+      mpbs = convert msgPart
+      lengthPrefixed = lpbs <> mpbs :: ByteString
+  pure (convert lengthPrefixed, ins)
 
-test_bytesToPair :: IO ()
-test_bytesToPair = do
-  putStrLn $ "private key zero should be rejected" ++ show (isNothing $ dhBytesToPair @Secp256k1 $ convert $ pack [0])
-  return ()
+test_bytesToPair :: Bool
+test_bytesToPair =
+  isNothing $ dhBytesToPair @Secp256k1 $ convert $ pack [0]
 
 main = do
-  test_handshake
-  test_bytesToPair
+  res <- test_handshake
+  let res2 = test_bytesToPair
+  if res && res2 then
+    exitSuccess
+  else do
+    putStrLn "a secp256k1 test failed"
+    exitFailure

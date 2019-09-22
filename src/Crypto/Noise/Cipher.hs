@@ -88,8 +88,6 @@ class Cipher c where
   -- | Imports a Ciphertext.
   cipherBytesToText :: ScrubbedBytes -> Ciphertext c
 
-  nonceToBytes :: Nonce c -> ScrubbedBytes
-
 -- | Represents the associated data for AEAD.
 type AssocData = ScrubbedBytes
 

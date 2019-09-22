@@ -1,3 +1,4 @@
+{-# LANGUAGE Rank2Types #-}
 -------------------------------------------------
 -- |
 -- Module      : Crypto.Noise
@@ -54,12 +55,9 @@ module Crypto.Noise
 import Control.Arrow   (arr, second, (***))
 import Control.Exception.Safe
 import Control.Lens
+import Control.Monad (guard)
 import Data.ByteArray  (ScrubbedBytes, convert)
 import Data.Maybe      (isJust, fromMaybe)
-import Crypto.Number.Serialize.LE (os2ip)
-import Debug.Trace
-import Data.ByteString (ByteString, splitAt)
-import Prelude hiding (splitAt)
 
 import Crypto.Noise.Cipher
 import Crypto.Noise.DH
@@ -107,52 +105,40 @@ writeMessage msg ns2 = maybe
   (convertTransportResult . encryptMsg)
   (ns ^. nsSendingCipherState)
   where
-    ns = lightningRotateSending ns2
+    ns = fromMaybe ns2 $ maybeNewNS Send ns2
     ctToMsg       = arr cipherTextToBytes
     updateState    = arr $ \cs -> ns & nsSendingCipherState ?~ cs
 
     encryptMsg cs = (ctToMsg *** updateState) <$> encryptWithAd mempty msg cs
 
-sck = nsHandshakeState . hsSymmetricState . sendingCK
+data SendOrReceive = Send | Receive
 
-lightningRotateSending :: (Cipher a, Hash c) => NoiseState a b c -> NoiseState a b c
-lightningRotateSending cs =
-    if doRotate then new else cs
-  where
-    oldCK = cs ^. sck
-    oldSK = cipherSymToBytes $ fromMaybe (error "Noise.hs: no csk available") $ cs ^? nsSendingCipherState . _Just . csk . _Just
-    [ck, sk] = hashHKDF oldCK oldSK 2
-    new = (cs & nsSendingCipherState %~ (updateMaybeCS $ cipherBytesToSym sk))
-              & sck .~ (hashBytesToCK ck)
-    currentNonceBytes = fmap (convert . nonceToBytes) (cs ^? nsSendingCipherState . _Just . csn)
-    maybeEightBytes = fmap (snd . (splitAt 4)) currentNonceBytes
-    currentNonce = fmap os2ip maybeEightBytes
-    rekeyNonce = cs ^. nsHandshakeState . hsOpts . lnRekeyNonce
-    doRotate = (isJust currentNonceBytes) -- no csn while handshaking
-            && (isJust rekeyNonce)        -- no rekeyNonce unless in LN mode
-            && currentNonce == rekeyNonce
-
-lightningRotateReceiving :: (Cipher a, Hash c) => NoiseState a b c -> NoiseState a b c
-lightningRotateReceiving cs =
-    if doRotate then new else cs
-  where
-    oldCK = cs ^. nsHandshakeState . hsSymmetricState . receivingCK
-    oldSK = cipherSymToBytes $ fromMaybe (error "Noise.hs: no csk available") $ cs ^? nsReceivingCipherState . _Just . csk . _Just
-    [ck, sk] = hashHKDF oldCK oldSK 2
-    new = (cs & nsReceivingCipherState %~ (updateMaybeCS $ cipherBytesToSym sk))
-              & nsHandshakeState . hsSymmetricState . receivingCK .~ (hashBytesToCK ck)
-    currentNonceBytes = fmap (convert . nonceToBytes) (cs ^? nsReceivingCipherState . _Just . csn)
-    maybeEightBytes = fmap (snd . (splitAt 4)) currentNonceBytes
-    currentNonce = fmap os2ip maybeEightBytes
-    rekeyNonce = cs ^. nsHandshakeState . hsOpts . lnRekeyNonce
-    doRotate = (isJust currentNonceBytes) -- no csn while handshaking
-            && (isJust rekeyNonce)        -- no rekeyNonce unless in LN mode
-            && currentNonce == rekeyNonce
-
-updateMaybeCS :: Cipher a => SymmetricKey a -> Maybe (CipherState a) -> Maybe (CipherState a)
-updateMaybeCS _  Nothing = Nothing
-updateMaybeCS sk (Just cs) = Just $ (cs & csk .~ (Just sk))
-                                        & csn .~ cipherZeroNonce
+maybeNewNS :: (Cipher a, Hash c) => SendOrReceive -> NoiseState a b c -> Maybe (NoiseState a b c)
+maybeNewNS sendOrReceive ns = do
+  let
+    selectCK Send    = sendingCK
+    selectCK Receive = receivingCK
+    selectCS Send    = nsSendingCipherState
+    selectCS Receive = nsReceivingCipherState
+    ckLens :: Lens' (NoiseState c d a) (ChainingKey a)
+    ckLens = nsHandshakeState . hsSymmetricState . (selectCK sendOrReceive)
+    csLens :: Lens' (NoiseState c d h) (Maybe (CipherState c))
+    csLens = selectCS sendOrReceive
+  oldSK <- ns ^? csLens . _Just . csk . _Just
+  currentNonce <- ns ^? csLens . _Just . csn
+  rekeyNonceInteger <- ns ^. nsHandshakeState . hsOpts . lnRekeyNonce
+  let
+    rekeyNonce = iterate cipherIncNonce cipherZeroNonce !! (fromIntegral rekeyNonceInteger)
+    oldSKBytes = cipherSymToBytes oldSK
+    [ck, sk] = hashHKDF (ns ^. ckLens) oldSKBytes 2
+    updateMaybeCS maybeCS = do
+      cs <- maybeCS
+      pure $ (cs & csk .~ (Just $ cipherBytesToSym sk))
+                 & csn .~ cipherZeroNonce
+    new = (ns & csLens %~ updateMaybeCS)
+              & ckLens .~ (hashBytesToCK ck)
+  guard $ cipherNonceEq currentNonce rekeyNonce
+  pure $ new
 
 -- | Reads a handshake or transport message and returns the embedded payload. If
 --   the handshake fails, a 'HandshakeError' will be returned. After the
@@ -173,7 +159,7 @@ readMessage ct ns2 = maybe
   (convertTransportResult . decryptMsg)
   (ns ^. nsReceivingCipherState)
   where
-    ns = lightningRotateReceiving ns2
+    ns = fromMaybe ns2 $ maybeNewNS Receive ns2
     ct'           = cipherBytesToText ct
     updateState   = arr $ \cs -> ns & nsReceivingCipherState ?~ cs
     decryptMsg cs = second updateState <$> decryptWithAd mempty ct' cs

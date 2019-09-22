@@ -12,9 +12,7 @@ import Control.Monad.Catch.Pure
 import Control.Monad.Coroutine
 import Control.Monad.Coroutine.SuspensionFunctors
 import Control.Monad.State
-import Data.ByteArray (ScrubbedBytes, convert)
-import Data.ByteString hiding (split)
-import Data.ByteString.Base16 (encode)
+import Data.ByteArray (ScrubbedBytes)
 
 import Crypto.Noise.Cipher
 import Crypto.Noise.DH
@@ -24,9 +22,6 @@ import Crypto.Noise.Internal.Handshake.Interpreter
 import Crypto.Noise.Internal.Handshake.Pattern (HandshakePattern)
 import Crypto.Noise.Internal.Handshake.State
 import Crypto.Noise.Internal.SymmetricState (split)
-
-import Debug.Trace
-
 
 -- | This type represents the state of an entire Noise conversation, and it is
 --   used both during the handshake and for every message read and written
@@ -81,10 +76,8 @@ resumeHandshake msg ns = case ns ^. nsHandshakeSuspension of
           -- The handshake pattern has not finished running. Save the suspension
           -- and the mutated HandshakeState and return what was yielded.
           Left (Request req resp) -> do
-            let ns' = ns & nsHandshakeSuspension ?~ (Handshake . (\x -> resp (trace ("resp: " ++ (show $ encode (convert x :: ByteString))) x)))
+            let ns' = ns & nsHandshakeSuspension ?~ (Handshake . resp)
                          & nsHandshakeState      .~ hs
-            --let HandshakeResultMessage x = req
-            --return ((trace ("req: " ++ (show $ encode $ (convert x :: ByteString))) req), ns')
             return (req, ns')
           -- The handshake pattern has finished running. Create the CipherStates.
           Right _ -> do

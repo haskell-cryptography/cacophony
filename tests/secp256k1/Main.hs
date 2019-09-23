@@ -1,19 +1,18 @@
-{-# LANGUAGE OverloadedStrings, TypeApplications #-}
 module Main where
 
 import Prelude hiding (replicate, length, splitAt)
+import Data.Bits (shiftR)
 import Data.ByteString.Base16 (encode, decode)
 import Data.ByteArray (convert, length)
 import Data.ByteString (ByteString, pack, splitAt)
-import Control.Monad (unless, foldM)
-import Data.Bits (shiftR)
 import Data.Maybe (fromJust, isNothing)
-import System.Exit
 import Data.Monoid ((<>))
+import Control.Monad (unless, foldM)
+import System.Exit
 
 import Crypto.Noise (NoiseState, NoiseResult(..), ScrubbedBytes, HandshakeOpts, writeMessage, readMessage, noiseState, setLocalEphemeral, setLocalStatic, setRemoteStatic, defaultHandshakeOpts, HandshakeRole(..), setLightningRotation)
 import Crypto.Noise.Cipher.ChaChaPoly1305 (ChaChaPoly1305)
-import Crypto.Noise.DH (KeyPair, dhBytesToPair)
+import Crypto.Noise.DH (KeyPair, dhBytesToPair, SecretKey, PublicKey)
 import Crypto.Noise.DH.Secp256k1 (Secp256k1)
 import Crypto.Noise.Hash.SHA256 (SHA256)
 import Crypto.Noise.HandshakePatterns (noiseXK)
@@ -21,9 +20,14 @@ import Crypto.Noise.HandshakePatterns (noiseXK)
 hexToPair :: ByteString -> KeyPair Secp256k1
 hexToPair x = fromJust $ dhBytesToPair $ convert $ fst $ decode x
 
-ilocalStaticKey = hexToPair "1111111111111111111111111111111111111111111111111111111111111111"
-(sec, iremoteStaticKey) = hexToPair "2121212121212121212121212121212121212121212121212121212121212121"
+pairLocal :: KeyPair Secp256k1
+pairLocal = hexToPair "1111111111111111111111111111111111111111111111111111111111111111"
 
+secRemote :: SecretKey Secp256k1
+pubRemote :: PublicKey Secp256k1
+(secRemote, pubRemote) = hexToPair "2121212121212121212121212121212121212121212121212121212121212121"
+
+test_handshake :: IO Bool
 test_handshake = do
   -- see
   -- https://github.com/cdecker/lightning/blob/pywire/contrib/pyln-proto/tests/test_wire.py#L29
@@ -34,9 +38,9 @@ test_handshake = do
 
   -- Initiator
   let idho = defaultHandshakeOpts InitiatorRole "lightning" :: HandshakeOpts Secp256k1
-      iiho = setLocalStatic      (Just ilocalStaticKey)
+      iiho = setLocalStatic      (Just pairLocal)
             . setLocalEphemeral (Just ilocalEphemeralKey)
-            . setRemoteStatic   (Just iremoteStaticKey) -- communicated out-of-band
+            . setRemoteStatic   (Just pubRemote) -- communicated out-of-band
             . setLightningRotation (Just 1000)
             $ idho
 
@@ -44,7 +48,7 @@ test_handshake = do
   let rlocalEphemeralKey = hexToPair "2222222222222222222222222222222222222222222222222222222222222222"
 
   let rdho = defaultHandshakeOpts ResponderRole "lightning" :: HandshakeOpts Secp256k1
-      rrho = setLocalStatic      (Just (sec, iremoteStaticKey))
+      rrho = setLocalStatic      (Just (secRemote, pubRemote))
             . setLocalEphemeral (Just rlocalEphemeralKey)
             . setLightningRotation (Just 1000)
             $ rdho
@@ -61,7 +65,7 @@ test_handshake = do
   let readResult = readMessage ciphertext rns
   -- note how version byte is missing
   unless (ciphertext == convert (fst $ decode "036360e856310ce5d294e8be33fc807077dc56ac80d95d9cd4ddbd21325eff73f70df6086551151f58b8afe6c195782c6a")) (error "act1")
-  let NoiseResultMessage plaintext rns = readResult
+  let NoiseResultMessage _ rns = readResult
   --putStrLn $ "act one received: " ++ (show $ (convert $ plaintext :: ByteString))
   let writeActTwoResult = writeMessage "" rns
   let NoiseResultMessage ciphertext rns = writeActTwoResult
@@ -69,10 +73,9 @@ test_handshake = do
   unless (ciphertext == convert (fst $ decode "02466d7fcae563e5cb09a0d1870bb580344804617879a14949cf22285f1bae3f276e2470b93aac583c9ef6eafca3f730ae")) $ error "act2"
 
   let readActTwoResult = readMessage ciphertext ins
-  let NoiseResultMessage plaintext ins = readActTwoResult
+  let NoiseResultMessage _ ins = readActTwoResult
 
   -- note how we are not sending the public key like in the python code linked
-  -- -- dhPubToBytes $ snd $ ilocalStaticKey
   let writeActThreeResult = writeMessage "" ins
   let NoiseResultMessage ciphertext ins = writeActThreeResult
   -- note how version byte is missing
@@ -90,20 +93,12 @@ test_handshake = do
   (lastm, ins) <- foldM (\(_lastm, tins) _ -> do
     (m2, newins) <- sendLnMsg msgtowrite tins
     return (m2, newins)
-    ) ("", ins) [1..498]
+    ) ("", ins) ([1..498] :: [Integer])
 
   unless (lastm == convert (fst $ decode "c95576afee4591869808a1c28e1fc7e5a578d86e569e1680e017b4f7a4df74ba222cf08e4ab8b1")) $ error $ "wrong msg2: " ++ show (encode $ convert lastm)
 
   (lastm, ins) <- sendLnMsg msgtowrite ins
   unless (lastm == convert (fst $ decode "0b0b7c16d2930e64a2db554f211f3bb279bf29701642655ce87e168ac0c6a19cdfe2b631d9e580")) $ error $ "wrong msg3: " ++ show (encode $ convert lastm)
-
-  --putStrLn $ "handshake cipherstate" ++ (show $ fmap (encode . convert . cipherSymToBytes) $ ins ^? nsHandshakeState . hsSymmetricState . ssCipher . csk . _Just)
-  --putStrLn $ "handshake ssh left" ++ (show $ fmap (encode . convert) $ ins ^? nsHandshakeState . hsSymmetricState . ssh . _Left)
-  --putStrLn $ "handshake ssh right" ++ (show $ fmap (encode . convert . hashToBytes) $ ins ^? nsHandshakeState . hsSymmetricState . ssh . _Right)
-  --putStrLn $ "handshake chaining key" ++ (show $ fmap (encode . convert . hashCKToBytes) $ ins ^? nsHandshakeState . hsSymmetricState . ssck)
-  --putStrLn $ "nonce" ++ (show $ fmap (encode . convert . nonceToBytes) $ ins ^? nsSendingCipherState . _Just . csn)
-  --putStrLn $ "sending symmetric key" ++ (show $ fmap (encode . convert . cipherSymToBytes) $ ins ^? nsSendingCipherState . _Just . csk . _Just)
-  --putStrLn $ "receiving symmetric key" ++ (show $ fmap (encode . convert . cipherSymToBytes) $ ins ^? nsReceivingCipherState . _Just . csk . _Just)
 
   (lastm, ins) <- sendLnMsg msgtowrite ins
   unless (lastm == convert (fst $ decode "178cb9d7387190fa34db9c2d50027d21793c9bc2d40b1e14dcf30ebeeeb220f48364f7a4c68bf8")) $ error $ "wrong msg4: " ++ show (encode $ convert lastm)
@@ -111,7 +106,7 @@ test_handshake = do
   (lastm, ins) <- foldM (\(_lastm, tins) _ -> do
     (m2, newins) <- sendLnMsg msgtowrite tins
     return (m2, newins)
-    ) ("", ins) [1..499]
+    ) ("", ins) ([1..499] :: [Integer])
 
   (lastm, ins) <- sendLnMsg msgtowrite ins
   unless (lastm == convert (fst $ decode "4a2f3cc3b5e78ddb83dcb426d9863d9d9a723b0337c89dd0b005d89f8d3c05c52b76b29b740f09")) $ error $ "wrong msg5: " ++ show (encode $ convert lastm)
@@ -131,7 +126,7 @@ test_handshake = do
     NoiseResultMessage plain_len ins <- pure $ readMessage (convert p1) ins
     NoiseResultMessage plain_msg ins <- pure $ readMessage (convert p2) ins
     return (m2, newrns, ins)
-    ) ("", rns, ins) [1..499]
+    ) ("", rns, ins) ([1..499] :: [Integer])
 
   print $ encode $ convert lastm
 
@@ -165,6 +160,7 @@ test_bytesToPair :: Bool
 test_bytesToPair =
   isNothing $ dhBytesToPair @Secp256k1 $ convert $ pack [0]
 
+main :: IO ()
 main = do
   res <- test_handshake
   let res2 = test_bytesToPair

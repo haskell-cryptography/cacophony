@@ -43,7 +43,7 @@ library:
     - mtl
     - safe-exceptions
     - transformers
-    - secp256k1-haskell >= 0.1.5
+    - secp256k1-haskell:+ecdh >= 0.1.5
 
   exposed-modules:
     - Crypto.Noise

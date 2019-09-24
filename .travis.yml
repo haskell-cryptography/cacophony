@@ -33,6 +33,13 @@ before_install:
   - mkdir -p ~/.local/bin
   - export PATH=$HOME/.local/bin:$PATH
   - travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
+  - apt install build-essential autoconf wget unzip
+  - wget https://github.com/bitcoin-core/secp256k1/archive/master.zip
+  - unzip master.zip
+  - cd secp256k1-master; ./autogen.sh
+  - cd secp256k1-master; ./configure --enable-experimental --enable-module-ecdh
+  - cd secp256k1-master; make -j4
+  - cd secp256k1-master; sudo make install
 
 install:
   - stack $ARGS setup

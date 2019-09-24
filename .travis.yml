@@ -36,10 +36,11 @@ before_install:
   - sudo apt install build-essential autoconf wget unzip
   - wget https://github.com/bitcoin-core/secp256k1/archive/master.zip
   - unzip master.zip
-  - cd secp256k1-master; ./autogen.sh
-  - cd secp256k1-master; ./configure --enable-experimental --enable-module-ecdh
-  - cd secp256k1-master; make -j4
-  - cd secp256k1-master; sudo make install
+  - cd secp256k1-master
+  - ./autogen.sh
+  - ./configure --enable-experimental --enable-module-ecdh --prefix=/usr
+  - make -j4
+  - sudo make install
 
 install:
   - stack $ARGS setup

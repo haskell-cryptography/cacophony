@@ -62,7 +62,7 @@ options =
     "show help"
   , Option ['n'] ["name"]
     (ReqArg (\n o -> o { optHandshakeName = either (const Nothing) Just . parseOnly parseHandshakeName . pack $ n }) "HANDSHAKE PATTERN")
-    "handshake pattern to use (e.g. Noise_XX_25519_ChaChaPoly1305_SHA256)"
+    "handshake pattern to use (e.g. Noise_XX_25519_ChaChaPoly_SHA256)"
   , Option ['r'] ["role"]
     (ReqArg (\r o -> o { optHandshakeRole = readRole r }) "{initiator,responder}")
     "handshake role"

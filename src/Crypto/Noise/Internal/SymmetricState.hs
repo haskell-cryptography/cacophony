@@ -1,4 +1,4 @@
-{-# LANGUAGE TemplateHaskell, ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell, ScopedTypeVariables, TypeApplications #-}
 -----------------------------------------------------
 -- |
 -- Module      : Crypto.Noise.Internal.SymmetricState
@@ -19,8 +19,9 @@ import Crypto.Noise.Internal.CipherState
 
 data SymmetricState c h =
   SymmetricState { _ssCipher :: CipherState c
-                 , _ssck     :: ChainingKey h
                  , _ssh      :: Either ScrubbedBytes (Digest h)
+                 , _sendingCK   :: ChainingKey h
+                 , _receivingCK :: ChainingKey h
                  }
 
 $(makeLenses ''SymmetricState)
@@ -29,7 +30,7 @@ $(makeLenses ''SymmetricState)
 symmetricState :: forall c h. (Cipher c, Hash h)
                => ScrubbedBytes
                -> SymmetricState c h
-symmetricState protoName = SymmetricState cs ck h
+symmetricState protoName = SymmetricState cs h ck ck
   where
     hashLen    = hashLength (Proxy :: Proxy h)
     shouldHash = length protoName > hashLen
@@ -44,10 +45,12 @@ mixKey :: (Cipher c, Hash h)
        => ScrubbedBytes
        -> SymmetricState c h
        -> SymmetricState c h
-mixKey keyMat ss = ss & ssCipher .~ cs
-                      & ssck     .~ hashBytesToCK ck
+mixKey keyMat ss =
+    ss & ssCipher .~ cs
+       & sendingCK       .~ hashBytesToCK ck
+       & receivingCK     .~ hashBytesToCK ck
   where
-    [ck, k] = hashHKDF (ss ^. ssck) keyMat 2
+    [ck, k] = hashHKDF (ss ^. sendingCK) keyMat 2
     -- k is truncated automatically by cipherBytesToSym
     cs      = cipherState . Just . cipherBytesToSym $ k
 
@@ -64,10 +67,12 @@ mixKeyAndHash :: (Cipher c, Hash h)
               => ScrubbedBytes
               -> SymmetricState c h
               -> SymmetricState c h
-mixKeyAndHash keyMat ss = ss' & ssCipher .~ cs
-                              & ssck     .~ hashBytesToCK ck
+mixKeyAndHash keyMat ss =
+    ss' & ssCipher .~ cs
+        & sendingCK     .~ hashBytesToCK ck
+        & receivingCK   .~ hashBytesToCK ck
   where
-    [ck, h, k] = hashHKDF (ss ^. ssck) keyMat 3
+    [ck, h, k] = hashHKDF (ss ^. sendingCK) keyMat 3
     ss'        = mixHash h ss
     cs         = cipherState . Just . cipherBytesToSym $ k
 
@@ -102,9 +107,10 @@ decryptAndHash ct ss = do
 split :: (Cipher c, Hash h)
       => SymmetricState c h
       -> (CipherState c, CipherState c)
-split ss = (c1, c2)
+split ss =
+    (c1, c2)
   where
-    [k1, k2] = hashHKDF (ss ^. ssck) mempty 2
+    [k1, k2] = hashHKDF (ss ^. sendingCK) mempty 2
     c1       = cipherState . Just . cipherBytesToSym $ k1
     c2       = cipherState . Just . cipherBytesToSym $ k2
 

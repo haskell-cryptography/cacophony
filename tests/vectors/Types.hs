@@ -16,6 +16,7 @@ import Crypto.Noise.Cipher.ChaChaPoly1305
 import Crypto.Noise.Cipher.AESGCM
 import Crypto.Noise.DH.Curve25519
 import Crypto.Noise.DH.Curve448
+import Crypto.Noise.DH.Secp256k1
 import Crypto.Noise.HandshakePatterns
 import Crypto.Noise.Hash.SHA256
 import Crypto.Noise.Hash.SHA512
@@ -101,6 +102,7 @@ data SomeCipherType where
 data DHType :: * -> * where
   Curve25519 :: DHType Curve25519
   Curve448   :: DHType Curve448
+  Secp256k1  :: DHType Secp256k1
 
 data SomeDHType where
   WrapDHType :: forall d. DH d => DHType d -> SomeDHType
@@ -181,6 +183,7 @@ dhMap :: [(ByteString, SomeDHType)]
 dhMap =
   [ ("25519", WrapDHType Curve25519)
   , ("448"  , WrapDHType Curve448)
+  , ("secp256k1", WrapDHType Secp256k1)
   ]
 
 cipherMap :: [(ByteString, SomeCipherType)]
@@ -313,6 +316,7 @@ instance Show SomeCipherType where
 instance Show SomeDHType where
   show (WrapDHType Curve25519) = "25519"
   show (WrapDHType Curve448)   = "448"
+  show (WrapDHType Secp256k1)  = "secp256k1"
 
 instance Show SomeHashType where
   show (WrapHashType BLAKE2b) = "BLAKE2b"

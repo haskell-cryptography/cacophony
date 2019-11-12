@@ -1,0 +1,64 @@
+diff --git a/contrib/pyln-proto/tests/test_wire.py b/contrib/pyln-proto/tests/test_wire.py
+index 093792ff..b08069ca 100644
+--- a/contrib/pyln-proto/tests/test_wire.py
++++ b/contrib/pyln-proto/tests/test_wire.py
+@@ -99,6 +99,59 @@ def test_handshake():
+     assert(lc1.chaining_key == lc2.chaining_key)
+     assert(hexlify(lc1.chaining_key) == b'919219dbb2920afa8db80f9a51787a840bcf111ed8d588caf9ab4be716e42b01')
+ 
++    msg = unhexlify(b'68656c6c6f')
++
++    # Send 498 more messages, to get just below the switch threshold
++    for i in range(0, 499):
++        lc1.send_message(msg)
++        c2.recv(18 + 21)
++
++    old_sck = lc1.sck
++    lc1.send_message(msg) # rotates here
++    assert lc1.sck != old_sck
++    m = c2.recv(18 + 21)
++    # this message would be the same without rotation
++    # since rotation takes effect only in the next message
++    assert m[:4] == unhexlify(b'0b0b7c16')
++
++    assert lc1.sck[:4] == unhexlify(b'cc2c6e46')
++    assert lc1.sk[:4] == unhexlify(b'3fbdc101')
++
++    lc1.send_message(msg)
++    m = c2.recv(18 + 21)
++    assert m == unhexlify(b'178cb9d7387190fa34db9c2d50027d21793c9bc2d40b1e14dcf30ebeeeb220f48364f7a4c68bf8')
++
++    for i in range(0, 499):
++        lc1.send_message(msg)
++        c2.recv(18 + 21)
++
++    lc1.send_message(msg)
++    m = c2.recv(18 + 21)
++    assert m == unhexlify(b'4a2f3cc3b5e78ddb83dcb426d9863d9d9a723b0337c89dd0b005d89f8d3c05c52b76b29b740f09'), m.hex()
++
++    # OTHER DIRECTION!!!! check that chaining_key is not shared
++
++    lc2.send_message(msg)
++    lc1.rn += 2
++    m = c1.recv(18 + 21)
++    assert m == unhexlify(b'5bed0e4d7e2bc28afff2c05dd8fd7a24da81dc17be87e87504e5266a5301529467b98884e0b269'), m.hex()
++
++    old = lc1.rck
++
++    for i in range(0, 500):
++        lc2.send_message(msg)
++        lc1.rn += 2
++        lc1._maybe_rotate_keys()
++        m = c1.recv(18 + 21)
++
++    assert lc1.rck != old
++
++    # this message is the first to have key rotation effective:
++    assert m == unhexlify(b'bfd031ec37bfd43f29401e2c5a465256ec7efe5258e70d7b0271200afd24239f7d3adc01e0be1f'), m.hex()
++    lc2.connection.send(m)
++    lc1.rn -= 2
++    lc1.read_message()
++
+ 
+ def test_shake():
+     rs_privkey = PrivateKey(unhexlify('2121212121212121212121212121212121212121212121212121212121212121'))

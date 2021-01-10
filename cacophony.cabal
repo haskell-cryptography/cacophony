@@ -1,0 +1,171 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.33.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: fe0edcb90865f0a7b030ff45f1e443c6d2326f740ee6e1966976eca650ffac51
+
+name:           cacophony
+version:        0.10.1
+synopsis:       A library implementing the Noise protocol.
+description:    This library implements the <https://noiseprotocol.org Noise> protocol.
+category:       Cryptography
+homepage:       https://github.com/centromere/cacophony#readme
+bug-reports:    https://github.com/centromere/cacophony/issues
+maintainer:     John Galt <jgalt@centromere.net>
+license:        PublicDomain
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    .travis.yml
+    README.md
+    changelog.md
+    LICENSE
+    stack.yaml
+    package.yaml
+    tests/.hlint
+    tools/pretty-print/format-vectors.py
+    tools/pretty-print/vector-template.jinja
+    vectors/cacophony.txt
+
+source-repository head
+  type: git
+  location: https://github.com/centromere/cacophony
+
+flag build-tools
+  description: Build tools
+  manual: True
+  default: False
+
+library
+  exposed-modules:
+      Crypto.Noise
+      Crypto.Noise.Cipher
+      Crypto.Noise.Cipher.AESGCM
+      Crypto.Noise.Cipher.ChaChaPoly1305
+      Crypto.Noise.DH
+      Crypto.Noise.DH.Curve25519
+      Crypto.Noise.DH.Curve448
+      Crypto.Noise.Exception
+      Crypto.Noise.HandshakePatterns
+      Crypto.Noise.Hash
+      Crypto.Noise.Hash.BLAKE2b
+      Crypto.Noise.Hash.BLAKE2s
+      Crypto.Noise.Hash.SHA256
+      Crypto.Noise.Hash.SHA512
+      Crypto.Noise.Internal.CipherState
+      Crypto.Noise.Internal.Handshake.Interpreter
+      Crypto.Noise.Internal.Handshake.Pattern
+      Crypto.Noise.Internal.Handshake.State
+      Crypto.Noise.Internal.Handshake.Validation
+      Crypto.Noise.Internal.NoiseState
+      Crypto.Noise.Internal.SymmetricState
+      Crypto.Noise.Validation
+  other-modules:
+      Paths_cacophony
+  hs-source-dirs:
+      src
+  default-extensions: OverloadedStrings
+  ghc-options: -Wall
+  build-depends:
+      base >=4.9 && <5
+    , bytestring
+    , cryptonite >=0.22
+    , exceptions
+    , free
+    , lens
+    , memory
+    , monad-coroutine
+    , mtl
+    , safe-exceptions
+    , transformers
+  default-language: Haskell2010
+
+executable noise-repl
+  main-is: Main.hs
+  other-modules:
+      Client
+      Options
+      Pipe
+      Socket
+      Types
+      Paths_cacophony
+  hs-source-dirs:
+      tools/noise-repl
+  default-extensions: OverloadedStrings
+  ghc-options: -Wall -O2 -rtsopts -threaded -with-rtsopts=-N
+  build-depends:
+      base >=4.9 && <5
+  if flag(build-tools)
+    build-depends:
+        attoparsec
+      , base16-bytestring
+      , base64-bytestring
+      , bytestring
+      , cacophony
+      , haskeline
+      , network
+      , process
+  else
+    buildable: False
+  default-language: Haskell2010
+
+test-suite hlint
+  type: exitcode-stdio-1.0
+  main-is: hlint.hs
+  other-modules:
+      Paths_cacophony
+  hs-source-dirs:
+      tests/hlint
+  ghc-options: -Wall -O2 -rtsopts -threaded -with-rtsopts=-N
+  build-depends:
+      base >=4.9 && <5
+    , hlint
+  default-language: Haskell2010
+
+test-suite vectors
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  other-modules:
+      Generate
+      Keys
+      Types
+      VectorFile
+      Verify
+      Paths_cacophony
+  hs-source-dirs:
+      tests/vectors
+  default-extensions: OverloadedStrings
+  ghc-options: -Wall -O2 -rtsopts -threaded -with-rtsopts=-N
+  build-depends:
+      aeson
+    , attoparsec
+    , base >=4.9 && <5
+    , base16-bytestring
+    , bytestring
+    , cacophony
+    , directory
+    , text
+  default-language: Haskell2010
+
+benchmark bench
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  other-modules:
+      Keys
+      Types
+      Paths_cacophony
+  hs-source-dirs:
+      benchmarks
+  default-extensions: OverloadedStrings
+  ghc-options: -Wall -O2 -rtsopts -threaded -with-rtsopts=-N
+  build-depends:
+      async
+    , base >=4.9 && <5
+    , base16-bytestring
+    , bytestring
+    , cacophony
+    , criterion
+    , deepseq
+  default-language: Haskell2010

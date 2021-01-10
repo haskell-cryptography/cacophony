@@ -7,10 +7,9 @@
 -- Portability : POSIX
 module Crypto.Noise.Internal.Handshake.Pattern where
 
-import Control.Applicative.Free
-import Control.Lens
+import Control.Applicative.Free ( liftAp, runAp_, Ap )
+import Control.Lens ( makeLenses )
 import Data.ByteString (ByteString)
-import Data.Semigroup (Semigroup(..))
 
 data Token next
   = E   next

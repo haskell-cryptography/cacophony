@@ -24,7 +24,7 @@ extra-source-files:
     LICENSE
     stack.yaml
     package.yaml
-    tests/.hlint
+    tests/.hlint.yaml
     tools/pretty-print/format-vectors.py
     tools/pretty-print/vector-template.jinja
     vectors/cacophony.txt
@@ -163,7 +163,7 @@ benchmark bench
   build-depends:
       async
     , base >=4.9 && <5
-    , base16-bytestring
+    , base16-bytestring >= 1.0
     , bytestring
     , cacophony
     , criterion

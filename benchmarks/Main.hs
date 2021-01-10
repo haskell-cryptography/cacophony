@@ -41,8 +41,8 @@ genMessages swap = go []
               if swap
                 then go ((pt, ct) : acc) receivingState' sendingState' mpsk
                 else go ((pt, ct) : acc) sendingState' receivingState' mpsk
-            _ -> error $ "problem encountered during message generation"
-        _ -> error $ "problem encountered during message generation"
+            _ -> error "problem encountered during message generation"
+        _ -> error "problem encountered during message generation"
 
 genNoiseStates :: (Cipher c, DH d, Hash h)
                => CipherType c
@@ -91,24 +91,17 @@ toBench (WrapCipherType c) (WrapDHType d) (WrapHashType h) pat =
     (ins, rns) = genNoiseStates c h pat opts
 
 allHandshakes :: [HandshakeName]
-allHandshakes = do
-  pattern <- [minBound .. maxBound]
+allHandshakes =
+  HandshakeName
+    <$>  [minBound .. maxBound]
+    <*> [ WrapCipherType AESGCM , WrapCipherType ChaChaPoly1305 ]
+    <*> [ WrapDHType Curve25519 , WrapDHType Curve448 ]
+    <*> [ WrapHashType BLAKE2b
+        , WrapHashType BLAKE2s
+        , WrapHashType SHA256
+        , WrapHashType SHA512
+        ]
 
-  cipher  <- [ WrapCipherType AESGCM
-             , WrapCipherType ChaChaPoly1305
-             ]
-
-  dh      <- [ WrapDHType Curve25519
-             , WrapDHType Curve448
-             ]
-
-  hash    <- [ WrapHashType BLAKE2b
-             , WrapHashType BLAKE2s
-             , WrapHashType SHA256
-             , WrapHashType SHA512
-             ]
-
-  return $ HandshakeName pattern cipher dh hash
 
 main :: IO ()
 main = do

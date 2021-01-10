@@ -7,12 +7,12 @@
 -- Portability : POSIX
 module Crypto.Noise.Internal.Handshake.Validation where
 
-import Control.Applicative.Free
-import Control.Lens
-import Control.Monad (when)
-import Control.Monad.State
+import Control.Applicative.Free ( runAp )
+import Control.Lens ( (^.), use, (%=), (.=), (<>=), makeLenses )
+import Control.Monad.State ( when, State, execState )
 
 import Crypto.Noise.Internal.Handshake.Pattern
+    ( HandshakePattern, Message(..), Token(..), hpMsgSeq )
 
 -- | @(message number, token number)@
 --

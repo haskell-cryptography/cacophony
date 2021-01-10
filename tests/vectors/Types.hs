@@ -6,7 +6,6 @@ import Data.Aeson.Types      (typeMismatch)
 import Data.Attoparsec.ByteString.Char8
 import Data.ByteString.Char8 (ByteString, unpack)
 import Data.Maybe            (fromMaybe)
-import Data.Monoid           ((<>))
 import Data.Text             (pack)
 import Data.Text.Encoding    (encodeUtf8)
 import Data.Tuple            (swap)
@@ -208,18 +207,17 @@ parseHandshakeName = do
 
       untilEOI        = takeByteString
 
-  pattern <- (flip lookup patternMap) <$> untilUnderscore
-  dh      <- (flip lookup dhMap)      <$> untilUnderscore
-  cipher  <- (flip lookup cipherMap)  <$> untilUnderscore
-  hash    <- (flip lookup hashMap)    <$> untilEOI
+  pat    <- flip lookup patternMap <$> untilUnderscore
+  dh     <- flip lookup dhMap      <$> untilUnderscore
+  cipher <- flip lookup cipherMap  <$> untilUnderscore
+  hash   <- flip lookup hashMap    <$> untilEOI
 
-  let mHandshakeName = do
-        p <- pattern
-        d <- dh
-        c <- cipher
-        h <- hash
-
-        return $ HandshakeName p c d h
+  let mHandshakeName =
+        HandshakeName
+          <$> pat
+          <*> cipher
+          <*> dh
+          <*> hash
 
   maybe mempty return mHandshakeName
 

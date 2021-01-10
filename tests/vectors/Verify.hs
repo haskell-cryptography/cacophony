@@ -6,7 +6,6 @@ import Data.Aeson           (eitherDecode)
 import Data.Bits
 import Data.ByteString.Lazy (readFile)
 import Data.Maybe           (fromMaybe)
-import Data.Monoid          ((<>))
 import Data.Text            (Text, pack)
 import Data.Text.IO         (putStrLn)
 import Prelude hiding       (readFile, putStrLn)

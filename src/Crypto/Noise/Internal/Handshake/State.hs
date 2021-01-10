@@ -9,22 +9,23 @@
 -- Portability : POSIX
 module Crypto.Noise.Internal.Handshake.State where
 
-import Control.Lens
-import Control.Monad.Coroutine
-import Control.Monad.Coroutine.SuspensionFunctors
-import Control.Monad.Catch.Pure
+import Control.Lens ( (^.), makeLenses )
+import Control.Monad.Coroutine ( Coroutine(Coroutine) )
+import Control.Monad.Coroutine.SuspensionFunctors ( Request )
+import Control.Monad.Catch.Pure ( MonadThrow(..), Catch )
 import Control.Monad.State       (MonadState(..), StateT)
 import Control.Monad.Trans.Class (MonadTrans(lift))
 import Data.ByteArray            (ScrubbedBytes, convert)
 import Data.ByteString           (ByteString)
-import Data.Monoid               ((<>))
-import Data.Proxy
+import Data.Proxy ( Proxy(..) )
 
-import Crypto.Noise.Cipher
-import Crypto.Noise.DH
-import Crypto.Noise.Hash
-import Crypto.Noise.Internal.Handshake.Pattern hiding (ss)
+import Crypto.Noise.Cipher ( Plaintext, Cipher(cipherName) )
+import Crypto.Noise.DH ( KeyPair, DH(dhName, PublicKey) )
+import Crypto.Noise.Hash ( Hash(hashName) )
+import Crypto.Noise.Internal.Handshake.Pattern
+    ( HandshakePattern, hpName, hpPSKMode )
 import Crypto.Noise.Internal.SymmetricState
+    ( SymmetricState, symmetricState, mixHash )
 
 -- | Represents the side of the conversation upon which a party resides.
 data HandshakeRole = InitiatorRole | ResponderRole

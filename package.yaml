@@ -16,7 +16,7 @@ extra-source-files:
   - LICENSE
   - stack.yaml
   - package.yaml
-  - tests/.hlint
+  - tests/.hlint.yaml
   - tools/pretty-print/format-vectors.py
   - tools/pretty-print/vector-template.jinja
   - vectors/cacophony.txt

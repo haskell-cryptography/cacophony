@@ -1,8 +1,0 @@
-import "hint" HLint.Default
-import "hint" HLint.Dollar
-import "hint" HLint.Generalise
-import "hint" HLint.HLint
-
-ignore "Reduce duplication"
-ignore "Parse error"
-ignore "Use module export list"

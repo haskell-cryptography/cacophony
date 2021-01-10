@@ -5,11 +5,14 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base16 as B16
 
 import Crypto.Noise    (ScrubbedBytes, convert)
-import Crypto.Noise.DH
-import Crypto.Noise.DH.Curve25519
-import Crypto.Noise.DH.Curve448
+import Crypto.Noise.DH ( DH(dhBytesToPair, dhPubToBytes), KeyPair )
+import Crypto.Noise.DH.Curve25519 ( Curve25519 )
+import Crypto.Noise.DH.Curve448 ( Curve448 )
 
 import Types
+    ( DHType(Curve448, Curve25519),
+      PatternName(..),
+      SomeDHType(..) )
 
 data HandshakeKeys = HandshakeKeys
   { hskInitEphemeral    :: Maybe ScrubbedBytes
@@ -152,7 +155,7 @@ privateToPublic (WrapDHType Curve448)   k = fmap (dhPubToBytes . snd) (dhBytesTo
 
 hexToSB :: ByteString
         -> ScrubbedBytes
-hexToSB = convert . fst . B16.decode
+hexToSB = convert . either error id . B16.decode
 
 initiatorEphemeral :: SomeDHType
                    -> ScrubbedBytes

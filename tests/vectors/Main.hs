@@ -1,6 +1,5 @@
 module Main where
 
-import Data.Monoid      ((<>))
 import System.Directory (createDirectoryIfMissing, getDirectoryContents)
 import System.Exit      (exitSuccess)
 

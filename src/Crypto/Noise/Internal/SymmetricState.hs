@@ -7,15 +7,20 @@
 -- Portability : POSIX
 module Crypto.Noise.Internal.SymmetricState where
 
-import Control.Exception.Safe
-import Control.Lens
+import Control.Exception.Safe ( MonadThrow )
+import Control.Lens ( (&), (^.), (%~), (.~), makeLenses )
 import Data.ByteArray  (ScrubbedBytes, length, replicate)
-import Data.Proxy
+import Data.Proxy ( Proxy(..) )
 import Prelude hiding  (length, replicate)
 
 import Crypto.Noise.Cipher
+    ( Plaintext,
+      Cipher(Ciphertext, cipherBytesToSym, cipherTextToBytes) )
 import Crypto.Noise.Hash
+    ( Hash(ChainingKey, Digest, hashToBytes, hashLength, hash,
+           hashBytesToCK, hashHKDF) )
 import Crypto.Noise.Internal.CipherState
+    ( CipherState, cipherState, encryptWithAd, decryptWithAd )
 
 data SymmetricState c h =
   SymmetricState { _ssCipher :: CipherState c

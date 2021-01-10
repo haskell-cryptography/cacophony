@@ -73,6 +73,19 @@ module Crypto.Noise.HandshakePatterns
   ) where
 
 import Crypto.Noise.Internal.Handshake.Pattern
+    ( HandshakePattern,
+      e,
+      s,
+      ee,
+      es,
+      se,
+      ss,
+      psk,
+      preInitiator,
+      preResponder,
+      initiator,
+      responder,
+      handshakePattern )
 
 -- | @Noise_NN():
 --  -> e

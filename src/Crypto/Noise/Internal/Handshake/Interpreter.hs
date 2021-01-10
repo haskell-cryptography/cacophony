@@ -7,23 +7,53 @@
 -- Portability : POSIX
 module Crypto.Noise.Internal.Handshake.Interpreter where
 
-import Control.Applicative.Free
-import Control.Exception.Safe
-import Control.Lens
-import Control.Monad.Coroutine.SuspensionFunctors
+import Control.Applicative.Free ( runAp )
+import Control.Exception.Safe ( throwM )
+import Control.Lens ( (^.), use, (%=), (.=), (<>=), Lens' )
+import Control.Monad.Coroutine.SuspensionFunctors ( request )
 import Data.ByteArray (splitAt)
 import Data.Maybe     (isJust)
-import Data.Proxy
+import Data.Proxy ( Proxy(..) )
 import Prelude hiding (splitAt)
 
 import Crypto.Noise.Cipher
+    ( Cipher(cipherBytesToText, cipherTextToBytes) )
 import Crypto.Noise.DH
+    ( KeyPair,
+      DH(PublicKey, dhPubToBytes, dhLength, dhBytesToPub, dhPerform) )
 import Crypto.Noise.Exception
-import Crypto.Noise.Hash
-import Crypto.Noise.Internal.Handshake.Pattern hiding (ss)
+    ( NoiseException(KeyMissing, StaticKeyOverwrite, InvalidKey,
+                     InvalidPattern),
+      ExceptionKeyType(..) )
+import Crypto.Noise.Hash ( Hash )
+import Crypto.Noise.Internal.Handshake.Pattern
+    ( HandshakePattern,
+      Message(..),
+      MessagePattern,
+      Token(..),
+      hpMsgSeq )
 import Crypto.Noise.Internal.Handshake.State
-import Crypto.Noise.Internal.CipherState
+    ( HandshakeOpts,
+      HandshakeRole(..),
+      hoLocalEphemeral,
+      hoLocalStatic,
+      hoRemoteEphemeral,
+      hoRemoteStatic,
+      hoRole,
+      Handshake(Handshake),
+      HandshakeResult(HandshakeResultMessage, HandshakeResultNeedPSK),
+      hsMsgBuffer,
+      hsOpts,
+      hsPSKMode,
+      hsSymmetricState )
+import Crypto.Noise.Internal.CipherState ( csk )
 import Crypto.Noise.Internal.SymmetricState
+    ( ssCipher,
+      mixKey,
+      mixHash,
+      mixKeyAndHash,
+      encryptAndHash,
+      decryptAndHash )
 
 -- [ E ] -----------------------------------------------------------------------
 

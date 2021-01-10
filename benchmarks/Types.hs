@@ -2,19 +2,18 @@
 module Types where
 
 import Data.Maybe  (fromMaybe)
-import Data.Monoid ((<>))
 import Data.Tuple  (swap)
 
-import Crypto.Noise
-import Crypto.Noise.Cipher.ChaChaPoly1305
-import Crypto.Noise.Cipher.AESGCM
-import Crypto.Noise.DH.Curve25519
-import Crypto.Noise.DH.Curve448
-import Crypto.Noise.HandshakePatterns
-import Crypto.Noise.Hash.SHA256
-import Crypto.Noise.Hash.SHA512
-import Crypto.Noise.Hash.BLAKE2s
-import Crypto.Noise.Hash.BLAKE2b
+import Crypto.Noise ( Cipher, DH, Hash, HandshakePattern )
+import Crypto.Noise.Cipher.ChaChaPoly1305 ( ChaChaPoly1305 )
+import Crypto.Noise.Cipher.AESGCM ( AESGCM )
+import Crypto.Noise.DH.Curve25519 ( Curve25519 )
+import Crypto.Noise.DH.Curve448 ( Curve448 )
+import qualified Crypto.Noise.HandshakePatterns as HP
+import Crypto.Noise.Hash.SHA256 ( SHA256 )
+import Crypto.Noise.Hash.SHA512 ( SHA512 )
+import Crypto.Noise.Hash.BLAKE2s ( BLAKE2s )
+import Crypto.Noise.Hash.BLAKE2b ( BLAKE2b )
 
 data PatternName
   = PatternNN
@@ -147,42 +146,42 @@ hashMap =
 
 patternToHandshake :: PatternName
                    -> HandshakePattern
-patternToHandshake PatternNN = noiseNN
-patternToHandshake PatternKN = noiseKN
-patternToHandshake PatternNK = noiseNK
-patternToHandshake PatternKK = noiseKK
-patternToHandshake PatternNX = noiseNX
-patternToHandshake PatternKX = noiseKX
-patternToHandshake PatternXN = noiseXN
-patternToHandshake PatternIN = noiseIN
-patternToHandshake PatternXK = noiseXK
-patternToHandshake PatternIK = noiseIK
-patternToHandshake PatternXX = noiseXX
-patternToHandshake PatternIX = noiseIX
-patternToHandshake PatternN  = noiseN
-patternToHandshake PatternK  = noiseK
-patternToHandshake PatternX  = noiseX
-patternToHandshake PatternNNpsk0 = noiseNNpsk0
-patternToHandshake PatternNNpsk2 = noiseNNpsk2
-patternToHandshake PatternNKpsk0 = noiseNKpsk0
-patternToHandshake PatternNKpsk2 = noiseNKpsk2
-patternToHandshake PatternNXpsk2 = noiseNXpsk2
-patternToHandshake PatternXNpsk3 = noiseXNpsk3
-patternToHandshake PatternXKpsk3 = noiseXKpsk3
-patternToHandshake PatternXXpsk3 = noiseXXpsk3
-patternToHandshake PatternKNpsk0 = noiseKNpsk0
-patternToHandshake PatternKNpsk2 = noiseKNpsk2
-patternToHandshake PatternKKpsk0 = noiseKKpsk0
-patternToHandshake PatternKKpsk2 = noiseKKpsk2
-patternToHandshake PatternKXpsk2 = noiseKXpsk2
-patternToHandshake PatternINpsk1 = noiseINpsk1
-patternToHandshake PatternINpsk2 = noiseINpsk2
-patternToHandshake PatternIKpsk1 = noiseIKpsk1
-patternToHandshake PatternIKpsk2 = noiseIKpsk2
-patternToHandshake PatternIXpsk2 = noiseIXpsk2
-patternToHandshake PatternNpsk0  = noiseNpsk0
-patternToHandshake PatternKpsk0  = noiseKpsk0
-patternToHandshake PatternXpsk1  = noiseXpsk1
+patternToHandshake PatternNN = HP.noiseNN
+patternToHandshake PatternKN = HP.noiseKN
+patternToHandshake PatternNK = HP.noiseNK
+patternToHandshake PatternKK = HP.noiseKK
+patternToHandshake PatternNX = HP.noiseNX
+patternToHandshake PatternKX = HP.noiseKX
+patternToHandshake PatternXN = HP.noiseXN
+patternToHandshake PatternIN = HP.noiseIN
+patternToHandshake PatternXK = HP.noiseXK
+patternToHandshake PatternIK = HP.noiseIK
+patternToHandshake PatternXX = HP.noiseXX
+patternToHandshake PatternIX = HP.noiseIX
+patternToHandshake PatternN  = HP.noiseN
+patternToHandshake PatternK  = HP.noiseK
+patternToHandshake PatternX  = HP.noiseX
+patternToHandshake PatternNNpsk0 = HP.noiseNNpsk0
+patternToHandshake PatternNNpsk2 = HP.noiseNNpsk2
+patternToHandshake PatternNKpsk0 = HP.noiseNKpsk0
+patternToHandshake PatternNKpsk2 = HP.noiseNKpsk2
+patternToHandshake PatternNXpsk2 = HP.noiseNXpsk2
+patternToHandshake PatternXNpsk3 = HP.noiseXNpsk3
+patternToHandshake PatternXKpsk3 = HP.noiseXKpsk3
+patternToHandshake PatternXXpsk3 = HP.noiseXXpsk3
+patternToHandshake PatternKNpsk0 = HP.noiseKNpsk0
+patternToHandshake PatternKNpsk2 = HP.noiseKNpsk2
+patternToHandshake PatternKKpsk0 = HP.noiseKKpsk0
+patternToHandshake PatternKKpsk2 = HP.noiseKKpsk2
+patternToHandshake PatternKXpsk2 = HP.noiseKXpsk2
+patternToHandshake PatternINpsk1 = HP.noiseINpsk1
+patternToHandshake PatternINpsk2 = HP.noiseINpsk2
+patternToHandshake PatternIKpsk1 = HP.noiseIKpsk1
+patternToHandshake PatternIKpsk2 = HP.noiseIKpsk2
+patternToHandshake PatternIXpsk2 = HP.noiseIXpsk2
+patternToHandshake PatternNpsk0  = HP.noiseNpsk0
+patternToHandshake PatternKpsk0  = HP.noiseKpsk0
+patternToHandshake PatternXpsk1  = HP.noiseXpsk1
 
 instance Show HandshakeName where
   show HandshakeName{..} = "Noise_"

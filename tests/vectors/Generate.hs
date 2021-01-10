@@ -5,7 +5,6 @@ import Control.Exception    (SomeException)
 import Data.Aeson           (encode)
 import Data.ByteString.Lazy (writeFile)
 import Data.Either          (isLeft)
-import Data.Monoid          ((<>))
 import Prelude hiding       (writeFile)
 
 import Crypto.Noise

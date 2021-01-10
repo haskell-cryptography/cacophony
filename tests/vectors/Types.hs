@@ -6,7 +6,6 @@ import Data.Aeson.Types      (typeMismatch)
 import Data.Attoparsec.ByteString.Char8
 import Data.ByteString.Char8 (ByteString, unpack)
 import Data.Maybe            (fromMaybe)
-import Data.Monoid           ((<>))
 import Data.Text             (pack)
 import Data.Text.Encoding    (encodeUtf8)
 import Data.Tuple            (swap)

@@ -106,4 +106,4 @@ encodeSB = decodeUtf8 . B16.encode . convert
 
 decodeSB :: Text
          -> ScrubbedBytes
-decodeSB = convert . fst . B16.decode . encodeUtf8
+decodeSB = convert . either error id . B16.decode . encodeUtf8

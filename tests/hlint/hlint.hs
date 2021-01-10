@@ -12,7 +12,7 @@ main = do
                    , "benchmarks"
                    , "tests"
                    , "tools"
-                   , "--hint=tests/.hlint"
+                   , "--hint=tests/.hlint.yaml"
                    , "--cpp-define=HLINT"
                    ] `mappend` args
   unless (null hints) exitFailure

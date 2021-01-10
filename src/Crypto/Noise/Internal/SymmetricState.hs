@@ -61,7 +61,7 @@ mixHash :: Hash h
         => ScrubbedBytes
         -> SymmetricState c h
         -> SymmetricState c h
-mixHash d ss = ss & ssh %~ Right . hash . (`mappend` d) . sshBytes
+mixHash d = ssh %~ Right . hash . (`mappend` d) . sshBytes
 
 -- | Mixes key material and arbitrary data in to the SymmetricState.
 --   Note that this is not isomorphic to @mixHash . mixKey@.

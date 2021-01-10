@@ -155,20 +155,20 @@ parseHandshakeName :: Parser HandshakeName
 parseHandshakeName = do
   _ <- string "Noise_"
 
-  let untilUnderscore = anyChar `manyTill'` (char '_')
+  let untilUnderscore = anyChar `manyTill'` char '_'
       untilEOI        = anyChar `manyTill'` endOfInput
 
-  pattern <- (flip lookup patternMap) <$> untilUnderscore
-  dh      <- (flip lookup dhMap)      <$> untilUnderscore
-  cipher  <- (flip lookup cipherMap)  <$> untilUnderscore
-  hash    <- (flip lookup hashMap)    <$> untilEOI
+  pat    <- flip lookup patternMap <$> untilUnderscore
+  dh     <- flip lookup dhMap      <$> untilUnderscore
+  cipher <- flip lookup cipherMap  <$> untilUnderscore
+  hash   <- flip lookup hashMap    <$> untilEOI
 
-
-  let mHandshakeName = do
-        p <- pattern
-        d <- dh
-        c <- cipher
-        h <- hash
+  let mHandshakeName =
+        HandshakeName
+          <$> pat
+          <*> cipher
+          <*> dh
+          <*> hash
 
         return $ HandshakeName p c d h
 

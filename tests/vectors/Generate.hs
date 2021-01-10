@@ -136,29 +136,17 @@ genVector pat payloads = finalVector
     d = hsDH     pat
     h = hsHash   pat
 
-    finalVector = either (\err -> error ("Pattern: " <> (show pat) <> " Error: " <> (show err)))
+    finalVector = either (\err -> error $ "Pattern: " <> show pat <> " Error: " <> show err)
                          id
                          (populateVector c d h payloads . setKeys $ emptyVector)
 
 allHandshakes :: [HandshakeName]
-allHandshakes = do
-  pattern <- [minBound .. maxBound]
-
-  cipher  <- [ WrapCipherType AESGCM
-             , WrapCipherType ChaChaPoly1305
-             ]
-
-  dh      <- [ WrapDHType Curve25519
-             , WrapDHType Curve448
-             ]
-
-  hash    <- [ WrapHashType BLAKE2b
-             , WrapHashType BLAKE2s
-             , WrapHashType SHA256
-             , WrapHashType SHA512
-             ]
-
-  return $ HandshakeName pattern cipher dh hash
+allHandshakes =
+  HandshakeName
+    <$> [minBound .. maxBound]
+    <*> [ WrapCipherType AESGCM , WrapCipherType ChaChaPoly1305 ]
+    <*> [ WrapDHType Curve25519 , WrapDHType Curve448 ]
+    <*> [ WrapHashType BLAKE2b , WrapHashType BLAKE2s , WrapHashType SHA256 , WrapHashType SHA512 ]
 
 genVectorFile :: FilePath
               -> IO ()

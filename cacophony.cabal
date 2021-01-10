@@ -163,7 +163,7 @@ benchmark bench
   build-depends:
       async
     , base >=4.9 && <5
-    , base16-bytestring
+    , base16-bytestring >= 1.0
     , bytestring
     , cacophony
     , criterion

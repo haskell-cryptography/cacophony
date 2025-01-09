@@ -16,7 +16,6 @@ extra-source-files:
   - LICENSE
   - stack.yaml
   - package.yaml
-  - tests/.hlint
   - tools/pretty-print/format-vectors.py
   - tools/pretty-print/vector-template.jinja
   - vectors/cacophony.txt
@@ -34,7 +33,7 @@ library:
   source-dirs: src
   dependencies:
     - bytestring
-    - cryptonite >= 0.22
+    - crypton
     - exceptions
     - free
     - lens

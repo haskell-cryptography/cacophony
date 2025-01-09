@@ -225,7 +225,7 @@ setKeys v@Vector{vProtoName = pat} = v
 
 hexToSB :: ByteString
         -> ScrubbedBytes
-hexToSB = convert . fst . B16.decode
+hexToSB = convert . B16.decodeLenient
 
 privateToPublic :: SomeDHType
                 -> ScrubbedBytes

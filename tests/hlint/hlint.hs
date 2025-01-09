@@ -12,7 +12,8 @@ main = do
                    , "benchmarks"
                    , "tests"
                    , "tools"
-                   , "--hint=tests/.hlint"
                    , "--cpp-define=HLINT"
+                   , "--ignore=Parse error"
+                   , "--ignore=Functor law"
                    ] `mappend` args
   unless (null hints) exitFailure

@@ -1,6 +1,7 @@
 # 0.11.0
 
 * Add support for deferred patterns
+* Depend upon crypton instead of cryptonite
 
 # 0.10.1
 

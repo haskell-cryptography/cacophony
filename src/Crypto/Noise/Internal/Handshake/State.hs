@@ -39,6 +39,7 @@ data HandshakeOpts d =
                 , _hoLocalStatic         :: Maybe (KeyPair d)
                 , _hoRemoteEphemeral     :: Maybe (PublicKey d)
                 , _hoRemoteStatic        :: Maybe (PublicKey d)
+                , _lnRekeyNonce          :: Maybe Integer
                 }
 
 $(makeLenses ''HandshakeOpts)
@@ -80,6 +81,7 @@ defaultHandshakeOpts r p =
                 , _hoLocalStatic         = Nothing
                 , _hoRemoteEphemeral     = Nothing
                 , _hoRemoteStatic        = Nothing
+                , _lnRekeyNonce          = Nothing
                 }
 
 -- | Sets the local ephemeral key.
@@ -105,6 +107,12 @@ setRemoteStatic :: Maybe (PublicKey d)
                 -> HandshakeOpts d
                 -> HandshakeOpts d
 setRemoteStatic k opts = opts { _hoRemoteStatic = k }
+
+-- | Sets the nonce number at which Lightning (BOLT-08) rekeying will occur.
+setLightningRotation :: Maybe Integer
+                     -> HandshakeOpts d
+                     -> HandshakeOpts d
+setLightningRotation n opts = opts { _lnRekeyNonce = n }
 
 -- | Given a protocol name, returns the full handshake name according to the
 --   rules in section 8.

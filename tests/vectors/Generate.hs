@@ -151,6 +151,7 @@ allHandshakes = do
 
   dh      <- [ WrapDHType Curve25519
              , WrapDHType Curve448
+             , WrapDHType Secp256k1
              ]
 
   hash    <- [ WrapHashType BLAKE2b

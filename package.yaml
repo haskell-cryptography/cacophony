@@ -42,6 +42,7 @@ library:
     - mtl
     - safe-exceptions
     - transformers
+    - secp256k1-haskell:+ecdh >= 0.1.5
 
   exposed-modules:
     - Crypto.Noise
@@ -51,6 +52,7 @@ library:
     - Crypto.Noise.DH
     - Crypto.Noise.DH.Curve25519
     - Crypto.Noise.DH.Curve448
+    - Crypto.Noise.DH.Secp256k1
     - Crypto.Noise.Exception
     - Crypto.Noise.HandshakePatterns
     - Crypto.Noise.Hash
@@ -103,6 +105,27 @@ tests:
 
     default-extensions:
       - OverloadedStrings
+
+  secp256k1:
+    main: Main.hs
+    source-dirs: tests/secp256k1
+    dependencies:
+      - base16-bytestring
+      - cacophony
+      - memory
+      - bytestring
+
+    ghc-options:
+      - -O2
+      - -rtsopts
+      - -threaded
+      - -with-rtsopts=-N
+      - -Wno-name-shadowing
+      - -Wno-unused-matches
+
+    default-extensions:
+      - OverloadedStrings
+      - TypeApplications
 
 benchmarks:
   bench:

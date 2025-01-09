@@ -1,3 +1,4 @@
+{-# LANGUAGE Rank2Types #-}
 -------------------------------------------------
 -- |
 -- Module      : Crypto.Noise
@@ -30,6 +31,7 @@ module Crypto.Noise
   , setLocalStatic
   , setRemoteEphemeral
   , setRemoteStatic
+  , setLightningRotation
     -- * Classes
   , Cipher
   , DH
@@ -42,8 +44,9 @@ module Crypto.Noise
 import Control.Arrow   (arr, second, (***))
 import Control.Exception.Safe
 import Control.Lens
+import Control.Monad (guard)
 import Data.ByteArray  (ScrubbedBytes, convert)
-import Data.Maybe      (isJust)
+import Data.Maybe      (isJust, fromMaybe)
 
 import Crypto.Noise.Cipher
 import Crypto.Noise.DH
@@ -86,14 +89,45 @@ writeMessage :: (Cipher c, DH d, Hash h)
              => ScrubbedBytes
              -> NoiseState c d h
              -> NoiseResult c d h
-writeMessage msg ns = maybe
+writeMessage msg ns2 = maybe
   (convertHandshakeResult $ resumeHandshake msg ns)
   (convertTransportResult . encryptMsg)
   (ns ^. nsSendingCipherState)
   where
+    ns = fromMaybe ns2 $ maybeNewNS Send ns2
     ctToMsg       = arr cipherTextToBytes
-    updateState   = arr $ \cs -> ns & nsSendingCipherState ?~ cs
+    updateState    = arr $ \cs -> ns & nsSendingCipherState ?~ cs
+
     encryptMsg cs = (ctToMsg *** updateState) <$> encryptWithAd mempty msg cs
+
+data SendOrReceive = Send | Receive
+
+maybeNewNS :: (Cipher a, Hash c) => SendOrReceive -> NoiseState a b c -> Maybe (NoiseState a b c)
+maybeNewNS sendOrReceive ns = do
+  let
+    selectCK Send    = sendingCK
+    selectCK Receive = receivingCK
+    selectCS Send    = nsSendingCipherState
+    selectCS Receive = nsReceivingCipherState
+    ckLens :: Lens' (NoiseState c d a) (ChainingKey a)
+    ckLens = nsHandshakeState . hsSymmetricState . selectCK sendOrReceive
+    csLens :: Lens' (NoiseState c d h) (Maybe (CipherState c))
+    csLens = selectCS sendOrReceive
+  oldSK <- ns ^? csLens . _Just . csk . _Just
+  currentNonce <- ns ^? csLens . _Just . csn
+  rekeyNonceInteger <- ns ^. nsHandshakeState . hsOpts . lnRekeyNonce
+  let
+    rekeyNonce = iterate cipherIncNonce cipherZeroNonce !! fromIntegral rekeyNonceInteger
+    oldSKBytes = cipherSymToBytes oldSK
+    [ck, sk] = hashHKDF (ns ^. ckLens) oldSKBytes 2
+    updateMaybeCS maybeCS = do
+      cs <- maybeCS
+      pure $ (cs & csk .~ (Just $ cipherBytesToSym sk))
+                 & csn .~ cipherZeroNonce
+    new = (ns & csLens %~ updateMaybeCS)
+              & ckLens .~ hashBytesToCK ck
+  guard $ cipherNonceEq currentNonce rekeyNonce
+  pure new
 
 -- | Reads a handshake or transport message and returns the embedded payload. If
 --   the handshake fails, a 'HandshakeError' will be returned. After the
@@ -109,11 +143,12 @@ readMessage :: (Cipher c, DH d, Hash h)
             => ScrubbedBytes
             -> NoiseState c d h
             -> NoiseResult c d h
-readMessage ct ns = maybe
+readMessage ct ns2 = maybe
   (convertHandshakeResult $ resumeHandshake ct ns)
   (convertTransportResult . decryptMsg)
   (ns ^. nsReceivingCipherState)
   where
+    ns = fromMaybe ns2 $ maybeNewNS Receive ns2
     ct'           = cipherBytesToText ct
     updateState   = arr $ \cs -> ns & nsReceivingCipherState ?~ cs
     decryptMsg cs = second updateState <$> decryptWithAd mempty ct' cs
